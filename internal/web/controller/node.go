@@ -23,6 +23,10 @@ import (
 // so the request context isn't what cuts a still-running command short.
 const execRequestBudget = 6 * time.Minute
 
+// installRequestBudget sits above the service's 10m install timeout to leave
+// room for reading the install result and the node conversion afterward.
+const installRequestBudget = 12 * time.Minute
+
 type NodeController struct {
 	nodeService service.NodeService
 	xrayService service.XrayService
@@ -47,6 +51,7 @@ func (a *NodeController) initRouter(g *gin.RouterGroup) {
 	g.POST("/test", a.test)
 	g.POST("/testSSH", a.testSSH)
 	g.POST("/exec", a.exec)
+	g.POST("/install", a.install)
 	g.GET("/execHistory", a.execHistory)
 	g.POST("/execHistory/prune", a.pruneExecHistory)
 	g.POST("/certFingerprint", a.certFingerprint)
@@ -351,6 +356,36 @@ func (a *NodeController) exec(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), execRequestBudget)
 	defer cancel()
 	result := a.nodeService.ExecCommandBatch(ctx, ids, req.Command, time.Duration(req.TimeoutSec)*time.Second, username)
+	jsonObj(c, result, nil)
+}
+
+// install installs 3x-ui on an ssh-mode node and, on success, converts it to an
+// api node in place. It is a long-running synchronous call — the install can take
+// minutes — so it carries a wider request budget than exec.
+func (a *NodeController) install(c *gin.Context) {
+	var req struct {
+		NodeId  int    `json:"nodeId"`
+		Version string `json:"version"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
+		return
+	}
+	if req.NodeId == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), fmt.Errorf("a node is required"))
+		return
+	}
+	username := ""
+	if u := session.GetLoginUser(c); u != nil {
+		username = u.Username
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), installRequestBudget)
+	defer cancel()
+	result, err := a.nodeService.InstallPanel(ctx, req.NodeId, req.Version, username)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
+		return
+	}
 	jsonObj(c, result, nil)
 }
 

@@ -2172,6 +2172,34 @@
         ],
         "type": "object"
       },
+      "InstallResult": {
+        "description": "InstallResult reports the outcome of an auto-install to the panel.",
+        "properties": {
+          "accessUrl": {
+            "example": "https://1.2.3.4:2053/abc/",
+            "type": "string"
+          },
+          "converted": {
+            "example": true,
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "stdout": {
+            "type": "string"
+          },
+          "success": {
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "converted",
+          "success"
+        ],
+        "type": "object"
+      },
       "Msg": {
         "properties": {
           "msg": {
@@ -8397,6 +8425,62 @@
                         "stdout": ""
                       }
                     ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/nodes/install": {
+      "post": {
+        "tags": [
+          "Nodes"
+        ],
+        "summary": "Install 3x-ui on an ssh-mode node over SSH and, on success, convert the node to api mode in place using the credentials the installer writes to /etc/x-ui/install-result.env (including the API token). The SSH credentials are kept so the box stays SSH-reachable. Long-running and synchronous (up to ~10 minutes). Runs the official install.sh non-interactively; version is optional (defaults to latest stable).",
+        "operationId": "post_panel_api_nodes_install",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "nodeId": 3,
+                "version": ""
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/InstallResult"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "accessUrl": "https://1.2.3.4:2053/abc/",
+                    "converted": true,
+                    "message": "",
+                    "stdout": "",
+                    "success": true
                   }
                 }
               }

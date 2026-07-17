@@ -32,6 +32,7 @@ function renderList() {
       onProbe={noop}
       onToggleEnable={noop}
       onUpdateNode={noop}
+      onInstall={noop}
       onUpdateSelected={noop}
       onExecSelected={noop}
       onExecHistory={noop}

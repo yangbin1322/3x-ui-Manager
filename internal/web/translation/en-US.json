@@ -1193,7 +1193,8 @@
         "updateResult": "Update triggered on {ok} node(s), {failed} failed",
         "updateNoneEligible": "Select at least one online, enabled node",
         "saveMtls": "Save node mTLS",
-        "exec": "Execute command"
+        "exec": "Execute command",
+        "install": "Install 3x-ui"
       },
       "tlsVerifyMode": "TLS verification",
       "tlsVerifyModeHint": "How the panel validates the node's HTTPS certificate. Pin or Skip are for self-signed certs (https nodes only).",
@@ -1271,6 +1272,15 @@
           "user": "User",
           "status": "Status"
         }
+      },
+      "install": {
+        "action": "Install 3x-ui",
+        "confirmTitle": "Install 3x-ui on \"{name}\"?",
+        "confirmBody": "This runs the official installer over SSH and, on success, converts this node to API mode automatically. It can take a few minutes.",
+        "running": "Installing 3x-ui… this can take a few minutes",
+        "convertedOk": "Installed and converted to an API node",
+        "installedNotConverted": "Installed, but automatic conversion failed — add the API node manually",
+        "failed": "Install failed"
       }
     },
     "settings": {

@@ -1076,7 +1076,8 @@
         "updateResult": "已在 {ok} 個節點上觸發更新，{failed} 個失敗",
         "updateNoneEligible": "請至少選擇一個在線且已啟用的節點",
         "saveMtls": "儲存節點 mTLS",
-        "exec": "執行命令"
+        "exec": "執行命令",
+        "install": "安裝 3x-ui"
       },
       "tlsVerifyMode": "TLS 驗證",
       "tlsVerifyModeHint": "面板如何驗證節點的 HTTPS 憑證。釘選或略過用於自簽憑證（僅 https 節點）。",
@@ -1154,6 +1155,15 @@
           "user": "使用者",
           "status": "狀態"
         }
+      },
+      "install": {
+        "action": "安裝 3x-ui",
+        "confirmTitle": "在「{name}」上安裝 3x-ui？",
+        "confirmBody": "將透過 SSH 執行官方安裝腳本，成功後自動把該節點轉為 API 模式。可能需要幾分鐘。",
+        "running": "正在安裝 3x-ui…可能需要幾分鐘",
+        "convertedOk": "已安裝並轉為 API 節點",
+        "installedNotConverted": "已安裝，但自動轉換失敗——請手動新增 API 節點",
+        "failed": "安裝失敗"
       }
     },
     "settings": {

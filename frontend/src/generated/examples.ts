@@ -541,6 +541,13 @@ export const EXAMPLES: Record<string, unknown> = {
     "wgMtu": 0,
     "wgPublicKey": ""
   },
+  "InstallResult": {
+    "accessUrl": "https://1.2.3.4:2053/abc/",
+    "converted": true,
+    "message": "",
+    "stdout": "",
+    "success": true
+  },
   "Msg": {
     "msg": "",
     "obj": null,

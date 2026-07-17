@@ -1076,7 +1076,8 @@
         "updateResult": "به‌روزرسانی روی {ok} نود آغاز شد، {failed} ناموفق",
         "updateNoneEligible": "حداقل یک نود آنلاین و فعال انتخاب کنید",
         "saveMtls": "ذخیره mTLS نود",
-        "exec": "اجرای دستور"
+        "exec": "اجرای دستور",
+        "install": "نصب 3x-ui"
       },
       "tlsVerifyMode": "اعتبارسنجی TLS",
       "tlsVerifyModeHint": "اینکه پنل گواهی HTTPS نود را چطور بررسی کند. Pin یا Skip برای گواهی‌های self-signed است (فقط نودهای https).",
@@ -1154,6 +1155,15 @@
           "user": "کاربر",
           "status": "وضعیت"
         }
+      },
+      "install": {
+        "action": "نصب 3x-ui",
+        "confirmTitle": "نصب 3x-ui روی «{name}»؟",
+        "confirmBody": "نصب‌کننده رسمی را از طریق SSH اجرا می‌کند و در صورت موفقیت این گره را به‌طور خودکار به حالت API تبدیل می‌کند. ممکن است چند دقیقه طول بکشد.",
+        "running": "در حال نصب 3x-ui… ممکن است چند دقیقه طول بکشد",
+        "convertedOk": "نصب شد و به گره API تبدیل شد",
+        "installedNotConverted": "نصب شد اما تبدیل خودکار ناموفق بود — گره API را دستی اضافه کنید",
+        "failed": "نصب ناموفق بود"
       }
     },
     "settings": {

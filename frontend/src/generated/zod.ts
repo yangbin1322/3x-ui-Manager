@@ -535,6 +535,15 @@ export const InboundOptionSchema = z.object({
 });
 export type InboundOption = z.infer<typeof InboundOptionSchema>;
 
+export const InstallResultSchema = z.object({
+  accessUrl: z.string().optional(),
+  converted: z.boolean(),
+  message: z.string().optional(),
+  stdout: z.string().optional(),
+  success: z.boolean(),
+});
+export type InstallResult = z.infer<typeof InstallResultSchema>;
+
 export const MsgSchema = z.object({
   msg: z.string(),
   obj: z.unknown(),

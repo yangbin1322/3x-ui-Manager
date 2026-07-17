@@ -502,6 +502,14 @@ export interface InboundOption {
   wgPublicKey?: string;
 }
 
+export interface InstallResult {
+  accessUrl?: string;
+  converted: boolean;
+  message?: string;
+  stdout?: string;
+  success: boolean;
+}
+
 export interface Msg {
   msg: string;
   obj: unknown;

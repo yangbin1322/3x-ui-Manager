@@ -5,7 +5,7 @@ import { parseMsg } from '@/utils/zodValidate';
 import { keys } from '@/api/queryKeys';
 import type { NodeRecord } from '@/api/queries/useNodesQuery';
 import { ProbeResultSchema, type ProbeResult } from '@/schemas/node';
-import type { SSHTestResult, BatchExecResult, ExecHistoryResponse } from '@/generated/types';
+import type { SSHTestResult, BatchExecResult, ExecHistoryResponse, InstallResult } from '@/generated/types';
 
 export interface ExecHistoryFilter {
   page?: number;
@@ -70,6 +70,14 @@ export function useNodeMutations() {
     onSuccess: (msg) => { if (msg?.success) invalidate(); },
   });
 
+  const installMut = useMutation({
+    mutationFn: ({ nodeId, version }: { nodeId: number; version: string }) =>
+      HttpUtil.post<InstallResult>('/panel/api/nodes/install', { nodeId, version }, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    onSuccess: (msg) => { if (msg?.success) invalidate(); },
+  });
+
   const updatePanelsMut = useMutation({
     mutationFn: ({ ids, dev }: { ids: number[]; dev: boolean }) =>
       HttpUtil.post<NodeUpdateResult[]>('/panel/api/nodes/updatePanel', { ids, dev }, {
@@ -98,6 +106,7 @@ export function useNodeMutations() {
       HttpUtil.post<BatchExecResult>('/panel/api/nodes/exec', { nodeIds, command, timeoutSec }, {
         headers: { 'Content-Type': 'application/json' },
       }),
+    installPanel: (nodeId: number, version: string): Promise<Msg<InstallResult>> => installMut.mutateAsync({ nodeId, version }),
     fetchExecHistory: (filter: ExecHistoryFilter): Promise<Msg<ExecHistoryResponse>> => {
       const q = new URLSearchParams();
       if (filter.page) q.set('page', String(filter.page));
