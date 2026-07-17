@@ -1058,7 +1058,9 @@
         "offline": "آفلاین",
         "unknown": "نامشخص",
         "xrayError": "خطای Xray",
-        "xrayStopped": "متوقف"
+        "xrayStopped": "متوقف",
+        "reachable": "قابل دسترسی",
+        "unreachable": "غیرقابل دسترسی"
       },
       "toasts": {
         "list": "بارگذاری نودها ناموفق",
@@ -1073,7 +1075,8 @@
         "updateStarted": "به‌روزرسانی پنل آغاز شد",
         "updateResult": "به‌روزرسانی روی {ok} نود آغاز شد، {failed} ناموفق",
         "updateNoneEligible": "حداقل یک نود آنلاین و فعال انتخاب کنید",
-        "saveMtls": "ذخیره mTLS نود"
+        "saveMtls": "ذخیره mTLS نود",
+        "exec": "اجرای دستور"
       },
       "tlsVerifyMode": "اعتبارسنجی TLS",
       "tlsVerifyModeHint": "اینکه پنل گواهی HTTPS نود را چطور بررسی کند. Pin یا Skip برای گواهی‌های self-signed است (فقط نودهای https).",
@@ -1121,7 +1124,37 @@
       "sshHostKeyTrust": "اعتماد در اولین استفاده",
       "sshHostKeyPin": "ثابت‌کردن اثر انگشت",
       "sshHostKeySkip": "رد کردن (ناامن)",
-      "sshConnectionOk": "اتصال SSH موفق بود"
+      "sshConnectionOk": "اتصال SSH موفق بود",
+      "exec": {
+        "action": "اجرای دستور",
+        "title": "اجرای دستور روی گره‌ها",
+        "targets": "گره‌های هدف ({count})",
+        "command": "دستور",
+        "timeout": "مهلت زمانی",
+        "timeoutHint": "مهلت زمانی هر گره به ثانیه (حداکثر ۳۰۰).",
+        "run": "اجرا",
+        "confirmRun": "تأیید و اجرا",
+        "close": "بستن",
+        "confirmTitle": "روی {count} گره اجرا شود؟",
+        "confirmBody": "این دستور روی همه گره‌های فهرست‌شده اجرا می‌شود. دستورهای دسته‌ای برگشت‌ناپذیرند — پیش از تأیید، هدف‌ها را بررسی کنید.",
+        "nonInteractiveHint": "فقط غیرتعاملی: دستوری که منتظر ورودی است سریع شکست می‌خورد. از -y یا DEBIAN_FRONTEND=noninteractive استفاده کنید.",
+        "okCount": "{count} موفق",
+        "failedCount": "{count} ناموفق",
+        "noSshSelected": "حداقل یک گره SSH انتخاب کنید.",
+        "status": {
+          "success": "موفق",
+          "failed": "ناموفق",
+          "unreachable": "غیرقابل دسترسی",
+          "timeout": "مهلت تمام شد"
+        },
+        "history": {
+          "action": "تاریخچه",
+          "title": "تاریخچه اجرای دستورات",
+          "time": "زمان",
+          "user": "کاربر",
+          "status": "وضعیت"
+        }
+      }
     },
     "settings": {
       "title": "تنظیمات پنل",

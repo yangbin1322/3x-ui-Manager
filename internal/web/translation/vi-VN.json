@@ -1058,7 +1058,9 @@
         "offline": "Ngoại tuyến",
         "unknown": "Không xác định",
         "xrayError": "Lỗi Xray",
-        "xrayStopped": "Đã dừng"
+        "xrayStopped": "Đã dừng",
+        "reachable": "Có thể kết nối",
+        "unreachable": "Không thể kết nối"
       },
       "toasts": {
         "list": "Không tải được danh sách nút",
@@ -1073,7 +1075,8 @@
         "updateStarted": "Đã bắt đầu cập nhật bảng điều khiển",
         "updateResult": "Đã kích hoạt cập nhật trên {ok} node, {failed} thất bại",
         "updateNoneEligible": "Chọn ít nhất một node trực tuyến và đang bật",
-        "saveMtls": "Lưu mTLS nút"
+        "saveMtls": "Lưu mTLS nút",
+        "exec": "Thực thi lệnh"
       },
       "tlsVerifyMode": "Xác minh TLS",
       "tlsVerifyModeHint": "Cách panel xác thực chứng chỉ HTTPS của node. Ghim hoặc Bỏ qua dành cho chứng chỉ tự ký (chỉ node https).",
@@ -1121,7 +1124,37 @@
       "sshHostKeyTrust": "Tin cậy lần đầu",
       "sshHostKeyPin": "Ghim vân tay",
       "sshHostKeySkip": "Bỏ qua (không an toàn)",
-      "sshConnectionOk": "Kết nối SSH thành công"
+      "sshConnectionOk": "Kết nối SSH thành công",
+      "exec": {
+        "action": "Chạy lệnh",
+        "title": "Chạy lệnh trên các nút",
+        "targets": "Nút mục tiêu ({count})",
+        "command": "Lệnh",
+        "timeout": "Thời gian chờ",
+        "timeoutHint": "Thời gian chờ mỗi nút tính bằng giây (tối đa 300).",
+        "run": "Chạy",
+        "confirmRun": "Xác nhận và chạy",
+        "close": "Đóng",
+        "confirmTitle": "Chạy trên {count} nút?",
+        "confirmBody": "Lệnh này chạy trên tất cả các nút được liệt kê. Lệnh hàng loạt không thể hoàn tác — hãy kiểm tra mục tiêu trước khi xác nhận.",
+        "nonInteractiveHint": "Chỉ không tương tác: lệnh chờ nhập liệu sẽ thất bại ngay. Dùng -y hoặc DEBIAN_FRONTEND=noninteractive.",
+        "okCount": "{count} thành công",
+        "failedCount": "{count} thất bại",
+        "noSshSelected": "Chọn ít nhất một nút SSH.",
+        "status": {
+          "success": "Thành công",
+          "failed": "Thất bại",
+          "unreachable": "Không thể kết nối",
+          "timeout": "Hết thời gian"
+        },
+        "history": {
+          "action": "Lịch sử",
+          "title": "Lịch sử thực thi lệnh",
+          "time": "Thời gian",
+          "user": "Người dùng",
+          "status": "Trạng thái"
+        }
+      }
     },
     "settings": {
       "title": "Cài đặt",

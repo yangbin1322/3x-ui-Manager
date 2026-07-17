@@ -21,6 +21,22 @@ import (
 const (
 	sshDialTimeout    = 10 * time.Second
 	sshCommandTimeout = 30 * time.Second
+
+	// execDefaultTimeout is used when a caller does not specify one; execMaxTimeout
+	// is the hard ceiling so a hung command cannot hold a connection open forever.
+	execDefaultTimeout = 30 * time.Second
+	execMaxTimeout     = 5 * time.Minute
+
+	// execOutputCap bounds how much combined output is retained per execution, so
+	// a single large-output command (e.g. cat of a big file) cannot bloat the
+	// audit table.
+	execOutputCap = 64 * 1024
+
+	// execConcurrency caps how many nodes a batch command runs on at once. It is
+	// deliberately lower than the heartbeat's 32: each execution is a real
+	// side-effecting action, not a read-only probe, so a smaller fan-out limits
+	// the blast radius of a mistaken command.
+	execConcurrency = 8
 )
 
 // SSHService opens SSH sessions to nodes running in "ssh" access mode: servers
@@ -185,6 +201,13 @@ func runOnClient(ctx context.Context, client *ssh.Client, cmd string) (string, e
 	}
 	defer session.Close()
 
+	// Give the command an immediately-EOF stdin and no PTY. A command that waits
+	// on input (an unguarded "apt install" prompt, a read) then hits EOF and
+	// fails fast instead of blocking until the timeout ceiling. This is a
+	// single-shot command model, not an interactive terminal — the timeout is
+	// the backstop for anything that ignores EOF and reads from /dev/tty.
+	session.Stdin = strings.NewReader("")
+
 	type result struct {
 		out []byte
 		err error
@@ -201,6 +224,17 @@ func runOnClient(ctx context.Context, client *ssh.Client, cmd string) (string, e
 	case r := <-done:
 		return string(r.out), r.err
 	}
+}
+
+// exitCodeOf extracts the remote exit status from a run error. An *ssh.ExitError
+// carries the command's own exit code; anything else (a closed channel, a signal
+// kill) has no meaningful code, reported as -1.
+func exitCodeOf(err error) int {
+	var exitErr *ssh.ExitError
+	if errors.As(err, &exitErr) {
+		return exitErr.ExitStatus()
+	}
+	return -1
 }
 
 // SSHTestResult is what the panel shows after a connection test.

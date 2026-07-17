@@ -1058,7 +1058,9 @@
         "offline": "オフライン",
         "unknown": "不明",
         "xrayError": "Xray エラー",
-        "xrayStopped": "停止"
+        "xrayStopped": "停止",
+        "reachable": "接続可能",
+        "unreachable": "接続不可"
       },
       "toasts": {
         "list": "ノードの読み込みに失敗しました",
@@ -1073,7 +1075,8 @@
         "updateStarted": "パネルの更新を開始しました",
         "updateResult": "{ok} 個のノードで更新を開始、{failed} 個失敗",
         "updateNoneEligible": "オンラインで有効なノードを少なくとも1つ選択してください",
-        "saveMtls": "ノード mTLS を保存"
+        "saveMtls": "ノード mTLS を保存",
+        "exec": "コマンドを実行"
       },
       "tlsVerifyMode": "TLS 検証",
       "tlsVerifyModeHint": "パネルがノードの HTTPS 証明書を検証する方法。ピン留めやスキップは自己署名証明書向け（https ノードのみ）。",
@@ -1121,7 +1124,37 @@
       "sshHostKeyTrust": "初回接続時に信頼",
       "sshHostKeyPin": "フィンガープリントを固定",
       "sshHostKeySkip": "スキップ（安全でない）",
-      "sshConnectionOk": "SSH 接続に成功しました"
+      "sshConnectionOk": "SSH 接続に成功しました",
+      "exec": {
+        "action": "コマンド実行",
+        "title": "ノードでコマンドを実行",
+        "targets": "対象ノード（{count}）",
+        "command": "コマンド",
+        "timeout": "タイムアウト",
+        "timeoutHint": "ノードごとのタイムアウト秒数（最大 300）。",
+        "run": "実行",
+        "confirmRun": "確認して実行",
+        "close": "閉じる",
+        "confirmTitle": "{count} 台のノードで実行しますか？",
+        "confirmBody": "このコマンドは一覧のすべてのノードで実行されます。一括コマンドは元に戻せません。確認前に対象を確認してください。",
+        "nonInteractiveHint": "非対話コマンドのみ：入力を待つコマンドはすぐに失敗します。-y や DEBIAN_FRONTEND=noninteractive を使用してください。",
+        "okCount": "{count} 台成功",
+        "failedCount": "{count} 台失敗",
+        "noSshSelected": "SSH ノードを 1 台以上選択してください。",
+        "status": {
+          "success": "成功",
+          "failed": "失敗",
+          "unreachable": "接続不可",
+          "timeout": "タイムアウト"
+        },
+        "history": {
+          "action": "実行履歴",
+          "title": "コマンド実行履歴",
+          "time": "時刻",
+          "user": "ユーザー",
+          "status": "状態"
+        }
+      }
     },
     "settings": {
       "title": "パネル設定",

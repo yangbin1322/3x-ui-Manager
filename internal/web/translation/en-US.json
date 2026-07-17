@@ -1175,7 +1175,9 @@
         "offline": "Offline",
         "unknown": "Unknown",
         "xrayError": "Xray Error",
-        "xrayStopped": "Stopped"
+        "xrayStopped": "Stopped",
+        "reachable": "Reachable",
+        "unreachable": "Unreachable"
       },
       "toasts": {
         "list": "Failed to load nodes",
@@ -1190,7 +1192,8 @@
         "updateStarted": "Panel update started",
         "updateResult": "Update triggered on {ok} node(s), {failed} failed",
         "updateNoneEligible": "Select at least one online, enabled node",
-        "saveMtls": "Save node mTLS"
+        "saveMtls": "Save node mTLS",
+        "exec": "Execute command"
       },
       "tlsVerifyMode": "TLS verification",
       "tlsVerifyModeHint": "How the panel validates the node's HTTPS certificate. Pin or Skip are for self-signed certs (https nodes only).",
@@ -1238,7 +1241,37 @@
       "sshHostKeyTrust": "Trust on first use",
       "sshHostKeyPin": "Pin fingerprint",
       "sshHostKeySkip": "Skip (unsafe)",
-      "sshConnectionOk": "SSH connection OK"
+      "sshConnectionOk": "SSH connection OK",
+      "exec": {
+        "action": "Run command",
+        "title": "Run command on nodes",
+        "targets": "Target nodes ({count})",
+        "command": "Command",
+        "timeout": "Timeout",
+        "timeoutHint": "Per-node timeout in seconds (max 300).",
+        "run": "Run",
+        "confirmRun": "Confirm and run",
+        "close": "Close",
+        "confirmTitle": "Run on {count} node(s)?",
+        "confirmBody": "This runs the command on every listed node. Batch commands are not reversible — review the targets before confirming.",
+        "nonInteractiveHint": "Non-interactive only: a command that waits for input fails fast. Use flags like -y or DEBIAN_FRONTEND=noninteractive.",
+        "okCount": "{count} succeeded",
+        "failedCount": "{count} failed",
+        "noSshSelected": "Select at least one SSH node.",
+        "status": {
+          "success": "Success",
+          "failed": "Failed",
+          "unreachable": "Unreachable",
+          "timeout": "Timeout"
+        },
+        "history": {
+          "action": "History",
+          "title": "Command execution history",
+          "time": "Time",
+          "user": "User",
+          "status": "Status"
+        }
+      }
     },
     "settings": {
       "title": "Panel Settings",
