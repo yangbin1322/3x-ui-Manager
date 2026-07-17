@@ -995,6 +995,26 @@
         ],
         "type": "object"
       },
+      "BatchExecResult": {
+        "description": "BatchExecResult is the outcome of running one command across several nodes.\nBatchId ties the per-node audit rows together for the history view.",
+        "properties": {
+          "batchId": {
+            "example": "a1b2c3d4",
+            "type": "string"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ExecResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "batchId",
+          "results"
+        ],
+        "type": "object"
+      },
       "Client": {
         "description": "Client represents a client configuration for Xray inbounds with traffic limits and settings.",
         "properties": {
@@ -1340,6 +1360,143 @@
           "total",
           "up",
           "uuid"
+        ],
+        "type": "object"
+      },
+      "CommandExecution": {
+        "description": "CommandExecution is one audit record of a command run on an ssh-mode node.\nRunning an arbitrary command on a remote root shell is the highest-risk action\nin the panel, so every execution — success or failure — is recorded with who\nran it, where, and the result. Records are append-only from the UI's point of\nview: there is no delete endpoint, only an age-based cleanup, so the trail\ncannot be erased to cover an action.\n\nNodeName is snapshotted rather than referenced because a node may later be\nrenamed or deleted, and the audit must still say which host was touched.\nStdout is truncated to a fixed cap so a single large-output command cannot\nbloat the database.",
+        "properties": {
+          "batchId": {
+            "example": "a1b2c3d4",
+            "type": "string"
+          },
+          "command": {
+            "example": "systemctl restart x-ui",
+            "type": "string"
+          },
+          "createdAt": {
+            "example": 1700000000,
+            "format": "int64",
+            "type": "integer"
+          },
+          "durationMs": {
+            "example": 142,
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "exitCode": {
+            "example": 0,
+            "type": "integer"
+          },
+          "id": {
+            "example": 1,
+            "format": "int64",
+            "type": "integer"
+          },
+          "nodeId": {
+            "example": 3,
+            "type": "integer"
+          },
+          "nodeName": {
+            "example": "hk-1",
+            "type": "string"
+          },
+          "status": {
+            "example": "success",
+            "type": "string"
+          },
+          "stdout": {
+            "type": "string"
+          },
+          "username": {
+            "example": "admin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "batchId",
+          "command",
+          "createdAt",
+          "durationMs",
+          "exitCode",
+          "id",
+          "nodeId",
+          "nodeName",
+          "status",
+          "stdout",
+          "username"
+        ],
+        "type": "object"
+      },
+      "ExecHistoryResponse": {
+        "description": "ExecHistoryResponse is one page of audit rows, newest first, plus the total\nmatching the filter so the UI can paginate.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommandExecution"
+            },
+            "type": "array"
+          },
+          "page": {
+            "example": 1,
+            "type": "integer"
+          },
+          "pageSize": {
+            "example": 20,
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object"
+      },
+      "ExecResult": {
+        "description": "ExecResult is the outcome of running a command on one node, returned to the\ncaller and mirrored into the audit log.",
+        "properties": {
+          "durationMs": {
+            "example": 142,
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "exitCode": {
+            "example": 0,
+            "type": "integer"
+          },
+          "nodeId": {
+            "example": 3,
+            "type": "integer"
+          },
+          "nodeName": {
+            "example": "hk-1",
+            "type": "string"
+          },
+          "status": {
+            "example": "success",
+            "type": "string"
+          },
+          "stdout": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "durationMs",
+          "exitCode",
+          "nodeId",
+          "nodeName",
+          "status",
+          "stdout"
         ],
         "type": "object"
       },
@@ -8173,6 +8330,225 @@
                     "osName": "Ubuntu",
                     "osVersion": "24.04",
                     "success": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/nodes/exec": {
+      "post": {
+        "tags": [
+          "Nodes"
+        ],
+        "summary": "Run one shell command on one or more ssh-mode nodes and record each execution in the audit log under a shared batch id. Pass nodeIds (batch) or a single nodeId; nodes run concurrently, bounded internally, and results come back in the order requested. This is a one-shot, non-interactive model: the command runs with an EOF stdin and no PTY, so a command that waits on input (e.g. an apt prompt) fails fast rather than hanging — write commands non-interactively (apt-get install -y, DEBIAN_FRONTEND=noninteractive, rm -f). Requires an authenticated panel admin; the initiating user is taken from the session. timeoutSec is clamped to [1s, 5m] and defaults to 30s. stdout is truncated to 64KB per node in the stored record.",
+        "operationId": "post_panel_api_nodes_exec",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "nodeIds": [
+                  3,
+                  5
+                ],
+                "command": "systemctl restart x-ui",
+                "timeoutSec": 30
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/BatchExecResult"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "batchId": "a1b2c3d4",
+                    "results": [
+                      {
+                        "durationMs": 142,
+                        "error": "",
+                        "exitCode": 0,
+                        "nodeId": 3,
+                        "nodeName": "hk-1",
+                        "status": "success",
+                        "stdout": ""
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/nodes/execHistory": {
+      "get": {
+        "tags": [
+          "Nodes"
+        ],
+        "summary": "Paginated, filterable command audit log, newest first. The audit trail is read-only — there is no per-row delete. Filter by nodeId, username, or status; page is 1-based and pageSize is capped at 200 (default 20).",
+        "operationId": "get_panel_api_nodes_execHistory",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "1-based page number.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "description": "Rows per page (max 200, default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "nodeId",
+            "in": "query",
+            "required": false,
+            "description": "Filter to one node.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "required": false,
+            "description": "Filter to one panel user.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Filter by outcome: success, failed, unreachable, timeout.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/ExecHistoryResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "items": [
+                      {
+                        "batchId": "a1b2c3d4",
+                        "command": "systemctl restart x-ui",
+                        "createdAt": 1700000000,
+                        "durationMs": 142,
+                        "error": "",
+                        "exitCode": 0,
+                        "id": 1,
+                        "nodeId": 3,
+                        "nodeName": "hk-1",
+                        "status": "success",
+                        "stdout": "",
+                        "username": "admin"
+                      }
+                    ],
+                    "page": 1,
+                    "pageSize": 20,
+                    "total": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/nodes/execHistory/prune": {
+      "post": {
+        "tags": [
+          "Nodes"
+        ],
+        "summary": "Delete audit rows older than olderThanDays. This is the only deletion path for the audit log — retention management, not selective erasure. Returns the number of rows removed.",
+        "operationId": "post_panel_api_nodes_execHistory_prune",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "olderThanDays": 90
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "removed": 128
                   }
                 }
               }

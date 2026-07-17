@@ -237,6 +237,11 @@ export interface ApiTokenView {
   token?: string;
 }
 
+export interface BatchExecResult {
+  batchId: string;
+  results: ExecResult[];
+}
+
 export interface Client {
   adTag?: string;
   allowedIPs?: string[];
@@ -318,6 +323,38 @@ export interface ClientTraffic {
   total: number;
   up: number;
   uuid: string;
+}
+
+export interface CommandExecution {
+  batchId: string;
+  command: string;
+  createdAt: number;
+  durationMs: number;
+  error?: string;
+  exitCode: number;
+  id: number;
+  nodeId: number;
+  nodeName: string;
+  status: string;
+  stdout: string;
+  username: string;
+}
+
+export interface ExecHistoryResponse {
+  items: CommandExecution[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface ExecResult {
+  durationMs: number;
+  error?: string;
+  exitCode: number;
+  nodeId: number;
+  nodeName: string;
+  status: string;
+  stdout: string;
 }
 
 export interface FallbackParentInfo {

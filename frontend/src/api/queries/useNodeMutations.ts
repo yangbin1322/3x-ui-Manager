@@ -5,7 +5,15 @@ import { parseMsg } from '@/utils/zodValidate';
 import { keys } from '@/api/queryKeys';
 import type { NodeRecord } from '@/api/queries/useNodesQuery';
 import { ProbeResultSchema, type ProbeResult } from '@/schemas/node';
-import type { SSHTestResult } from '@/generated/types';
+import type { SSHTestResult, BatchExecResult, ExecHistoryResponse } from '@/generated/types';
+
+export interface ExecHistoryFilter {
+  page?: number;
+  pageSize?: number;
+  nodeId?: number;
+  username?: string;
+  status?: string;
+}
 
 export type { ProbeResult };
 
@@ -86,6 +94,20 @@ export function useNodeMutations() {
         id ? `/panel/api/nodes/testSSH?id=${id}` : '/panel/api/nodes/testSSH',
         payload,
       ),
+    execCommand: (nodeIds: number[], command: string, timeoutSec: number): Promise<Msg<BatchExecResult>> =>
+      HttpUtil.post<BatchExecResult>('/panel/api/nodes/exec', { nodeIds, command, timeoutSec }, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    fetchExecHistory: (filter: ExecHistoryFilter): Promise<Msg<ExecHistoryResponse>> => {
+      const q = new URLSearchParams();
+      if (filter.page) q.set('page', String(filter.page));
+      if (filter.pageSize) q.set('pageSize', String(filter.pageSize));
+      if (filter.nodeId) q.set('nodeId', String(filter.nodeId));
+      if (filter.username) q.set('username', filter.username);
+      if (filter.status) q.set('status', filter.status);
+      const qs = q.toString();
+      return HttpUtil.get<ExecHistoryResponse>(`/panel/api/nodes/execHistory${qs ? `?${qs}` : ''}`);
+    },
     fetchFingerprint: (payload: Partial<NodeRecord>): Promise<Msg<string>> =>
       HttpUtil.post<string>('/panel/api/nodes/certFingerprint', payload),
     fetchInbounds: (payload: Partial<NodeRecord>): Promise<Msg<RemoteInboundOption[]>> =>

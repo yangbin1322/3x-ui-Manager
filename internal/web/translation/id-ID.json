@@ -1058,7 +1058,9 @@
         "offline": "Offline",
         "unknown": "Tidak diketahui",
         "xrayError": "Kesalahan Xray",
-        "xrayStopped": "Berhenti"
+        "xrayStopped": "Berhenti",
+        "reachable": "Dapat dijangkau",
+        "unreachable": "Tidak dapat dijangkau"
       },
       "toasts": {
         "list": "Gagal memuat node",
@@ -1073,7 +1075,8 @@
         "updateStarted": "Pembaruan panel dimulai",
         "updateResult": "Pembaruan dipicu pada {ok} node, {failed} gagal",
         "updateNoneEligible": "Pilih minimal satu node online dan aktif",
-        "saveMtls": "Simpan mTLS node"
+        "saveMtls": "Simpan mTLS node",
+        "exec": "Jalankan perintah"
       },
       "tlsVerifyMode": "Verifikasi TLS",
       "tlsVerifyModeHint": "Cara panel memvalidasi sertifikat HTTPS node. Pin atau Lewati untuk sertifikat self-signed (hanya node https).",
@@ -1121,7 +1124,37 @@
       "sshHostKeyTrust": "Percaya saat pertama kali",
       "sshHostKeyPin": "Sematkan sidik jari",
       "sshHostKeySkip": "Lewati (tidak aman)",
-      "sshConnectionOk": "Koneksi SSH berhasil"
+      "sshConnectionOk": "Koneksi SSH berhasil",
+      "exec": {
+        "action": "Jalankan perintah",
+        "title": "Jalankan perintah pada node",
+        "targets": "Node target ({count})",
+        "command": "Perintah",
+        "timeout": "Batas waktu",
+        "timeoutHint": "Batas waktu per node dalam detik (maks. 300).",
+        "run": "Jalankan",
+        "confirmRun": "Konfirmasi dan jalankan",
+        "close": "Tutup",
+        "confirmTitle": "Jalankan pada {count} node?",
+        "confirmBody": "Ini menjalankan perintah pada semua node yang tercantum. Perintah massal tidak dapat dibatalkan — periksa target sebelum mengonfirmasi.",
+        "nonInteractiveHint": "Hanya non-interaktif: perintah yang menunggu masukan akan gagal cepat. Gunakan -y atau DEBIAN_FRONTEND=noninteractive.",
+        "okCount": "{count} berhasil",
+        "failedCount": "{count} gagal",
+        "noSshSelected": "Pilih setidaknya satu node SSH.",
+        "status": {
+          "success": "Berhasil",
+          "failed": "Gagal",
+          "unreachable": "Tidak dapat dijangkau",
+          "timeout": "Batas waktu"
+        },
+        "history": {
+          "action": "Riwayat",
+          "title": "Riwayat eksekusi perintah",
+          "time": "Waktu",
+          "user": "Pengguna",
+          "status": "Status"
+        }
+      }
     },
     "settings": {
       "title": "Pengaturan Panel",

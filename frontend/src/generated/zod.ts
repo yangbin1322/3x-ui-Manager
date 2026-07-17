@@ -253,6 +253,12 @@ export const ApiTokenViewSchema = z.object({
 });
 export type ApiTokenView = z.infer<typeof ApiTokenViewSchema>;
 
+export const BatchExecResultSchema = z.object({
+  batchId: z.string(),
+  results: z.array(z.lazy(() => ExecResultSchema)),
+});
+export type BatchExecResult = z.infer<typeof BatchExecResultSchema>;
+
 export const ClientSchema = z.object({
   adTag: z.string().optional(),
   allowedIPs: z.array(z.string()).optional(),
@@ -340,6 +346,41 @@ export const ClientTrafficSchema = z.object({
   uuid: z.string(),
 });
 export type ClientTraffic = z.infer<typeof ClientTrafficSchema>;
+
+export const CommandExecutionSchema = z.object({
+  batchId: z.string(),
+  command: z.string(),
+  createdAt: z.number().int(),
+  durationMs: z.number().int(),
+  error: z.string().optional(),
+  exitCode: z.number().int(),
+  id: z.number().int(),
+  nodeId: z.number().int(),
+  nodeName: z.string(),
+  status: z.string(),
+  stdout: z.string(),
+  username: z.string(),
+});
+export type CommandExecution = z.infer<typeof CommandExecutionSchema>;
+
+export const ExecHistoryResponseSchema = z.object({
+  items: z.array(z.lazy(() => CommandExecutionSchema)),
+  page: z.number().int(),
+  pageSize: z.number().int(),
+  total: z.number().int(),
+});
+export type ExecHistoryResponse = z.infer<typeof ExecHistoryResponseSchema>;
+
+export const ExecResultSchema = z.object({
+  durationMs: z.number().int(),
+  error: z.string().optional(),
+  exitCode: z.number().int(),
+  nodeId: z.number().int(),
+  nodeName: z.string(),
+  status: z.string(),
+  stdout: z.string(),
+});
+export type ExecResult = z.infer<typeof ExecResultSchema>;
 
 export const FallbackParentInfoSchema = z.object({
   masterId: z.number().int(),

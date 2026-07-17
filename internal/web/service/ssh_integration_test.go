@@ -95,10 +95,26 @@ func handleSSHSession(ch ssh.Channel, reqs <-chan *ssh.Request) {
 			if req.WantReply {
 				_ = req.Reply(true, nil)
 			}
-			if strings.Contains(payload.Command, "os-release") {
+			var status uint32
+			switch {
+			case strings.Contains(payload.Command, "os-release"):
 				_, _ = io.WriteString(ch, "NAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nID=ubuntu\n")
+			case strings.HasPrefix(payload.Command, "fail:"):
+				_, _ = io.WriteString(ch, "boom\n")
+				status = 7
+			case strings.HasPrefix(payload.Command, "big:"):
+				big := strings.Repeat("A", 200*1024)
+				_, _ = io.WriteString(ch, big)
+			case strings.HasPrefix(payload.Command, "readstdin:"):
+				// Mimic a command that waits on input: drain stdin to EOF, then
+				// report how much it got. With an EOF stdin this returns at once;
+				// with a blocking stdin it would hang until the client kills it.
+				n, _ := io.Copy(io.Discard, ch)
+				_, _ = io.WriteString(ch, "read "+strconv.Itoa(int(n))+" bytes\n")
+			default:
+				_, _ = io.WriteString(ch, payload.Command+"\n")
 			}
-			_, _ = ch.SendRequest("exit-status", false, ssh.Marshal(struct{ Status uint32 }{0}))
+			_, _ = ch.SendRequest("exit-status", false, ssh.Marshal(struct{ Status uint32 }{status}))
 			_ = ch.Close()
 			return
 		default:

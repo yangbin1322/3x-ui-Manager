@@ -989,6 +989,33 @@ export const sections: readonly Section[] = [
       },
       {
         method: 'POST',
+        path: '/panel/api/nodes/exec',
+        summary: 'Run one shell command on one or more ssh-mode nodes and record each execution in the audit log under a shared batch id. Pass nodeIds (batch) or a single nodeId; nodes run concurrently, bounded internally, and results come back in the order requested. This is a one-shot, non-interactive model: the command runs with an EOF stdin and no PTY, so a command that waits on input (e.g. an apt prompt) fails fast rather than hanging — write commands non-interactively (apt-get install -y, DEBIAN_FRONTEND=noninteractive, rm -f). Requires an authenticated panel admin; the initiating user is taken from the session. timeoutSec is clamped to [1s, 5m] and defaults to 30s. stdout is truncated to 64KB per node in the stored record.',
+        body: '{\n  "nodeIds": [3, 5],\n  "command": "systemctl restart x-ui",\n  "timeoutSec": 30\n}',
+        responseSchema: 'BatchExecResult',
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/nodes/execHistory',
+        summary: 'Paginated, filterable command audit log, newest first. The audit trail is read-only — there is no per-row delete. Filter by nodeId, username, or status; page is 1-based and pageSize is capped at 200 (default 20).',
+        params: [
+          { name: 'page', in: 'query', type: 'number', optional: true, desc: '1-based page number.' },
+          { name: 'pageSize', in: 'query', type: 'number', optional: true, desc: 'Rows per page (max 200, default 20).' },
+          { name: 'nodeId', in: 'query', type: 'number', optional: true, desc: 'Filter to one node.' },
+          { name: 'username', in: 'query', type: 'string', optional: true, desc: 'Filter to one panel user.' },
+          { name: 'status', in: 'query', type: 'string', optional: true, desc: 'Filter by outcome: success, failed, unreachable, timeout.' },
+        ],
+        responseSchema: 'ExecHistoryResponse',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/nodes/execHistory/prune',
+        summary: 'Delete audit rows older than olderThanDays. This is the only deletion path for the audit log — retention management, not selective erasure. Returns the number of rows removed.',
+        body: '{\n  "olderThanDays": 90\n}',
+        response: '{\n  "success": true,\n  "obj": { "removed": 128 }\n}',
+      },
+      {
+        method: 'POST',
         path: '/panel/api/nodes/certFingerprint',
         summary: "Connect to the node over HTTPS without verifying its certificate and return the leaf certificate's SHA-256 (base64). Used by the Add/Edit Node dialog to fetch and pin a self-signed certificate. Uses the same body as /test.",
         body: '{\n  "scheme": "https",\n  "address": "node1.example.com",\n  "port": 2053,\n  "basePath": "/"\n}',

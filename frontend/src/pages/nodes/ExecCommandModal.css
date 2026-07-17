@@ -1,0 +1,79 @@
+.exec-label {
+  display: block;
+  font-weight: 500;
+  margin: 12px 0 6px;
+}
+
+.exec-targets {
+  margin-bottom: 8px;
+}
+
+.exec-target-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 96px;
+  overflow-y: auto;
+}
+
+.exec-timeout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.exec-timeout .exec-label {
+  margin: 0;
+}
+
+.exec-results {
+  margin-top: 16px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.exec-summary {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.exec-result-row {
+  border: 1px solid var(--ant-color-border, #d9d9d9);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+.exec-result-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.exec-result-node {
+  font-weight: 600;
+}
+
+.exec-result-exit,
+.exec-result-dur {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.exec-result-out {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--ant-color-fill-quaternary, #f5f5f5);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow: auto;
+}

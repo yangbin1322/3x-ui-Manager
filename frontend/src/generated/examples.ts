@@ -227,6 +227,20 @@ export const EXAMPLES: Record<string, unknown> = {
     "name": "central-panel-a",
     "token": "new-token-string"
   },
+  "BatchExecResult": {
+    "batchId": "a1b2c3d4",
+    "results": [
+      {
+        "durationMs": 142,
+        "error": "",
+        "exitCode": 0,
+        "nodeId": 3,
+        "nodeName": "hk-1",
+        "status": "success",
+        "stdout": ""
+      }
+    ]
+  },
   "Client": {
     "adTag": "0123456789abcdef0123456789abcdef",
     "allowedIPs": [
@@ -306,6 +320,50 @@ export const EXAMPLES: Record<string, unknown> = {
     "total": 10737418240,
     "up": 1048576,
     "uuid": "e18c9a96-71bf-48d4-933f-8b9a46d4290c"
+  },
+  "CommandExecution": {
+    "batchId": "a1b2c3d4",
+    "command": "systemctl restart x-ui",
+    "createdAt": 1700000000,
+    "durationMs": 142,
+    "error": "",
+    "exitCode": 0,
+    "id": 1,
+    "nodeId": 3,
+    "nodeName": "hk-1",
+    "status": "success",
+    "stdout": "",
+    "username": "admin"
+  },
+  "ExecHistoryResponse": {
+    "items": [
+      {
+        "batchId": "a1b2c3d4",
+        "command": "systemctl restart x-ui",
+        "createdAt": 1700000000,
+        "durationMs": 142,
+        "error": "",
+        "exitCode": 0,
+        "id": 1,
+        "nodeId": 3,
+        "nodeName": "hk-1",
+        "status": "success",
+        "stdout": "",
+        "username": "admin"
+      }
+    ],
+    "page": 1,
+    "pageSize": 20,
+    "total": 0
+  },
+  "ExecResult": {
+    "durationMs": 142,
+    "error": "",
+    "exitCode": 0,
+    "nodeId": 3,
+    "nodeName": "hk-1",
+    "status": "success",
+    "stdout": ""
   },
   "FallbackParentInfo": {
     "masterId": 0,

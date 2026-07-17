@@ -804,6 +804,32 @@ type Node struct {
 	UpdatedAt int64 `json:"updatedAt" gorm:"autoUpdateTime:milli" example:"1700000000"`
 }
 
+// CommandExecution is one audit record of a command run on an ssh-mode node.
+// Running an arbitrary command on a remote root shell is the highest-risk action
+// in the panel, so every execution — success or failure — is recorded with who
+// ran it, where, and the result. Records are append-only from the UI's point of
+// view: there is no delete endpoint, only an age-based cleanup, so the trail
+// cannot be erased to cover an action.
+//
+// NodeName is snapshotted rather than referenced because a node may later be
+// renamed or deleted, and the audit must still say which host was touched.
+// Stdout is truncated to a fixed cap so a single large-output command cannot
+// bloat the database.
+type CommandExecution struct {
+	Id         int64  `json:"id" gorm:"primaryKey;autoIncrement" example:"1"`
+	BatchId    string `json:"batchId" gorm:"column:batch_id;index" example:"a1b2c3d4"`
+	NodeId     int    `json:"nodeId" gorm:"column:node_id;index" example:"3"`
+	NodeName   string `json:"nodeName" gorm:"column:node_name" example:"hk-1"`
+	Username   string `json:"username" example:"admin"`
+	Command    string `json:"command" example:"systemctl restart x-ui"`
+	Stdout     string `json:"stdout"`
+	Error      string `json:"error,omitempty"`
+	ExitCode   int    `json:"exitCode" example:"0"`
+	Status     string `json:"status" example:"success"`
+	DurationMs int    `json:"durationMs" example:"142"`
+	CreatedAt  int64  `json:"createdAt" gorm:"autoCreateTime:milli;index" example:"1700000000"`
+}
+
 // NodeSummary is the read-only identity of a node as published one hop up: the
 // view a panel exposes about the nodes it directly manages, so a master can
 // surface transitive sub-nodes in a chained topology (#4983). Counts are

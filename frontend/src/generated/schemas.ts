@@ -969,6 +969,26 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "BatchExecResult": {
+    "description": "BatchExecResult is the outcome of running one command across several nodes.\nBatchId ties the per-node audit rows together for the history view.",
+    "properties": {
+      "batchId": {
+        "example": "a1b2c3d4",
+        "type": "string"
+      },
+      "results": {
+        "items": {
+          "$ref": "#/components/schemas/ExecResult"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "batchId",
+      "results"
+    ],
+    "type": "object"
+  },
   "Client": {
     "description": "Client represents a client configuration for Xray inbounds with traffic limits and settings.",
     "properties": {
@@ -1314,6 +1334,143 @@ export const SCHEMAS: Record<string, unknown> = {
       "total",
       "up",
       "uuid"
+    ],
+    "type": "object"
+  },
+  "CommandExecution": {
+    "description": "CommandExecution is one audit record of a command run on an ssh-mode node.\nRunning an arbitrary command on a remote root shell is the highest-risk action\nin the panel, so every execution — success or failure — is recorded with who\nran it, where, and the result. Records are append-only from the UI's point of\nview: there is no delete endpoint, only an age-based cleanup, so the trail\ncannot be erased to cover an action.\n\nNodeName is snapshotted rather than referenced because a node may later be\nrenamed or deleted, and the audit must still say which host was touched.\nStdout is truncated to a fixed cap so a single large-output command cannot\nbloat the database.",
+    "properties": {
+      "batchId": {
+        "example": "a1b2c3d4",
+        "type": "string"
+      },
+      "command": {
+        "example": "systemctl restart x-ui",
+        "type": "string"
+      },
+      "createdAt": {
+        "example": 1700000000,
+        "format": "int64",
+        "type": "integer"
+      },
+      "durationMs": {
+        "example": 142,
+        "type": "integer"
+      },
+      "error": {
+        "type": "string"
+      },
+      "exitCode": {
+        "example": 0,
+        "type": "integer"
+      },
+      "id": {
+        "example": 1,
+        "format": "int64",
+        "type": "integer"
+      },
+      "nodeId": {
+        "example": 3,
+        "type": "integer"
+      },
+      "nodeName": {
+        "example": "hk-1",
+        "type": "string"
+      },
+      "status": {
+        "example": "success",
+        "type": "string"
+      },
+      "stdout": {
+        "type": "string"
+      },
+      "username": {
+        "example": "admin",
+        "type": "string"
+      }
+    },
+    "required": [
+      "batchId",
+      "command",
+      "createdAt",
+      "durationMs",
+      "exitCode",
+      "id",
+      "nodeId",
+      "nodeName",
+      "status",
+      "stdout",
+      "username"
+    ],
+    "type": "object"
+  },
+  "ExecHistoryResponse": {
+    "description": "ExecHistoryResponse is one page of audit rows, newest first, plus the total\nmatching the filter so the UI can paginate.",
+    "properties": {
+      "items": {
+        "items": {
+          "$ref": "#/components/schemas/CommandExecution"
+        },
+        "type": "array"
+      },
+      "page": {
+        "example": 1,
+        "type": "integer"
+      },
+      "pageSize": {
+        "example": 20,
+        "type": "integer"
+      },
+      "total": {
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "items",
+      "page",
+      "pageSize",
+      "total"
+    ],
+    "type": "object"
+  },
+  "ExecResult": {
+    "description": "ExecResult is the outcome of running a command on one node, returned to the\ncaller and mirrored into the audit log.",
+    "properties": {
+      "durationMs": {
+        "example": 142,
+        "type": "integer"
+      },
+      "error": {
+        "type": "string"
+      },
+      "exitCode": {
+        "example": 0,
+        "type": "integer"
+      },
+      "nodeId": {
+        "example": 3,
+        "type": "integer"
+      },
+      "nodeName": {
+        "example": "hk-1",
+        "type": "string"
+      },
+      "status": {
+        "example": "success",
+        "type": "string"
+      },
+      "stdout": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "durationMs",
+      "exitCode",
+      "nodeId",
+      "nodeName",
+      "status",
+      "stdout"
     ],
     "type": "object"
   },
