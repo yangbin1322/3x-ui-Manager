@@ -1058,7 +1058,9 @@
         "offline": "Offline",
         "unknown": "Desconhecido",
         "xrayError": "Erro do Xray",
-        "xrayStopped": "Parado"
+        "xrayStopped": "Parado",
+        "reachable": "Acessível",
+        "unreachable": "Inacessível"
       },
       "toasts": {
         "list": "Falha ao carregar os nós",
@@ -1073,7 +1075,8 @@
         "updateStarted": "Atualização do painel iniciada",
         "updateResult": "Atualização iniciada em {ok} nó(s), {failed} falharam",
         "updateNoneEligible": "Selecione pelo menos um nó online e ativo",
-        "saveMtls": "Salvar mTLS do nó"
+        "saveMtls": "Salvar mTLS do nó",
+        "exec": "Executar comando"
       },
       "tlsVerifyMode": "Verificação TLS",
       "tlsVerifyModeHint": "Como o painel valida o certificado HTTPS do nó. Fixar ou Ignorar são para certificados autoassinados (apenas nós https).",
@@ -1121,7 +1124,37 @@
       "sshHostKeyTrust": "Confiar no primeiro uso",
       "sshHostKeyPin": "Fixar impressão digital",
       "sshHostKeySkip": "Ignorar (inseguro)",
-      "sshConnectionOk": "Conexão SSH bem-sucedida"
+      "sshConnectionOk": "Conexão SSH bem-sucedida",
+      "exec": {
+        "action": "Executar comando",
+        "title": "Executar comando nos nós",
+        "targets": "Nós alvo ({count})",
+        "command": "Comando",
+        "timeout": "Tempo limite",
+        "timeoutHint": "Tempo limite por nó em segundos (máx. 300).",
+        "run": "Executar",
+        "confirmRun": "Confirmar e executar",
+        "close": "Fechar",
+        "confirmTitle": "Executar em {count} nó(s)?",
+        "confirmBody": "Isso executa o comando em todos os nós listados. Comandos em lote não são reversíveis — revise os alvos antes de confirmar.",
+        "nonInteractiveHint": "Somente não interativo: um comando que aguarda entrada falha rápido. Use -y ou DEBIAN_FRONTEND=noninteractive.",
+        "okCount": "{count} com sucesso",
+        "failedCount": "{count} com falha",
+        "noSshSelected": "Selecione ao menos um nó SSH.",
+        "status": {
+          "success": "Sucesso",
+          "failed": "Falhou",
+          "unreachable": "Inacessível",
+          "timeout": "Tempo esgotado"
+        },
+        "history": {
+          "action": "Histórico",
+          "title": "Histórico de execução de comandos",
+          "time": "Hora",
+          "user": "Usuário",
+          "status": "Status"
+        }
+      }
     },
     "settings": {
       "title": "Configurações do Painel",

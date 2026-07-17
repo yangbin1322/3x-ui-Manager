@@ -1058,7 +1058,9 @@
         "offline": "離線",
         "unknown": "未知",
         "xrayError": "Xray 錯誤",
-        "xrayStopped": "已停止"
+        "xrayStopped": "已停止",
+        "reachable": "可連線",
+        "unreachable": "無法連線"
       },
       "toasts": {
         "list": "載入節點失敗",
@@ -1073,7 +1075,8 @@
         "updateStarted": "已開始更新面板",
         "updateResult": "已在 {ok} 個節點上觸發更新，{failed} 個失敗",
         "updateNoneEligible": "請至少選擇一個在線且已啟用的節點",
-        "saveMtls": "儲存節點 mTLS"
+        "saveMtls": "儲存節點 mTLS",
+        "exec": "執行命令"
       },
       "tlsVerifyMode": "TLS 驗證",
       "tlsVerifyModeHint": "面板如何驗證節點的 HTTPS 憑證。釘選或略過用於自簽憑證（僅 https 節點）。",
@@ -1121,7 +1124,37 @@
       "sshHostKeyTrust": "首次連線信任",
       "sshHostKeyPin": "固定指紋",
       "sshHostKeySkip": "略過（不安全）",
-      "sshConnectionOk": "SSH 連線成功"
+      "sshConnectionOk": "SSH 連線成功",
+      "exec": {
+        "action": "執行命令",
+        "title": "在節點上執行命令",
+        "targets": "目標節點（{count}）",
+        "command": "命令",
+        "timeout": "逾時",
+        "timeoutHint": "單節點逾時秒數（最大 300）。",
+        "run": "執行",
+        "confirmRun": "確認並執行",
+        "close": "關閉",
+        "confirmTitle": "在 {count} 台節點上執行？",
+        "confirmBody": "該命令將在所有列出的節點上執行。批次命令不可復原——確認前請核對目標節點。",
+        "nonInteractiveHint": "僅支援非互動命令：等待輸入的命令會快速失敗。請使用 -y 或 DEBIAN_FRONTEND=noninteractive 等參數。",
+        "okCount": "{count} 台成功",
+        "failedCount": "{count} 台失敗",
+        "noSshSelected": "請至少選擇一台 SSH 節點。",
+        "status": {
+          "success": "成功",
+          "failed": "失敗",
+          "unreachable": "無法連線",
+          "timeout": "逾時"
+        },
+        "history": {
+          "action": "執行歷史",
+          "title": "命令執行歷史",
+          "time": "時間",
+          "user": "使用者",
+          "status": "狀態"
+        }
+      }
     },
     "settings": {
       "title": "面板設定",

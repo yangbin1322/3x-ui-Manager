@@ -18,6 +18,8 @@ import {
   ApartmentOutlined,
   ClusterOutlined,
   CloudDownloadOutlined,
+  CodeOutlined,
+  HistoryOutlined,
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleOutlined,
@@ -53,10 +55,21 @@ interface NodeListProps {
   onToggleEnable: (node: NodeRecord, next: boolean) => void;
   onUpdateNode: (node: NodeRecord) => void;
   onUpdateSelected: () => void;
+  onExecSelected: () => void;
+  onExecHistory: () => void;
 }
 
 function isUpdateEligible(n: NodeRecord): boolean {
   return !!n.enable && n.status === 'online';
+}
+
+// A row is selectable if any bulk action can target it. API nodes qualify when
+// they can be updated (enabled + online); ssh nodes qualify when enabled, since
+// their bulk action is command execution, not a panel update — they never reach
+// the "online" status the update path checks for.
+function isSelectable(n: NodeRecord): boolean {
+  if (n.mode === 'ssh') return !!n.enable;
+  return isUpdateEligible(n);
 }
 
 interface NodeRow extends NodeRecord {
@@ -174,6 +187,8 @@ export default function NodeList({
   onToggleEnable,
   onUpdateNode,
   onUpdateSelected,
+  onExecSelected,
+  onExecHistory,
 }: NodeListProps) {
   const { t } = useTranslation();
   const relativeTime = useRelativeTime();
@@ -189,6 +204,13 @@ export default function NodeList({
     for (const n of nodes) if (n.guid) m.set(n.guid, n.name || n.guid);
     return m;
   }, [nodes]);
+
+  // The exec action only applies to ssh-mode nodes, so its button appears only
+  // when the selection includes at least one.
+  const hasSshSelected = useMemo(
+    () => nodes.some((n) => selectedIds.includes(n.id) && n.mode === 'ssh'),
+    [nodes, selectedIds],
+  );
 
   // Order direct nodes first, each immediately followed by its transitive
   // sub-nodes, so the table reads as a parent -> child tree without colliding
@@ -439,9 +461,17 @@ export default function NodeList({
         <Button icon={<SafetyCertificateOutlined />} onClick={onMtls}>
           {t('pages.nodes.mtls.title')}
         </Button>
+        <Button icon={<HistoryOutlined />} onClick={onExecHistory}>
+          {t('pages.nodes.exec.history.action')}
+        </Button>
         {selectedIds.length > 0 && (
           <Button icon={<CloudDownloadOutlined />} onClick={onUpdateSelected}>
             {t('pages.nodes.updateSelected', { count: selectedIds.length })}
+          </Button>
+        )}
+        {hasSshSelected && (
+          <Button icon={<CodeOutlined />} onClick={onExecSelected}>
+            {t('pages.nodes.exec.action')}
           </Button>
         )}
       </div>
@@ -654,7 +684,7 @@ export default function NodeList({
           rowSelection={dataSource.length > 1 ? {
             selectedRowKeys: selectedIds,
             onChange: (keys) => onSelectionChange(keys.filter((k) => typeof k === 'number') as number[]),
-            getCheckboxProps: (record) => ({ disabled: !!record.transitive || !isUpdateEligible(record) }),
+            getCheckboxProps: (record) => ({ disabled: !!record.transitive || !isSelectable(record) }),
           } : undefined}
           locale={{
             emptyText: (

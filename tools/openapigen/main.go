@@ -39,6 +39,7 @@ func run(root, outDir string) error {
 				"ClientInbound",
 				"InboundFallback",
 				"Host",
+				"CommandExecution",
 			),
 			AliasAllow: setOf("Protocol"),
 			Overrides: map[string][]walkOverride{
@@ -81,6 +82,9 @@ func run(root, outDir string) error {
 				"ProbeResultUI",
 				"RealityScanResult",
 				"SSHTestResult",
+				"ExecResult",
+				"BatchExecResult",
+				"ExecHistoryResponse",
 			),
 		},
 		{

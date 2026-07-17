@@ -17,6 +17,8 @@ import { useNodeMutations } from '@/api/queries/useNodeMutations';
 import AppSidebar from '@/layouts/AppSidebar';
 import NodeList from './NodeList';
 import NodeFormModal from './NodeFormModal';
+import ExecCommandModal from './ExecCommandModal';
+import ExecHistoryModal from './ExecHistoryModal';
 import { setMessageInstance } from '@/utils/messageBus';
 import { HttpUtil } from '@/utils';
 import type { PanelUpdateInfo } from '../index/PanelUpdateModal';
@@ -57,7 +59,7 @@ export default function NodesPage() {
   useEffect(() => { setMessageInstance(messageApi); }, [messageApi]);
 
   const { nodes, loading, fetched, fetchError, refetch, totals } = useNodesQuery();
-  const { create, update, remove, setEnable, testConnection, testSSH, fetchFingerprint, fetchInbounds, probe, updatePanels } = useNodeMutations();
+  const { create, update, remove, setEnable, testConnection, testSSH, fetchFingerprint, fetchInbounds, probe, updatePanels, execCommand, fetchExecHistory } = useNodeMutations();
 
   const { data: latestVersion = '' } = useQuery({
     queryKey: ['server', 'panelUpdateInfo'],
@@ -72,6 +74,9 @@ export default function NodesPage() {
   const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
   const [formNode, setFormNode] = useState<NodeRecord | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [execOpen, setExecOpen] = useState(false);
+  const [execTargets, setExecTargets] = useState<NodeRecord[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [mtlsOpen, setMtlsOpen] = useState(false);
   const [trustCa, setTrustCa] = useState('');
   const [copyingCa, setCopyingCa] = useState(false);
@@ -213,6 +218,16 @@ export default function NodesPage() {
     });
   }, [modal, t, nodes, selectedIds, runUpdate, messageApi]);
 
+  const onExecSelected = useCallback(() => {
+    const sshTargets = nodes.filter((n) => selectedIds.includes(n.id) && n.mode === 'ssh');
+    if (sshTargets.length === 0) {
+      messageApi.warning(t('pages.nodes.exec.noSshSelected'));
+      return;
+    }
+    setExecTargets(sshTargets);
+    setExecOpen(true);
+  }, [nodes, selectedIds, messageApi, t]);
+
   const pageClass = useMemo(() => {
     const classes = ['nodes-page'];
     if (isDark) classes.push('is-dark');
@@ -292,6 +307,8 @@ export default function NodesPage() {
                       onToggleEnable={onToggleEnable}
                       onUpdateNode={onUpdateNode}
                       onUpdateSelected={onUpdateSelected}
+                      onExecSelected={onExecSelected}
+                      onExecHistory={() => setHistoryOpen(true)}
                     />
                   </Col>
                 </Row>
@@ -310,6 +327,19 @@ export default function NodesPage() {
           fetchInbounds={fetchInbounds}
           save={onSave}
           onOpenChange={setFormOpen}
+        />
+
+        <ExecCommandModal
+          open={execOpen}
+          targets={execTargets}
+          execCommand={execCommand}
+          onOpenChange={setExecOpen}
+        />
+
+        <ExecHistoryModal
+          open={historyOpen}
+          fetchHistory={fetchExecHistory}
+          onOpenChange={setHistoryOpen}
         />
 
         <Modal
