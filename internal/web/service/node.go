@@ -597,6 +597,14 @@ func (s *NodeService) Delete(id int) error {
 		if err := tx.Where("node_guid IN ?", guids).Delete(&model.NodeClientIp{}).Error; err != nil {
 			return err
 		}
+		// A ManagedServer that derived this node keeps a node_id pointing at it.
+		// Clear the link in the same transaction so deleting the panel node
+		// leaves the server unlinked (install button returns) rather than
+		// showing a dangling association to a node that no longer exists.
+		if err := tx.Model(&model.ManagedServer{}).Where("node_id = ?", id).
+			Update("node_id", 0).Error; err != nil {
+			return err
+		}
 		return tx.Where("id = ?", id).Delete(&model.Node{}).Error
 	}); err != nil {
 		return err

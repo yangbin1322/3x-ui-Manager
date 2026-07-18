@@ -847,6 +847,14 @@ type ManagedServer struct {
 	OsName    string `json:"osName" gorm:"column:os_name"`
 	OsVersion string `json:"osVersion" gorm:"column:os_version"`
 
+	// PanelInstalled / PanelVersion are learned by the SSH heartbeat: if the
+	// x-ui binary answers a version query, the box already runs a panel even
+	// when no node has been derived from it yet. This lets the UI offer "import
+	// as node" instead of a fresh install, and show which version is running.
+	// Observed-state only — never user-edited.
+	PanelInstalled bool   `json:"panelInstalled" gorm:"column:panel_installed;default:false"`
+	PanelVersion   string `json:"panelVersion" gorm:"column:panel_version"`
+
 	NodeId int `json:"nodeId" gorm:"column:node_id;default:0" example:"0"`
 
 	Status        string `json:"status" gorm:"default:unknown" example:"reachable"`

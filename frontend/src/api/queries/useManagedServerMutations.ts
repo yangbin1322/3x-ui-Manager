@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { HttpUtil, Msg } from '@/utils';
 import { keys } from '@/api/queryKeys';
 import type { ManagedServerRecord } from '@/schemas/managedServer';
-import type { SSHTestResult, BatchExecResult, ExecHistoryResponse, InstallResult } from '@/generated/types';
+import type { SSHTestResult, BatchExecResult, ExecHistoryResponse, InstallResult, UninstallResult, BatchInstallResponse } from '@/generated/types';
 
 export interface ExecHistoryFilter {
   page?: number;
@@ -43,17 +43,54 @@ export function useManagedServerMutations() {
     onSuccess: (msg) => { if (msg?.success) invalidate(); },
   });
 
+  // Install, import, uninstall and their batch forms all reshape both the
+  // server list (panel state, linked node) and the node list (derived nodes),
+  // so they share one invalidator.
+  const invalidateBoth = (msg: { success?: boolean } | undefined) => {
+    if (msg?.success) {
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: keys.nodes.root() });
+    }
+  };
+
   const installMut = useMutation({
     mutationFn: ({ serverId, version }: { serverId: number; version: string }) =>
       HttpUtil.post<InstallResult>('/panel/api/managedServers/install', { serverId, version }, {
         headers: { 'Content-Type': 'application/json' },
       }),
-    onSuccess: (msg) => {
-      if (msg?.success) {
-        invalidate();
-        queryClient.invalidateQueries({ queryKey: keys.nodes.root() });
-      }
-    },
+    onSuccess: invalidateBoth,
+  });
+
+  const importMut = useMutation({
+    mutationFn: (serverId: number) =>
+      HttpUtil.post<InstallResult>('/panel/api/managedServers/import', { serverId }, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    onSuccess: invalidateBoth,
+  });
+
+  const uninstallMut = useMutation({
+    mutationFn: (serverId: number) =>
+      HttpUtil.post<UninstallResult>('/panel/api/managedServers/uninstall', { serverId }, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    onSuccess: invalidateBoth,
+  });
+
+  const installBatchMut = useMutation({
+    mutationFn: ({ serverIds, version }: { serverIds: number[]; version: string }) =>
+      HttpUtil.post<BatchInstallResponse>('/panel/api/managedServers/installBatch', { serverIds, version }, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    onSuccess: invalidateBoth,
+  });
+
+  const uninstallBatchMut = useMutation({
+    mutationFn: (serverIds: number[]) =>
+      HttpUtil.post<BatchInstallResponse>('/panel/api/managedServers/uninstallBatch', { serverIds }, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    onSuccess: invalidateBoth,
   });
 
   return {
@@ -72,6 +109,14 @@ export function useManagedServerMutations() {
       }),
     installPanel: (serverId: number, version: string): Promise<Msg<InstallResult>> =>
       installMut.mutateAsync({ serverId, version }),
+    importPanel: (serverId: number): Promise<Msg<InstallResult>> => importMut.mutateAsync(serverId),
+    uninstallPanel: (serverId: number): Promise<Msg<UninstallResult>> => uninstallMut.mutateAsync(serverId),
+    installPanelBatch: (serverIds: number[], version: string): Promise<Msg<BatchInstallResponse>> =>
+      installBatchMut.mutateAsync({ serverIds, version }),
+    uninstallPanelBatch: (serverIds: number[]): Promise<Msg<BatchInstallResponse>> =>
+      uninstallBatchMut.mutateAsync(serverIds),
+    fetchPanelVersions: (): Promise<Msg<string[]>> =>
+      HttpUtil.get<string[]>('/panel/api/managedServers/panelVersions'),
     fetchExecHistory: (filter: ExecHistoryFilter): Promise<Msg<ExecHistoryResponse>> => {
       const q = new URLSearchParams();
       if (filter.page) q.set('page', String(filter.page));

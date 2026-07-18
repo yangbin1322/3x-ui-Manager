@@ -1015,6 +1015,46 @@
         ],
         "type": "object"
       },
+      "BatchInstallResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/BatchServerResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "type": "object"
+      },
+      "BatchServerResult": {
+        "description": "BatchInstallResult / BatchUninstallResult carry one per-server outcome each so\nthe UI can show which servers succeeded and which failed in a bulk action.",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "serverId": {
+            "example": 3,
+            "type": "integer"
+          },
+          "serverName": {
+            "example": "hk-1",
+            "type": "string"
+          },
+          "success": {
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "serverId",
+          "serverName",
+          "success"
+        ],
+        "type": "object"
+      },
       "Client": {
         "description": "Client represents a client configuration for Xray inbounds with traffic limits and settings.",
         "properties": {
@@ -2253,6 +2293,13 @@
           "osVersion": {
             "type": "string"
           },
+          "panelInstalled": {
+            "description": "PanelInstalled / PanelVersion are learned by the SSH heartbeat: if the\nx-ui binary answers a version query, the box already runs a panel even\nwhen no node has been derived from it yet. This lets the UI offer \"import\nas node\" instead of a fresh install, and show which version is running.\nObserved-state only — never user-edited.",
+            "type": "boolean"
+          },
+          "panelVersion": {
+            "type": "string"
+          },
           "remark": {
             "type": "string"
           },
@@ -2315,6 +2362,8 @@
           "nodeId",
           "osName",
           "osVersion",
+          "panelInstalled",
+          "panelVersion",
           "remark",
           "sshAuthType",
           "sshHostKeyMode",
@@ -2805,12 +2854,21 @@
             "example": "24.04",
             "type": "string"
           },
+          "panelInstalled": {
+            "example": true,
+            "type": "boolean"
+          },
+          "panelVersion": {
+            "example": "v2.6.0",
+            "type": "string"
+          },
           "success": {
             "example": true,
             "type": "boolean"
           }
         },
         "required": [
+          "panelInstalled",
           "success"
         ],
         "type": "object"
@@ -2832,6 +2890,25 @@
           "id",
           "key",
           "value"
+        ],
+        "type": "object"
+      },
+      "UninstallResult": {
+        "description": "UninstallResult reports the outcome of removing a panel from a managed server.",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "stdout": {
+            "type": "string"
+          },
+          "success": {
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
         ],
         "type": "object"
       },
@@ -8673,6 +8750,8 @@
                       "nodeId": 0,
                       "osName": "",
                       "osVersion": "",
+                      "panelInstalled": false,
+                      "panelVersion": "",
                       "remark": "",
                       "sshAuthType": "password",
                       "sshHostKeyMode": "trust",
@@ -8744,6 +8823,8 @@
                     "nodeId": 0,
                     "osName": "",
                     "osVersion": "",
+                    "panelInstalled": false,
+                    "panelVersion": "",
                     "remark": "",
                     "sshAuthType": "password",
                     "sshHostKeyMode": "trust",
@@ -9033,6 +9114,8 @@
                     "message": "Authentication failed",
                     "osName": "Ubuntu",
                     "osVersion": "24.04",
+                    "panelInstalled": true,
+                    "panelVersion": "v2.6.0",
                     "success": true
                   }
                 }
@@ -9159,6 +9242,275 @@
                     "stdout": "",
                     "success": true
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/installBatch": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Install 3x-ui on several managed servers at once, applying the same version to each. Servers run concurrently (bounded internally); the response carries one per-server outcome. A missing or already-linked server becomes a failed result rather than aborting the batch.",
+        "operationId": "post_panel_api_managedServers_installBatch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "serverIds": [
+                  3,
+                  5
+                ],
+                "version": ""
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/BatchInstallResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "results": [
+                      {
+                        "message": "",
+                        "serverId": 3,
+                        "serverName": "hk-1",
+                        "success": true
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/import": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Adopt a 3x-ui panel that is ALREADY installed on a managed server: read its running credentials over SSH (port/base path from `x-ui setting -show`, API token minted if absent) and derive a linked panel node WITHOUT reinstalling. The derived node defaults to https with TLS verification skipped (correct it from the Panel Nodes tab). A server that already has a linked node is rejected.",
+        "operationId": "post_panel_api_managedServers_import",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "serverId": 3
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/InstallResult"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "accessUrl": "https://1.2.3.4:2053/abc/",
+                    "derived": true,
+                    "message": "",
+                    "nodeId": 7,
+                    "stdout": "",
+                    "success": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/uninstall": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Run the official 3x-ui uninstaller on a managed server over SSH. If the server has a derived panel node, that node is deleted and the link cleared so the panel and its record disappear together. The SSH access (the managed-server row) is kept so the box can be reinstalled. Long-running and synchronous.",
+        "operationId": "post_panel_api_managedServers_uninstall",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "serverId": 3
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/UninstallResult"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "message": "",
+                    "stdout": "",
+                    "success": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/uninstallBatch": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Uninstall 3x-ui from several managed servers at once. Servers run concurrently; the response carries one per-server outcome.",
+        "operationId": "post_panel_api_managedServers_uninstallBatch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "serverIds": [
+                  3,
+                  5
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/BatchInstallResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "results": [
+                      {
+                        "message": "",
+                        "serverId": 3,
+                        "serverName": "hk-1",
+                        "success": true
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/panelVersions": {
+      "get": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "List installable 3x-ui release tags (newest first) for the install version picker. Fetched from the MHSanaei/3x-ui GitHub releases and cached ~15 minutes; a transient GitHub failure serves the stale list. The caller adds a \"latest\" default and free-text entry, so an empty list is still usable.",
+        "operationId": "get_panel_api_managedServers_panelVersions",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": [
+                    "v2.6.0",
+                    "v2.5.5"
+                  ]
                 }
               }
             }

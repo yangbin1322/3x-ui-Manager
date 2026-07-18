@@ -259,6 +259,19 @@ export const BatchExecResultSchema = z.object({
 });
 export type BatchExecResult = z.infer<typeof BatchExecResultSchema>;
 
+export const BatchInstallResponseSchema = z.object({
+  results: z.array(z.lazy(() => BatchServerResultSchema)),
+});
+export type BatchInstallResponse = z.infer<typeof BatchInstallResponseSchema>;
+
+export const BatchServerResultSchema = z.object({
+  message: z.string().optional(),
+  serverId: z.number().int(),
+  serverName: z.string(),
+  success: z.boolean(),
+});
+export type BatchServerResult = z.infer<typeof BatchServerResultSchema>;
+
 export const ClientSchema = z.object({
   adTag: z.string().optional(),
   allowedIPs: z.array(z.string()).optional(),
@@ -558,6 +571,8 @@ export const ManagedServerSchema = z.object({
   nodeId: z.number().int(),
   osName: z.string(),
   osVersion: z.string(),
+  panelInstalled: z.boolean(),
+  panelVersion: z.string(),
   remark: z.string(),
   sshAuthType: z.enum(['password', 'key']),
   sshHostKeyMode: z.enum(['pin', 'trust', 'skip']),
@@ -681,6 +696,8 @@ export const SSHTestResultSchema = z.object({
   message: z.string().optional(),
   osName: z.string().optional(),
   osVersion: z.string().optional(),
+  panelInstalled: z.boolean(),
+  panelVersion: z.string().optional(),
   success: z.boolean(),
 });
 export type SSHTestResult = z.infer<typeof SSHTestResultSchema>;
@@ -691,6 +708,13 @@ export const SettingSchema = z.object({
   value: z.string(),
 });
 export type Setting = z.infer<typeof SettingSchema>;
+
+export const UninstallResultSchema = z.object({
+  message: z.string().optional(),
+  stdout: z.string().optional(),
+  success: z.boolean(),
+});
+export type UninstallResult = z.infer<typeof UninstallResultSchema>;
 
 export const UserSchema = z.object({
   id: z.number().int(),

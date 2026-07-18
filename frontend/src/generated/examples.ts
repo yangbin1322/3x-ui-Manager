@@ -241,6 +241,22 @@ export const EXAMPLES: Record<string, unknown> = {
       }
     ]
   },
+  "BatchInstallResponse": {
+    "results": [
+      {
+        "message": "",
+        "serverId": 3,
+        "serverName": "hk-1",
+        "success": true
+      }
+    ]
+  },
+  "BatchServerResult": {
+    "message": "",
+    "serverId": 3,
+    "serverName": "hk-1",
+    "success": true
+  },
   "Client": {
     "adTag": "0123456789abcdef0123456789abcdef",
     "allowedIPs": [
@@ -562,6 +578,8 @@ export const EXAMPLES: Record<string, unknown> = {
     "nodeId": 0,
     "osName": "",
     "osVersion": "",
+    "panelInstalled": false,
+    "panelVersion": "",
     "remark": "",
     "sshAuthType": "password",
     "sshHostKeyMode": "trust",
@@ -675,12 +693,19 @@ export const EXAMPLES: Record<string, unknown> = {
     "message": "Authentication failed",
     "osName": "Ubuntu",
     "osVersion": "24.04",
+    "panelInstalled": true,
+    "panelVersion": "v2.6.0",
     "success": true
   },
   "Setting": {
     "id": 0,
     "key": "",
     "value": ""
+  },
+  "UninstallResult": {
+    "message": "",
+    "stdout": "",
+    "success": true
   },
   "User": {
     "id": 0,

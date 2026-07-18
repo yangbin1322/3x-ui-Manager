@@ -16,6 +16,8 @@ export const ManagedServerRecordSchema = z.object({
   sshPrivateKeySet: z.boolean().optional(),
   osName: z.string().optional(),
   osVersion: z.string().optional(),
+  panelInstalled: z.boolean().optional(),
+  panelVersion: z.string().optional(),
   nodeId: z.number().optional(),
   status: z.string().optional(),
   lastHeartbeat: z.number().optional(),

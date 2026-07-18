@@ -138,7 +138,7 @@ export default function ServerFormModal({
           methods.setValue('sshHostKeySha256', msg.obj.hostKeySha256);
         }
       } else {
-        setTestResult({ success: false, message: msg?.msg || t('pages.nodes.connectionFailed') });
+        setTestResult({ success: false, panelInstalled: false, message: msg?.msg || t('pages.nodes.connectionFailed') });
       }
     } finally {
       setTesting(false);
@@ -161,7 +161,7 @@ export default function ServerFormModal({
       const test = await testSSH(testPayload, result.data.id || undefined);
       const obj = test?.success ? test.obj : null;
       if (!obj || !obj.success) {
-        setTestResult(obj ?? { success: false, message: test?.msg || t('pages.nodes.connectionFailed') });
+        setTestResult(obj ?? { success: false, panelInstalled: false, message: test?.msg || t('pages.nodes.connectionFailed') });
         return;
       }
       setTestResult(obj);

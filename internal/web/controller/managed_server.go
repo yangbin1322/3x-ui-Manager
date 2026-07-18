@@ -46,6 +46,11 @@ func (a *ManagedServerController) initRouter(g *gin.RouterGroup) {
 	g.POST("/test", a.test)
 	g.POST("/exec", a.exec)
 	g.POST("/install", a.install)
+	g.POST("/installBatch", a.installBatch)
+	g.POST("/import", a.importPanel)
+	g.POST("/uninstall", a.uninstall)
+	g.POST("/uninstallBatch", a.uninstallBatch)
+	g.GET("/panelVersions", a.panelVersions)
 	g.GET("/execHistory", a.execHistory)
 	g.POST("/execHistory/prune", a.pruneExecHistory)
 }
@@ -232,6 +237,120 @@ func (a *ManagedServerController) install(c *gin.Context) {
 		return
 	}
 	jsonObj(c, result, nil)
+}
+
+// installBatch installs 3x-ui on several managed servers at once. The version is
+// applied to every server; servers run concurrently, bounded internally.
+func (a *ManagedServerController) installBatch(c *gin.Context) {
+	var req struct {
+		ServerIds []int  `json:"serverIds"`
+		Version   string `json:"version"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
+		return
+	}
+	if len(req.ServerIds) == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), fmt.Errorf("at least one server is required"))
+		return
+	}
+	username := ""
+	if u := session.GetLoginUser(c); u != nil {
+		username = u.Username
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), installRequestBudget)
+	defer cancel()
+	result := a.serverService.InstallPanelBatch(ctx, req.ServerIds, req.Version, username)
+	jsonObj(c, result, nil)
+}
+
+// importPanel adopts a panel that is already installed on a server, deriving a
+// linked node from its running credentials without reinstalling.
+func (a *ManagedServerController) importPanel(c *gin.Context) {
+	var req struct {
+		ServerId int `json:"serverId"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
+		return
+	}
+	if req.ServerId == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), fmt.Errorf("a server is required"))
+		return
+	}
+	username := ""
+	if u := session.GetLoginUser(c); u != nil {
+		username = u.Username
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), installRequestBudget)
+	defer cancel()
+	result, err := a.serverService.ImportPanel(ctx, req.ServerId, username)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
+		return
+	}
+	jsonObj(c, result, nil)
+}
+
+// uninstall removes 3x-ui from a server and tears down its derived node.
+func (a *ManagedServerController) uninstall(c *gin.Context) {
+	var req struct {
+		ServerId int `json:"serverId"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.uninstall"), err)
+		return
+	}
+	if req.ServerId == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.uninstall"), fmt.Errorf("a server is required"))
+		return
+	}
+	username := ""
+	if u := session.GetLoginUser(c); u != nil {
+		username = u.Username
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), installRequestBudget)
+	defer cancel()
+	result, err := a.serverService.UninstallPanel(ctx, req.ServerId, username)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.uninstall"), err)
+		return
+	}
+	jsonObj(c, result, nil)
+}
+
+// uninstallBatch removes 3x-ui from several servers at once.
+func (a *ManagedServerController) uninstallBatch(c *gin.Context) {
+	var req struct {
+		ServerIds []int `json:"serverIds"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.uninstall"), err)
+		return
+	}
+	if len(req.ServerIds) == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.uninstall"), fmt.Errorf("at least one server is required"))
+		return
+	}
+	username := ""
+	if u := session.GetLoginUser(c); u != nil {
+		username = u.Username
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), installRequestBudget)
+	defer cancel()
+	result := a.serverService.UninstallPanelBatch(ctx, req.ServerIds, username)
+	jsonObj(c, result, nil)
+}
+
+// panelVersions lists installable 3x-ui release tags for the install version
+// picker (cached; newest first).
+func (a *ManagedServerController) panelVersions(c *gin.Context) {
+	versions, err := a.serverService.PanelVersions()
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
+		return
+	}
+	jsonObj(c, versions, nil)
 }
 
 // execHistory returns a filtered, paginated page of the command audit log. It is
