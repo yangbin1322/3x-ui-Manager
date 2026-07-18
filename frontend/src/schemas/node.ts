@@ -76,8 +76,11 @@ export const NodeFormSchema = z.object({
   mode: z.enum(['api', 'ssh']).default('api'),
   scheme: z.enum(['http', 'https']),
   address: z.string().trim().min(1, 'pages.nodes.toasts.fillRequired'),
-  // Panel port; only required in API mode. SSH mode validates sshPort instead.
-  port: z.number().int().min(1).max(65535),
+  // Panel port; only meaningful in API mode. An ssh node carries port 0 (the
+  // backend clears it), so the base rule must accept 0 — the 1..65535 range is
+  // enforced for API mode in the superRefine below. Without this an ssh node's
+  // port 0 fails min(1) and the whole edit reports "Invalid input".
+  port: z.number().int().min(0).max(65535),
   basePath: z.string(),
   // mTLS nodes authenticate via the client certificate, so the token is optional
   // there; every other verify mode still requires one (matches remote.do()).
@@ -115,6 +118,13 @@ export const NodeFormSchema = z.object({
       ctx.addIssue({ code: 'custom', path: ['sshPrivateKey'], message: 'pages.nodes.toasts.fillRequired' });
     }
     return;
+  }
+  if (val.port < 1 || val.port > 65535) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['port'],
+      message: 'pages.nodes.toasts.fillRequired',
+    });
   }
   if (val.tlsVerifyMode !== 'mtls' && val.apiToken.length === 0) {
     ctx.addIssue({
