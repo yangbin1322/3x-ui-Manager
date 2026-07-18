@@ -30,8 +30,10 @@ func TestBuildInstallCommand(t *testing.T) {
 }
 
 func TestParseAccessURL(t *testing.T) {
-	// A realistic installer tail, including the ANSI-colored Access URL line.
-	stdout := "Migration done!\nAccess URL:  http://38.207.132.48:1322/uJlwUiLpIMe41EwJv7/\nx-ui v3.5.0 installation finished\n"
+	// The REAL installer line is ANSI-colored: green start code, reset "\x1b[0m"
+	// trailing the URL. The reset code must not end up in the base path (the
+	// bug that produced a 404 on the converted node).
+	stdout := "Migration done!\n\x1b[0;32mAccess URL:  http://38.207.132.48:1322/uJlwUiLpIMe41EwJv7/\x1b[0m\nx-ui v3.5.0 installation finished\n"
 	env := parseAccessURL(stdout)
 	if env == nil {
 		t.Fatal("parseAccessURL returned nil for a valid access url line")
@@ -40,7 +42,18 @@ func TestParseAccessURL(t *testing.T) {
 		t.Fatalf("scheme/port = %q/%d, want http/1322", env.scheme, env.port)
 	}
 	if env.basePath != "uJlwUiLpIMe41EwJv7" {
-		t.Fatalf("basePath = %q, want uJlwUiLpIMe41EwJv7 (trailing slash trimmed)", env.basePath)
+		t.Fatalf("basePath = %q, want uJlwUiLpIMe41EwJv7 (no ANSI, no slashes)", env.basePath)
+	}
+	if strings.Contains(normalizeBasePath(env.basePath), "\x1b") {
+		t.Fatalf("normalized base path still contains an ANSI escape: %q", normalizeBasePath(env.basePath))
+	}
+}
+
+func TestParseApiTokenStripsANSI(t *testing.T) {
+	// Guard the token path against the same ANSI contamination.
+	out := "\x1b[0;32mapiToken: tok_abc123\x1b[0m\n"
+	if got := parseApiToken(out); got != "tok_abc123" {
+		t.Fatalf("parseApiToken with ANSI = %q, want tok_abc123", got)
 	}
 }
 

@@ -115,6 +115,16 @@ func (s *NodeService) InstallPanel(ctx context.Context, nodeId int, version stri
 // install-result.env file whose write is gated on internal script branches.
 var accessURLPattern = regexp.MustCompile(`Access URL:\s*(https?)://[^:/\s]+:(\d+)/([^\s]*)`)
 
+// ansiPattern matches ANSI SGR color escapes (e.g. "\x1b[0;32m", "\x1b[0m").
+// The installer colorizes the Access URL line, so a reset code "\x1b[0m" trails
+// the URL; without stripping it, the [^\s]* base-path capture swallows the escape
+// and the panel URL ends up containing it, 404ing.
+var ansiPattern = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func stripANSI(s string) string {
+	return ansiPattern.ReplaceAllString(s, "")
+}
+
 // getApiTokenCommand reads (minting if needed) the panel's API token. It calls
 // the x-ui BINARY at its install path, not the global `x-ui` wrapper: the global
 // command is the management shell script (x-ui.sh), which has no `setting`
@@ -147,7 +157,10 @@ func (s *NodeService) readPanelCredentials(ctx context.Context, n *model.Node, i
 // parseAccessURL pulls scheme/port/basePath out of the installer's Access URL
 // line. Returns nil if the line is absent.
 func parseAccessURL(stdout string) *installEnv {
-	m := accessURLPattern.FindStringSubmatch(stdout)
+	// Strip ANSI color codes first: the installer colorizes the line, so the URL
+	// is wrapped in escapes ("\x1b[0;32m…\x1b[0m") that would otherwise be
+	// captured into the base path (no whitespace separates them).
+	m := accessURLPattern.FindStringSubmatch(stripANSI(stdout))
 	if m == nil {
 		return nil
 	}
@@ -158,19 +171,18 @@ func parseAccessURL(stdout string) *installEnv {
 	return &installEnv{
 		scheme: m[1],
 		port:   port,
-		// Strip ALL leading/trailing slashes to a bare path; normalizeBasePath
-		// re-adds exactly one on each side. TrimSuffix would leave a second slash
-		// if the installer prints a trailing "//", which then reaches the panel
-		// URL as a base path with a double slash and 404s.
+		// Strip all leading/trailing slashes to a bare segment; normalizeBasePath
+		// re-adds exactly one on each side.
 		basePath: strings.Trim(m[3], "/"),
 		url:      m[0][len("Access URL:"):],
 	}
 }
 
 // parseApiToken pulls the token out of `x-ui setting -getApiToken true`, whose
-// output line is "apiToken: <token>".
+// output line is "apiToken: <token>". ANSI codes are stripped first in case the
+// binary colorizes its output, so an escape can't end up in the token.
 func parseApiToken(stdout string) string {
-	for _, line := range strings.Split(stdout, "\n") {
+	for _, line := range strings.Split(stripANSI(stdout), "\n") {
 		line = strings.TrimSpace(line)
 		if after, ok := strings.CutPrefix(line, "apiToken:"); ok {
 			return strings.TrimSpace(after)
