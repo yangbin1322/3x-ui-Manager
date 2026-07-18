@@ -506,8 +506,34 @@ export interface InstallResult {
   accessUrl?: string;
   converted: boolean;
   message?: string;
+  nodeId?: number;
   stdout?: string;
   success: boolean;
+}
+
+export interface ManagedServer {
+  address: string;
+  allowPrivateAddress: boolean;
+  createdAt: number;
+  enable: boolean;
+  id: number;
+  lastError: string;
+  lastHeartbeat: number;
+  latencyMs: number;
+  name: string;
+  nodeId: number;
+  osName: string;
+  osVersion: string;
+  remark: string;
+  sshAuthType: string;
+  sshHostKeyMode: string;
+  sshHostKeySha256: string;
+  sshPasswordSet: boolean;
+  sshPort: number;
+  sshPrivateKeySet: boolean;
+  sshUser: string;
+  status: string;
+  updatedAt: number;
 }
 
 export interface Msg {

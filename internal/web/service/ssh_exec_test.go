@@ -10,15 +10,14 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 )
 
-func execTestNode(t *testing.T, svc *NodeService, host string, port int) *model.Node {
+func execTestServer(t *testing.T, svc *ManagedServerService, host string, port int) *model.ManagedServer {
 	t.Helper()
-	return execTestNodeNamed(t, svc, "exec-node", host, port)
+	return execTestServerNamed(t, svc, "exec-server", host, port)
 }
 
-func execTestNodeNamed(t *testing.T, svc *NodeService, name, host string, port int) *model.Node {
+func execTestServerNamed(t *testing.T, svc *ManagedServerService, name, host string, port int) *model.ManagedServer {
 	t.Helper()
-	n := &model.Node{
-		Mode:                "ssh",
+	srv := &model.ManagedServer{
 		Name:                name,
 		Address:             host,
 		SshPort:             port,
@@ -28,16 +27,16 @@ func execTestNodeNamed(t *testing.T, svc *NodeService, name, host string, port i
 		SshHostKeyMode:      "trust",
 		AllowPrivateAddress: true,
 	}
-	if err := svc.Create(n); err != nil {
-		t.Fatalf("create node %q: %v", name, err)
+	if err := svc.Create(srv); err != nil {
+		t.Fatalf("create server %q: %v", name, err)
 	}
-	return n
+	return srv
 }
 
-func lastAudit(t *testing.T, nodeId int) *model.CommandExecution {
+func lastAudit(t *testing.T, serverId int) *model.CommandExecution {
 	t.Helper()
 	rec := &model.CommandExecution{}
-	if err := database.GetDB().Where("node_id = ?", nodeId).
+	if err := database.GetDB().Where("node_id = ?", serverId).
 		Order("id desc").First(rec).Error; err != nil {
 		t.Fatalf("load audit row: %v", err)
 	}
@@ -48,12 +47,12 @@ func TestExecCommandSuccessWritesAudit(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	setupConflictDB(t)
 	host, port, _ := startTestSSHServer(t, "root", "s3cret")
-	svc := &NodeService{}
-	n := execTestNode(t, svc, host, port)
+	svc := &ManagedServerService{}
+	srv := execTestServer(t, svc, host, port)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	res, err := svc.ExecCommand(ctx, n.Id, "echo hello", 0, "admin")
+	res, err := svc.ExecCommand(ctx, srv.Id, "echo hello", 0, "admin")
 	if err != nil {
 		t.Fatalf("ExecCommand: %v", err)
 	}
@@ -64,12 +63,12 @@ func TestExecCommandSuccessWritesAudit(t *testing.T) {
 		t.Fatalf("stdout = %q, want it to echo the command", res.Stdout)
 	}
 
-	rec := lastAudit(t, n.Id)
+	rec := lastAudit(t, srv.Id)
 	if rec.Username != "admin" || rec.Command != "echo hello" || rec.Status != execStatusSuccess {
 		t.Fatalf("audit row = %+v, want admin/echo hello/success", rec)
 	}
-	if rec.NodeName != "exec-node" {
-		t.Fatalf("audit NodeName = %q, want snapshot exec-node", rec.NodeName)
+	if rec.NodeName != "exec-server" {
+		t.Fatalf("audit NodeName = %q, want snapshot exec-server", rec.NodeName)
 	}
 }
 
@@ -77,12 +76,12 @@ func TestExecCommandNonZeroExit(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	setupConflictDB(t)
 	host, port, _ := startTestSSHServer(t, "root", "s3cret")
-	svc := &NodeService{}
-	n := execTestNode(t, svc, host, port)
+	svc := &ManagedServerService{}
+	srv := execTestServer(t, svc, host, port)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	res, err := svc.ExecCommand(ctx, n.Id, "fail:now", 0, "admin")
+	res, err := svc.ExecCommand(ctx, srv.Id, "fail:now", 0, "admin")
 	if err != nil {
 		t.Fatalf("ExecCommand: %v", err)
 	}
@@ -92,7 +91,7 @@ func TestExecCommandNonZeroExit(t *testing.T) {
 	if res.ExitCode != 7 {
 		t.Fatalf("exitCode = %d, want 7 from the remote command", res.ExitCode)
 	}
-	if lastAudit(t, n.Id).ExitCode != 7 {
+	if lastAudit(t, srv.Id).ExitCode != 7 {
 		t.Fatalf("audit did not record the non-zero exit code")
 	}
 }
@@ -101,12 +100,12 @@ func TestExecCommandTruncatesOutput(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	setupConflictDB(t)
 	host, port, _ := startTestSSHServer(t, "root", "s3cret")
-	svc := &NodeService{}
-	n := execTestNode(t, svc, host, port)
+	svc := &ManagedServerService{}
+	srv := execTestServer(t, svc, host, port)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	res, err := svc.ExecCommand(ctx, n.Id, "big:dump", 0, "admin")
+	res, err := svc.ExecCommand(ctx, srv.Id, "big:dump", 0, "admin")
 	if err != nil {
 		t.Fatalf("ExecCommand: %v", err)
 	}
@@ -118,20 +117,16 @@ func TestExecCommandTruncatesOutput(t *testing.T) {
 	}
 }
 
-func TestExecCommandRejectsApiNode(t *testing.T) {
+func TestExecCommandServerNotFound(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	setupConflictDB(t)
-	svc := &NodeService{}
-	apiNode := &model.Node{Name: "api-node", Address: "node.example.com", Port: 2053, ApiToken: "tok"}
-	if err := svc.Create(apiNode); err != nil {
-		t.Fatalf("create api node: %v", err)
-	}
+	svc := &ManagedServerService{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	_, err := svc.ExecCommand(ctx, apiNode.Id, "whoami", 0, "admin")
-	if err == nil || !strings.Contains(err.Error(), "only available for ssh-mode") {
-		t.Fatalf("ExecCommand on api node error = %v, want an ssh-mode-only error", err)
+	_, err := svc.ExecCommand(ctx, 999999, "whoami", 0, "admin")
+	if err == nil || !strings.Contains(err.Error(), "server not found") {
+		t.Fatalf("ExecCommand on missing server error = %v, want server not found", err)
 	}
 }
 
@@ -139,8 +134,8 @@ func TestExecCommandStdinEOFDoesNotHang(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	setupConflictDB(t)
 	host, port, _ := startTestSSHServer(t, "root", "s3cret")
-	svc := &NodeService{}
-	n := execTestNode(t, svc, host, port)
+	svc := &ManagedServerService{}
+	srv := execTestServer(t, svc, host, port)
 
 	// A command that waits on stdin must hit EOF and return quickly, not block
 	// until the timeout ceiling. Give it a generous timeout but assert it
@@ -148,7 +143,7 @@ func TestExecCommandStdinEOFDoesNotHang(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	start := time.Now()
-	res, err := svc.ExecCommand(ctx, n.Id, "readstdin:apt", 25*time.Second, "admin")
+	res, err := svc.ExecCommand(ctx, srv.Id, "readstdin:apt", 25*time.Second, "admin")
 	if err != nil {
 		t.Fatalf("ExecCommand: %v", err)
 	}
@@ -189,13 +184,13 @@ func TestExecCommandBatchAllSucceed(t *testing.T) {
 	setupConflictDB(t)
 	host1, port1, _ := startTestSSHServer(t, "root", "s3cret")
 	host2, port2, _ := startTestSSHServer(t, "root", "s3cret")
-	svc := &NodeService{}
-	n1 := execTestNodeNamed(t, svc, "node-a", host1, port1)
-	n2 := execTestNodeNamed(t, svc, "node-b", host2, port2)
+	svc := &ManagedServerService{}
+	s1 := execTestServerNamed(t, svc, "server-a", host1, port1)
+	s2 := execTestServerNamed(t, svc, "server-b", host2, port2)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	batch := svc.ExecCommandBatch(ctx, []int{n1.Id, n2.Id}, "echo hi", 0, "admin")
+	batch := svc.ExecCommandBatch(ctx, []int{s1.Id, s2.Id}, "echo hi", 0, "admin")
 
 	if batch.BatchId == "" {
 		t.Fatal("BatchId is empty, want a shared id")
@@ -203,12 +198,12 @@ func TestExecCommandBatchAllSucceed(t *testing.T) {
 	if len(batch.Results) != 2 {
 		t.Fatalf("got %d results, want 2", len(batch.Results))
 	}
-	if batch.Results[0].NodeId != n1.Id || batch.Results[1].NodeId != n2.Id {
+	if batch.Results[0].NodeId != s1.Id || batch.Results[1].NodeId != s2.Id {
 		t.Fatalf("results out of order: %d, %d", batch.Results[0].NodeId, batch.Results[1].NodeId)
 	}
 	for _, r := range batch.Results {
 		if r.Status != execStatusSuccess {
-			t.Fatalf("node %d status = %q, want success", r.NodeId, r.Status)
+			t.Fatalf("server %d status = %q, want success", r.NodeId, r.Status)
 		}
 	}
 
@@ -224,9 +219,9 @@ func TestExecCommandBatchMixedOutcomes(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	setupConflictDB(t)
 	host, port, _ := startTestSSHServer(t, "root", "s3cret")
-	svc := &NodeService{}
-	good := execTestNodeNamed(t, svc, "reachable", host, port)
-	dead := execTestNodeNamed(t, svc, "dead", "127.0.0.1", 1)
+	svc := &ManagedServerService{}
+	good := execTestServerNamed(t, svc, "reachable", host, port)
+	dead := execTestServerNamed(t, svc, "dead", "127.0.0.1", 1)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -236,19 +231,19 @@ func TestExecCommandBatchMixedOutcomes(t *testing.T) {
 		t.Fatalf("got %d results, want 3", len(batch.Results))
 	}
 	if batch.Results[0].Status != execStatusSuccess {
-		t.Fatalf("reachable node status = %q, want success", batch.Results[0].Status)
+		t.Fatalf("reachable server status = %q, want success", batch.Results[0].Status)
 	}
 	if batch.Results[1].Status != execStatusUnreachable {
-		t.Fatalf("dead node status = %q, want unreachable", batch.Results[1].Status)
+		t.Fatalf("dead server status = %q, want unreachable", batch.Results[1].Status)
 	}
-	if batch.Results[2].Status != execStatusFailed || batch.Results[2].Error != "node not found" {
-		t.Fatalf("missing node result = %+v, want failed/node not found", batch.Results[2])
+	if batch.Results[2].Status != execStatusFailed || batch.Results[2].Error != "server not found" {
+		t.Fatalf("missing server result = %+v, want failed/server not found", batch.Results[2])
 	}
 
 	var count int64
 	database.GetDB().Model(&model.CommandExecution{}).
 		Where("batch_id = ?", batch.BatchId).Count(&count)
 	if count != 2 {
-		t.Fatalf("audit rows for batch = %d, want 2 (missing node not audited)", count)
+		t.Fatalf("audit rows for batch = %d, want 2 (missing server not audited)", count)
 	}
 }

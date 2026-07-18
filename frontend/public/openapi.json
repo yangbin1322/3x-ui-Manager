@@ -996,7 +996,7 @@
         "type": "object"
       },
       "BatchExecResult": {
-        "description": "BatchExecResult is the outcome of running one command across several nodes.\nBatchId ties the per-node audit rows together for the history view.",
+        "description": "BatchExecResult is the outcome of running one command across several managed\nservers. BatchId ties the per-server audit rows together for the history view.",
         "properties": {
           "batchId": {
             "example": "a1b2c3d4",
@@ -1461,7 +1461,7 @@
         "type": "object"
       },
       "ExecResult": {
-        "description": "ExecResult is the outcome of running a command on one node, returned to the\ncaller and mirrored into the audit log.",
+        "description": "ExecResult is the outcome of running a command on one managed server,\nreturned to the caller and mirrored into the audit log. NodeId/NodeName carry\nthe managed server's id and name; the wire field names predate the\nNode/ManagedServer split.",
         "properties": {
           "durationMs": {
             "example": 142,
@@ -2173,7 +2173,7 @@
         "type": "object"
       },
       "InstallResult": {
-        "description": "InstallResult reports the outcome of an auto-install to the panel.",
+        "description": "InstallResult reports the outcome of an auto-install to the panel. Converted\nreports that a panel Node was derived from the server and linked to it; the\nwire name predates the derive semantics. NodeId is the derived node's id.",
         "properties": {
           "accessUrl": {
             "example": "https://1.2.3.4:2053/abc/",
@@ -2186,6 +2186,10 @@
           "message": {
             "type": "string"
           },
+          "nodeId": {
+            "example": 7,
+            "type": "integer"
+          },
           "stdout": {
             "type": "string"
           },
@@ -2197,6 +2201,130 @@
         "required": [
           "converted",
           "success"
+        ],
+        "type": "object"
+      },
+      "ManagedServer": {
+        "description": "ManagedServer is a Linux box the panel reaches over SSH: a server under\nmanagement that may not run a 3x-ui panel at all. It is deliberately a\nseparate model from Node — a Node is a remote panel spoken to over HTTP,\na ManagedServer is raw SSH access — because jamming both into one row (the\nold Node.Mode api|ssh split) polluted every panel-only surface (inbound\ndeploy targets, heartbeats) with servers that are not panels, and installing\na panel had to destroy the SSH identity to become one.\n\nSshPassword and SshPrivateKey are encrypted at rest with AES-256-GCM under\nXUI_SECRET_KEY (internal/util/crypto). They must be replayed to the remote\nhost to authenticate, so unlike a login password they cannot be hashed.\nBoth are json:\"-\": they are write-only over the API and never serialized\nback to a client. SshPasswordSet / SshPrivateKeySet report whether a\ncredential exists so the UI can show \"configured\" without reading it.\n\nSshHostKeyMode mirrors the node TlsVerifyMode's shape for the SSH transport:\n\"pin\" verifies the host key against SshHostKeySha256, \"trust\" accepts and\nrecords the key on first connect (trust on first use), \"skip\" accepts any\nhost key. Anything other than \"skip\" prevents handing credentials to a\nmachine-in-the-middle.\n\nNodeId links to the panel Node derived from this server by an auto-install:\ninstalling 3x-ui creates a NEW Node and records it here, so the server keeps\nits SSH access and the panel gets its own row. 0 means no derived node.\n\nStatus is \"reachable\"/\"unreachable\"/\"unknown\" rather than online/offline:\n\"online\" drives panel-only work (traffic sync, CPU history) that a bare SSH\nserver does not feed.",
+        "properties": {
+          "address": {
+            "example": "203.0.113.10",
+            "type": "string"
+          },
+          "allowPrivateAddress": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "example": 1700000000,
+            "format": "int64",
+            "type": "integer"
+          },
+          "enable": {
+            "example": true,
+            "type": "boolean"
+          },
+          "id": {
+            "example": 1,
+            "type": "integer"
+          },
+          "lastError": {
+            "type": "string"
+          },
+          "lastHeartbeat": {
+            "example": 1700000000,
+            "format": "int64",
+            "type": "integer"
+          },
+          "latencyMs": {
+            "example": 42,
+            "type": "integer"
+          },
+          "name": {
+            "example": "de-fra-1",
+            "type": "string"
+          },
+          "nodeId": {
+            "example": 0,
+            "type": "integer"
+          },
+          "osName": {
+            "type": "string"
+          },
+          "osVersion": {
+            "type": "string"
+          },
+          "remark": {
+            "type": "string"
+          },
+          "sshAuthType": {
+            "enum": [
+              "password",
+              "key"
+            ],
+            "example": "password",
+            "type": "string"
+          },
+          "sshHostKeyMode": {
+            "enum": [
+              "pin",
+              "trust",
+              "skip"
+            ],
+            "example": "trust",
+            "type": "string"
+          },
+          "sshHostKeySha256": {
+            "type": "string"
+          },
+          "sshPasswordSet": {
+            "type": "boolean"
+          },
+          "sshPort": {
+            "example": 22,
+            "maximum": 65535,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "sshPrivateKeySet": {
+            "type": "boolean"
+          },
+          "sshUser": {
+            "example": "root",
+            "type": "string"
+          },
+          "status": {
+            "example": "reachable",
+            "type": "string"
+          },
+          "updatedAt": {
+            "example": 1700000000,
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "address",
+          "allowPrivateAddress",
+          "createdAt",
+          "enable",
+          "id",
+          "lastError",
+          "lastHeartbeat",
+          "latencyMs",
+          "name",
+          "nodeId",
+          "osName",
+          "osVersion",
+          "remark",
+          "sshAuthType",
+          "sshHostKeyMode",
+          "sshHostKeySha256",
+          "sshPasswordSet",
+          "sshPort",
+          "sshPrivateKeySet",
+          "sshUser",
+          "status",
+          "updatedAt"
         ],
         "type": "object"
       },
@@ -2819,6 +2947,10 @@
     {
       "name": "Nodes",
       "description": "Manage remote 3x-ui panels acting as nodes for a central panel. All endpoints under /panel/api/nodes."
+    },
+    {
+      "name": "Managed Servers",
+      "description": "Manage Linux servers over SSH — boxes under management that may not run a 3x-ui panel at all. A managed server keeps its SSH access permanently; installing 3x-ui on one derives a NEW panel node (linked via nodeId) instead of converting the server. All endpoints under /panel/api/managedServers."
     },
     {
       "name": "Hosts",
@@ -8295,352 +8427,6 @@
         }
       }
     },
-    "/panel/api/nodes/testSSH": {
-      "post": {
-        "tags": [
-          "Nodes"
-        ],
-        "summary": "Test SSH credentials for an ssh-mode node without saving it. Returns whether the connection succeeded, the host key fingerprint (to adopt under trust-on-first-use), and the detected OS. Pass ?id=<nodeId> when editing an existing node so a stored password/key is reused without re-entering it.",
-        "operationId": "post_panel_api_nodes_testSSH",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "query",
-            "required": false,
-            "description": "Optional existing node ID, so stored SSH credentials are reused when not re-entered.",
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              },
-              "example": {
-                "address": "1.2.3.4",
-                "sshPort": 22,
-                "sshUser": "root",
-                "sshAuthType": "password",
-                "sshPassword": "secret",
-                "sshHostKeyMode": "trust"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "msg": {
-                      "type": "string"
-                    },
-                    "obj": {
-                      "$ref": "#/components/schemas/SSHTestResult"
-                    }
-                  }
-                },
-                "example": {
-                  "success": true,
-                  "obj": {
-                    "hostKeySha256": "sha256:abc123",
-                    "message": "Authentication failed",
-                    "osName": "Ubuntu",
-                    "osVersion": "24.04",
-                    "success": true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/panel/api/nodes/exec": {
-      "post": {
-        "tags": [
-          "Nodes"
-        ],
-        "summary": "Run one shell command on one or more ssh-mode nodes and record each execution in the audit log under a shared batch id. Pass nodeIds (batch) or a single nodeId; nodes run concurrently, bounded internally, and results come back in the order requested. This is a one-shot, non-interactive model: the command runs with an EOF stdin and no PTY, so a command that waits on input (e.g. an apt prompt) fails fast rather than hanging — write commands non-interactively (apt-get install -y, DEBIAN_FRONTEND=noninteractive, rm -f). Requires an authenticated panel admin; the initiating user is taken from the session. timeoutSec is clamped to [1s, 5m] and defaults to 30s. stdout is truncated to 64KB per node in the stored record.",
-        "operationId": "post_panel_api_nodes_exec",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              },
-              "example": {
-                "nodeIds": [
-                  3,
-                  5
-                ],
-                "command": "systemctl restart x-ui",
-                "timeoutSec": 30
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "msg": {
-                      "type": "string"
-                    },
-                    "obj": {
-                      "$ref": "#/components/schemas/BatchExecResult"
-                    }
-                  }
-                },
-                "example": {
-                  "success": true,
-                  "obj": {
-                    "batchId": "a1b2c3d4",
-                    "results": [
-                      {
-                        "durationMs": 142,
-                        "error": "",
-                        "exitCode": 0,
-                        "nodeId": 3,
-                        "nodeName": "hk-1",
-                        "status": "success",
-                        "stdout": ""
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/panel/api/nodes/install": {
-      "post": {
-        "tags": [
-          "Nodes"
-        ],
-        "summary": "Install 3x-ui on an ssh-mode node over SSH and, on success, convert the node to api mode in place using the credentials the installer writes to /etc/x-ui/install-result.env (including the API token). The SSH credentials are kept so the box stays SSH-reachable. Long-running and synchronous (up to ~10 minutes). Runs the official install.sh non-interactively; version is optional (defaults to latest stable).",
-        "operationId": "post_panel_api_nodes_install",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              },
-              "example": {
-                "nodeId": 3,
-                "version": ""
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "msg": {
-                      "type": "string"
-                    },
-                    "obj": {
-                      "$ref": "#/components/schemas/InstallResult"
-                    }
-                  }
-                },
-                "example": {
-                  "success": true,
-                  "obj": {
-                    "accessUrl": "https://1.2.3.4:2053/abc/",
-                    "converted": true,
-                    "message": "",
-                    "stdout": "",
-                    "success": true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/panel/api/nodes/execHistory": {
-      "get": {
-        "tags": [
-          "Nodes"
-        ],
-        "summary": "Paginated, filterable command audit log, newest first. The audit trail is read-only — there is no per-row delete. Filter by nodeId, username, or status; page is 1-based and pageSize is capped at 200 (default 20).",
-        "operationId": "get_panel_api_nodes_execHistory",
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "description": "1-based page number.",
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "required": false,
-            "description": "Rows per page (max 200, default 20).",
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "nodeId",
-            "in": "query",
-            "required": false,
-            "description": "Filter to one node.",
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "username",
-            "in": "query",
-            "required": false,
-            "description": "Filter to one panel user.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "description": "Filter by outcome: success, failed, unreachable, timeout.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "msg": {
-                      "type": "string"
-                    },
-                    "obj": {
-                      "$ref": "#/components/schemas/ExecHistoryResponse"
-                    }
-                  }
-                },
-                "example": {
-                  "success": true,
-                  "obj": {
-                    "items": [
-                      {
-                        "batchId": "a1b2c3d4",
-                        "command": "systemctl restart x-ui",
-                        "createdAt": 1700000000,
-                        "durationMs": 142,
-                        "error": "",
-                        "exitCode": 0,
-                        "id": 1,
-                        "nodeId": 3,
-                        "nodeName": "hk-1",
-                        "status": "success",
-                        "stdout": "",
-                        "username": "admin"
-                      }
-                    ],
-                    "page": 1,
-                    "pageSize": 20,
-                    "total": 0
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/panel/api/nodes/execHistory/prune": {
-      "post": {
-        "tags": [
-          "Nodes"
-        ],
-        "summary": "Delete audit rows older than olderThanDays. This is the only deletion path for the audit log — retention management, not selective erasure. Returns the number of rows removed.",
-        "operationId": "post_panel_api_nodes_execHistory_prune",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              },
-              "example": {
-                "olderThanDays": 90
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "msg": {
-                      "type": "string"
-                    },
-                    "obj": {}
-                  }
-                },
-                "example": {
-                  "success": true,
-                  "obj": {
-                    "removed": 128
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/panel/api/nodes/certFingerprint": {
       "post": {
         "tags": [
@@ -8906,6 +8692,696 @@
                       "type": "string"
                     },
                     "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/list": {
+      "get": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "List every managed server with its SSH connection details, detected OS, reachability, and the derived panel node link (nodeId, 0 = none).",
+        "operationId": "get_panel_api_managedServers_list",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ManagedServer"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": [
+                    {
+                      "address": "203.0.113.10",
+                      "allowPrivateAddress": false,
+                      "createdAt": 1700000000,
+                      "enable": true,
+                      "id": 1,
+                      "lastError": "",
+                      "lastHeartbeat": 1700000000,
+                      "latencyMs": 42,
+                      "name": "de-fra-1",
+                      "nodeId": 0,
+                      "osName": "",
+                      "osVersion": "",
+                      "remark": "",
+                      "sshAuthType": "password",
+                      "sshHostKeyMode": "trust",
+                      "sshHostKeySha256": "",
+                      "sshPasswordSet": false,
+                      "sshPort": 22,
+                      "sshPrivateKeySet": false,
+                      "sshUser": "root",
+                      "status": "reachable",
+                      "updatedAt": 1700000000
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/get/{id}": {
+      "get": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Fetch a single managed server by ID.",
+        "operationId": "get_panel_api_managedServers_get_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Managed server ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/ManagedServer"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "address": "203.0.113.10",
+                    "allowPrivateAddress": false,
+                    "createdAt": 1700000000,
+                    "enable": true,
+                    "id": 1,
+                    "lastError": "",
+                    "lastHeartbeat": 1700000000,
+                    "latencyMs": 42,
+                    "name": "de-fra-1",
+                    "nodeId": 0,
+                    "osName": "",
+                    "osVersion": "",
+                    "remark": "",
+                    "sshAuthType": "password",
+                    "sshHostKeyMode": "trust",
+                    "sshHostKeySha256": "",
+                    "sshPasswordSet": false,
+                    "sshPort": 22,
+                    "sshPrivateKeySet": false,
+                    "sshUser": "root",
+                    "status": "reachable",
+                    "updatedAt": 1700000000
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/add": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Register a new managed server. SSH credentials are write-only: they are encrypted at rest and never returned; sshPasswordSet / sshPrivateKeySet report whether one is stored.",
+        "operationId": "post_panel_api_managedServers_add",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "name": "de-fra-1",
+                "remark": "",
+                "address": "203.0.113.10",
+                "sshPort": 22,
+                "sshUser": "root",
+                "sshAuthType": "password",
+                "sshPassword": "secret",
+                "sshHostKeyMode": "trust",
+                "enable": true,
+                "allowPrivateAddress": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/update/{id}": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Replace a managed server’s details. Same body shape as /add. A stored SSH password/key/passphrase is carried forward when not re-entered, and a trust-on-first-use fingerprint is preserved unless the mode is pin.",
+        "operationId": "post_panel_api_managedServers_update_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Managed server ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "name": "de-fra-1",
+                "remark": "",
+                "address": "203.0.113.10",
+                "sshPort": 22,
+                "sshUser": "root",
+                "sshAuthType": "password",
+                "sshHostKeyMode": "trust",
+                "enable": true,
+                "allowPrivateAddress": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/del/{id}": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Delete a managed server. A derived panel node linked to it is NOT deleted — the link is simply gone.",
+        "operationId": "post_panel_api_managedServers_del_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Managed server ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/setEnable/{id}": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Pause or resume SSH heartbeat probing of this server.",
+        "operationId": "post_panel_api_managedServers_setEnable_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Managed server ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "enable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/test": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Test SSH credentials for a managed server without saving it. Returns whether the connection succeeded, the host key fingerprint (to adopt under trust-on-first-use), and the detected OS. Pass ?id=<serverId> when editing an existing server so a stored password/key is reused without re-entering it.",
+        "operationId": "post_panel_api_managedServers_test",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Optional existing server ID, so stored SSH credentials are reused when not re-entered.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "address": "1.2.3.4",
+                "sshPort": 22,
+                "sshUser": "root",
+                "sshAuthType": "password",
+                "sshPassword": "secret",
+                "sshHostKeyMode": "trust"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/SSHTestResult"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "hostKeySha256": "sha256:abc123",
+                    "message": "Authentication failed",
+                    "osName": "Ubuntu",
+                    "osVersion": "24.04",
+                    "success": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/exec": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Run one shell command on one or more managed servers and record each execution in the audit log under a shared batch id. Pass serverIds (batch); servers run concurrently, bounded internally, and results come back in the order requested. This is a one-shot, non-interactive model: the command runs with an EOF stdin and no PTY, so a command that waits on input (e.g. an apt prompt) fails fast rather than hanging — write commands non-interactively (apt-get install -y, DEBIAN_FRONTEND=noninteractive, rm -f). Requires an authenticated panel admin; the initiating user is taken from the session. timeoutSec is clamped to [1s, 5m] and defaults to 30s. stdout is truncated to 64KB per server in the stored record.",
+        "operationId": "post_panel_api_managedServers_exec",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "serverIds": [
+                  3,
+                  5
+                ],
+                "command": "systemctl restart x-ui",
+                "timeoutSec": 30
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/BatchExecResult"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "batchId": "a1b2c3d4",
+                    "results": [
+                      {
+                        "durationMs": 142,
+                        "error": "",
+                        "exitCode": 0,
+                        "nodeId": 3,
+                        "nodeName": "hk-1",
+                        "status": "success",
+                        "stdout": ""
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/install": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Install 3x-ui on a managed server over SSH and, on success, derive a NEW panel node from the installer’s credentials (Access URL + minted API token), linked back via the server’s nodeId. The server keeps its SSH access; a server that already has a linked node is rejected. Long-running and synchronous (up to ~10 minutes). Runs the official install.sh non-interactively; version is optional (defaults to latest stable).",
+        "operationId": "post_panel_api_managedServers_install",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "serverId": 3,
+                "version": ""
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/InstallResult"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "accessUrl": "https://1.2.3.4:2053/abc/",
+                    "converted": true,
+                    "message": "",
+                    "nodeId": 7,
+                    "stdout": "",
+                    "success": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/execHistory": {
+      "get": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Paginated, filterable command audit log, newest first. The audit trail is read-only — there is no per-row delete. Filter by nodeId (the managed server id in audit rows), username, or status; page is 1-based and pageSize is capped at 200 (default 20).",
+        "operationId": "get_panel_api_managedServers_execHistory",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "1-based page number.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "description": "Rows per page (max 200, default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "nodeId",
+            "in": "query",
+            "required": false,
+            "description": "Filter to one managed server (audit rows keep the nodeId field name).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "required": false,
+            "description": "Filter to one panel user.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Filter by outcome: success, failed, unreachable, timeout.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/ExecHistoryResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "items": [
+                      {
+                        "batchId": "a1b2c3d4",
+                        "command": "systemctl restart x-ui",
+                        "createdAt": 1700000000,
+                        "durationMs": 142,
+                        "error": "",
+                        "exitCode": 0,
+                        "id": 1,
+                        "nodeId": 3,
+                        "nodeName": "hk-1",
+                        "status": "success",
+                        "stdout": "",
+                        "username": "admin"
+                      }
+                    ],
+                    "page": 1,
+                    "pageSize": 20,
+                    "total": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/execHistory/prune": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Delete audit rows older than olderThanDays. This is the only deletion path for the audit log — retention management, not selective erasure. Returns the number of rows removed.",
+        "operationId": "post_panel_api_managedServers_execHistory_prune",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "olderThanDays": 90
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "removed": 128
                   }
                 }
               }

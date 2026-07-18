@@ -19,7 +19,7 @@ func seedAudit(t *testing.T, rows []model.CommandExecution) {
 
 func TestExecHistoryFiltersAndPaginates(t *testing.T) {
 	setupConflictDB(t)
-	svc := &NodeService{}
+	svc := &ManagedServerService{}
 	seedAudit(t, []model.CommandExecution{
 		{NodeId: 1, NodeName: "a", Username: "admin", Command: "uptime", Status: "success"},
 		{NodeId: 1, NodeName: "a", Username: "admin", Command: "df", Status: "failed"},
@@ -65,7 +65,7 @@ func TestExecHistoryFiltersAndPaginates(t *testing.T) {
 
 func TestExecHistoryPageSizeClamp(t *testing.T) {
 	setupConflictDB(t)
-	svc := &NodeService{}
+	svc := &ManagedServerService{}
 	rows := make([]model.CommandExecution, 5)
 	for i := range rows {
 		rows[i] = model.CommandExecution{NodeId: 1, NodeName: "a", Username: "admin", Command: "x", Status: "success"}
@@ -92,7 +92,7 @@ func TestExecHistoryPageSizeClamp(t *testing.T) {
 
 func TestPruneExecHistory(t *testing.T) {
 	setupConflictDB(t)
-	svc := &NodeService{}
+	svc := &ManagedServerService{}
 	oldTs := time.Now().AddDate(0, 0, -100).UnixMilli()
 	newTs := time.Now().UnixMilli()
 	seedAudit(t, []model.CommandExecution{
@@ -115,7 +115,7 @@ func TestPruneExecHistory(t *testing.T) {
 
 func TestPruneExecHistoryRejectsNonPositive(t *testing.T) {
 	setupConflictDB(t)
-	svc := &NodeService{}
+	svc := &ManagedServerService{}
 	if _, err := svc.PruneExecHistory(0); err == nil {
 		t.Fatal("PruneExecHistory(0) succeeded, want it rejected to avoid wiping the whole log")
 	}

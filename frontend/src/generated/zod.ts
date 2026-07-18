@@ -539,10 +539,37 @@ export const InstallResultSchema = z.object({
   accessUrl: z.string().optional(),
   converted: z.boolean(),
   message: z.string().optional(),
+  nodeId: z.number().int().optional(),
   stdout: z.string().optional(),
   success: z.boolean(),
 });
 export type InstallResult = z.infer<typeof InstallResultSchema>;
+
+export const ManagedServerSchema = z.object({
+  address: z.string(),
+  allowPrivateAddress: z.boolean(),
+  createdAt: z.number().int(),
+  enable: z.boolean(),
+  id: z.number().int(),
+  lastError: z.string(),
+  lastHeartbeat: z.number().int(),
+  latencyMs: z.number().int(),
+  name: z.string(),
+  nodeId: z.number().int(),
+  osName: z.string(),
+  osVersion: z.string(),
+  remark: z.string(),
+  sshAuthType: z.enum(['password', 'key']),
+  sshHostKeyMode: z.enum(['pin', 'trust', 'skip']),
+  sshHostKeySha256: z.string(),
+  sshPasswordSet: z.boolean(),
+  sshPort: z.number().int().min(1).max(65535),
+  sshPrivateKeySet: z.boolean(),
+  sshUser: z.string(),
+  status: z.string(),
+  updatedAt: z.number().int(),
+});
+export type ManagedServer = z.infer<typeof ManagedServerSchema>;
 
 export const MsgSchema = z.object({
   msg: z.string(),

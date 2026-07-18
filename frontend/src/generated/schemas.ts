@@ -970,7 +970,7 @@ export const SCHEMAS: Record<string, unknown> = {
     "type": "object"
   },
   "BatchExecResult": {
-    "description": "BatchExecResult is the outcome of running one command across several nodes.\nBatchId ties the per-node audit rows together for the history view.",
+    "description": "BatchExecResult is the outcome of running one command across several managed\nservers. BatchId ties the per-server audit rows together for the history view.",
     "properties": {
       "batchId": {
         "example": "a1b2c3d4",
@@ -1435,7 +1435,7 @@ export const SCHEMAS: Record<string, unknown> = {
     "type": "object"
   },
   "ExecResult": {
-    "description": "ExecResult is the outcome of running a command on one node, returned to the\ncaller and mirrored into the audit log.",
+    "description": "ExecResult is the outcome of running a command on one managed server,\nreturned to the caller and mirrored into the audit log. NodeId/NodeName carry\nthe managed server's id and name; the wire field names predate the\nNode/ManagedServer split.",
     "properties": {
       "durationMs": {
         "example": 142,
@@ -2147,7 +2147,7 @@ export const SCHEMAS: Record<string, unknown> = {
     "type": "object"
   },
   "InstallResult": {
-    "description": "InstallResult reports the outcome of an auto-install to the panel.",
+    "description": "InstallResult reports the outcome of an auto-install to the panel. Converted\nreports that a panel Node was derived from the server and linked to it; the\nwire name predates the derive semantics. NodeId is the derived node's id.",
     "properties": {
       "accessUrl": {
         "example": "https://1.2.3.4:2053/abc/",
@@ -2160,6 +2160,10 @@ export const SCHEMAS: Record<string, unknown> = {
       "message": {
         "type": "string"
       },
+      "nodeId": {
+        "example": 7,
+        "type": "integer"
+      },
       "stdout": {
         "type": "string"
       },
@@ -2171,6 +2175,130 @@ export const SCHEMAS: Record<string, unknown> = {
     "required": [
       "converted",
       "success"
+    ],
+    "type": "object"
+  },
+  "ManagedServer": {
+    "description": "ManagedServer is a Linux box the panel reaches over SSH: a server under\nmanagement that may not run a 3x-ui panel at all. It is deliberately a\nseparate model from Node — a Node is a remote panel spoken to over HTTP,\na ManagedServer is raw SSH access — because jamming both into one row (the\nold Node.Mode api|ssh split) polluted every panel-only surface (inbound\ndeploy targets, heartbeats) with servers that are not panels, and installing\na panel had to destroy the SSH identity to become one.\n\nSshPassword and SshPrivateKey are encrypted at rest with AES-256-GCM under\nXUI_SECRET_KEY (internal/util/crypto). They must be replayed to the remote\nhost to authenticate, so unlike a login password they cannot be hashed.\nBoth are json:\"-\": they are write-only over the API and never serialized\nback to a client. SshPasswordSet / SshPrivateKeySet report whether a\ncredential exists so the UI can show \"configured\" without reading it.\n\nSshHostKeyMode mirrors the node TlsVerifyMode's shape for the SSH transport:\n\"pin\" verifies the host key against SshHostKeySha256, \"trust\" accepts and\nrecords the key on first connect (trust on first use), \"skip\" accepts any\nhost key. Anything other than \"skip\" prevents handing credentials to a\nmachine-in-the-middle.\n\nNodeId links to the panel Node derived from this server by an auto-install:\ninstalling 3x-ui creates a NEW Node and records it here, so the server keeps\nits SSH access and the panel gets its own row. 0 means no derived node.\n\nStatus is \"reachable\"/\"unreachable\"/\"unknown\" rather than online/offline:\n\"online\" drives panel-only work (traffic sync, CPU history) that a bare SSH\nserver does not feed.",
+    "properties": {
+      "address": {
+        "example": "203.0.113.10",
+        "type": "string"
+      },
+      "allowPrivateAddress": {
+        "type": "boolean"
+      },
+      "createdAt": {
+        "example": 1700000000,
+        "format": "int64",
+        "type": "integer"
+      },
+      "enable": {
+        "example": true,
+        "type": "boolean"
+      },
+      "id": {
+        "example": 1,
+        "type": "integer"
+      },
+      "lastError": {
+        "type": "string"
+      },
+      "lastHeartbeat": {
+        "example": 1700000000,
+        "format": "int64",
+        "type": "integer"
+      },
+      "latencyMs": {
+        "example": 42,
+        "type": "integer"
+      },
+      "name": {
+        "example": "de-fra-1",
+        "type": "string"
+      },
+      "nodeId": {
+        "example": 0,
+        "type": "integer"
+      },
+      "osName": {
+        "type": "string"
+      },
+      "osVersion": {
+        "type": "string"
+      },
+      "remark": {
+        "type": "string"
+      },
+      "sshAuthType": {
+        "enum": [
+          "password",
+          "key"
+        ],
+        "example": "password",
+        "type": "string"
+      },
+      "sshHostKeyMode": {
+        "enum": [
+          "pin",
+          "trust",
+          "skip"
+        ],
+        "example": "trust",
+        "type": "string"
+      },
+      "sshHostKeySha256": {
+        "type": "string"
+      },
+      "sshPasswordSet": {
+        "type": "boolean"
+      },
+      "sshPort": {
+        "example": 22,
+        "maximum": 65535,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "sshPrivateKeySet": {
+        "type": "boolean"
+      },
+      "sshUser": {
+        "example": "root",
+        "type": "string"
+      },
+      "status": {
+        "example": "reachable",
+        "type": "string"
+      },
+      "updatedAt": {
+        "example": 1700000000,
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "address",
+      "allowPrivateAddress",
+      "createdAt",
+      "enable",
+      "id",
+      "lastError",
+      "lastHeartbeat",
+      "latencyMs",
+      "name",
+      "nodeId",
+      "osName",
+      "osVersion",
+      "remark",
+      "sshAuthType",
+      "sshHostKeyMode",
+      "sshHostKeySha256",
+      "sshPasswordSet",
+      "sshPort",
+      "sshPrivateKeySet",
+      "sshUser",
+      "status",
+      "updatedAt"
     ],
     "type": "object"
   },

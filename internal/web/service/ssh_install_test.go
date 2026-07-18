@@ -118,89 +118,120 @@ func TestParseApiToken(t *testing.T) {
 	}
 }
 
-func TestConvertToApiNode(t *testing.T) {
-	t.Setenv("XUI_SECRET_KEY", "test-key")
-	setupConflictDB(t)
-	svc := &NodeService{}
-
-	n := &model.Node{
-		Mode:        "ssh",
-		Name:        "to-convert",
+func installTestServer(t *testing.T, svc *ManagedServerService, name string) *model.ManagedServer {
+	t.Helper()
+	srv := &model.ManagedServer{
+		Name:        name,
 		Address:     "203.0.113.40",
 		SshUser:     "root",
 		SshAuthType: "password",
 		SshPassword: "pw",
-		Status:      "reachable",
 	}
-	if err := svc.Create(n); err != nil {
-		t.Fatalf("create: %v", err)
+	if err := svc.Create(srv); err != nil {
+		t.Fatalf("create server: %v", err)
 	}
+	return srv
+}
+
+func TestDeriveNode(t *testing.T) {
+	t.Setenv("XUI_SECRET_KEY", "test-key")
+	setupConflictDB(t)
+	svc := &ManagedServerService{}
+	srv := installTestServer(t, svc, "to-derive")
 
 	env := &installEnv{port: 2096, basePath: "abcd", scheme: "https", token: "tok_x"}
-	if err := svc.convertToApiNode(n.Id, env); err != nil {
-		t.Fatalf("convertToApiNode: %v", err)
+	nodeId, err := svc.deriveNode(srv, env)
+	if err != nil {
+		t.Fatalf("deriveNode: %v", err)
+	}
+	if nodeId == 0 {
+		t.Fatalf("deriveNode returned node id 0")
 	}
 
-	got, err := svc.GetById(n.Id)
+	node, err := (&NodeService{}).GetById(nodeId)
 	if err != nil {
-		t.Fatalf("get: %v", err)
+		t.Fatalf("get derived node: %v", err)
 	}
-	if got.Mode != "api" {
-		t.Fatalf("Mode = %q, want api", got.Mode)
+	if node.Name != "to-derive" {
+		t.Fatalf("derived node name = %q, want the server's name", node.Name)
 	}
-	if got.Port != 2096 || got.ApiToken != "tok_x" || got.Scheme != "https" {
-		t.Fatalf("api fields not filled: port=%d token=%q scheme=%q", got.Port, got.ApiToken, got.Scheme)
+	if node.Address != srv.Address {
+		t.Fatalf("derived node address = %q, want %q", node.Address, srv.Address)
 	}
-	if got.BasePath != "/abcd/" {
-		t.Fatalf("BasePath = %q, want /abcd/ (single-slashed)", got.BasePath)
+	if node.Port != 2096 || node.ApiToken != "tok_x" || node.Scheme != "https" {
+		t.Fatalf("api fields not filled: port=%d token=%q scheme=%q", node.Port, node.ApiToken, node.Scheme)
 	}
-	if got.TlsVerifyMode != "verify" {
-		t.Fatalf("TlsVerifyMode = %q, want verify for an https install", got.TlsVerifyMode)
+	if node.BasePath != "/abcd/" {
+		t.Fatalf("BasePath = %q, want /abcd/ (single-slashed)", node.BasePath)
 	}
-	// SSH credentials must be kept so the box stays SSH-reachable.
-	if got.SshPassword == "" {
-		t.Fatalf("SSH password was cleared on conversion, want it kept")
+	if node.TlsVerifyMode != "verify" {
+		t.Fatalf("TlsVerifyMode = %q, want verify for an https install", node.TlsVerifyMode)
 	}
-	// Status reset so the heartbeat re-evaluates it as an api node.
-	if got.Status != "unknown" {
-		t.Fatalf("Status = %q, want unknown after conversion", got.Status)
+
+	// The server keeps its SSH identity and now points at the derived node.
+	after, err := svc.GetById(srv.Id)
+	if err != nil {
+		t.Fatalf("get server: %v", err)
+	}
+	if after.NodeId != nodeId {
+		t.Fatalf("server NodeId = %d, want link to derived node %d", after.NodeId, nodeId)
+	}
+	if after.SshPassword == "" {
+		t.Fatalf("SSH password was cleared on derive, want it kept")
 	}
 }
 
-func TestConvertToApiNodeHttpSkipsTlsVerify(t *testing.T) {
+func TestDeriveNodeHttpSkipsTlsVerify(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	setupConflictDB(t)
-	svc := &NodeService{}
-	n := &model.Node{
-		Mode: "ssh", Name: "http-convert", Address: "203.0.113.41",
-		SshUser: "root", SshAuthType: "password", SshPassword: "pw",
-	}
-	if err := svc.Create(n); err != nil {
-		t.Fatalf("create: %v", err)
-	}
+	svc := &ManagedServerService{}
+	srv := installTestServer(t, svc, "http-derive")
 	// A skipped-SSL install serves plain HTTP; the node must not carry a
 	// contradictory "http + verify" config.
 	env := &installEnv{port: 1322, basePath: "p", scheme: "http", token: "t"}
-	if err := svc.convertToApiNode(n.Id, env); err != nil {
-		t.Fatalf("convertToApiNode: %v", err)
+	nodeId, err := svc.deriveNode(srv, env)
+	if err != nil {
+		t.Fatalf("deriveNode: %v", err)
 	}
-	got, _ := svc.GetById(n.Id)
-	if got.Scheme != "http" || got.TlsVerifyMode != "skip" {
-		t.Fatalf("http install => scheme=%q tls=%q, want http/skip", got.Scheme, got.TlsVerifyMode)
+	node, _ := (&NodeService{}).GetById(nodeId)
+	if node.Scheme != "http" || node.TlsVerifyMode != "skip" {
+		t.Fatalf("http install => scheme=%q tls=%q, want http/skip", node.Scheme, node.TlsVerifyMode)
 	}
 }
 
-func TestInstallPanelRejectsApiNode(t *testing.T) {
+func TestDeriveNodeNameCollisionFallsBack(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	setupConflictDB(t)
-	svc := &NodeService{}
-	apiNode := &model.Node{Name: "already-api", Address: "node.example.com", Port: 2053, ApiToken: "tok"}
-	if err := svc.Create(apiNode); err != nil {
-		t.Fatalf("create: %v", err)
+	nodeSvc := &NodeService{}
+	taken := &model.Node{Name: "shared-name", Address: "node.example.com", Port: 2053, ApiToken: "tok"}
+	if err := nodeSvc.Create(taken); err != nil {
+		t.Fatalf("create existing node: %v", err)
 	}
-	_ = database.GetDB()
-	_, err := svc.InstallPanel(t.Context(), apiNode.Id, "", "admin")
-	if err == nil || !strings.Contains(err.Error(), "only available for ssh-mode") {
-		t.Fatalf("InstallPanel on api node error = %v, want ssh-mode-only", err)
+	svc := &ManagedServerService{}
+	srv := installTestServer(t, svc, "shared-name")
+
+	env := &installEnv{port: 2096, basePath: "p", scheme: "https", token: "tok_y"}
+	nodeId, err := svc.deriveNode(srv, env)
+	if err != nil {
+		t.Fatalf("deriveNode with name collision: %v", err)
+	}
+	node, _ := nodeSvc.GetById(nodeId)
+	if node.Name != "shared-name-panel" {
+		t.Fatalf("derived node name = %q, want shared-name-panel on collision", node.Name)
+	}
+}
+
+func TestInstallPanelRejectsLinkedServer(t *testing.T) {
+	t.Setenv("XUI_SECRET_KEY", "test-key")
+	setupConflictDB(t)
+	svc := &ManagedServerService{}
+	srv := installTestServer(t, svc, "already-linked")
+	if err := database.GetDB().Model(&model.ManagedServer{}).Where("id = ?", srv.Id).
+		Update("node_id", 42).Error; err != nil {
+		t.Fatalf("seed link: %v", err)
+	}
+	_, err := svc.InstallPanel(t.Context(), srv.Id, "", "admin")
+	if err == nil || !strings.Contains(err.Error(), "already has a linked panel node") {
+		t.Fatalf("InstallPanel on linked server error = %v, want already-linked rejection", err)
 	}
 }

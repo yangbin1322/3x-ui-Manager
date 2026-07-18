@@ -129,8 +129,7 @@ func TestSSHServiceTestConnectionSuccess(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	host, port, fingerprint := startTestSSHServer(t, "root", "s3cret")
 
-	n := &model.Node{
-		Mode:                "ssh",
+	srv := &model.ManagedServer{
 		Address:             host,
 		SshPort:             port,
 		SshUser:             "root",
@@ -141,7 +140,7 @@ func TestSSHServiceTestConnectionSuccess(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	res := (&SSHService{}).TestConnection(ctx, n)
+	res := (&SSHService{}).TestConnection(ctx, srv)
 
 	if !res.Success {
 		t.Fatalf("TestConnection failed: %q", res.Message)
@@ -158,8 +157,7 @@ func TestSSHServiceWrongPassword(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	host, port, _ := startTestSSHServer(t, "root", "s3cret")
 
-	n := &model.Node{
-		Mode:                "ssh",
+	srv := &model.ManagedServer{
 		Address:             host,
 		SshPort:             port,
 		SshUser:             "root",
@@ -170,7 +168,7 @@ func TestSSHServiceWrongPassword(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	res := (&SSHService{}).TestConnection(ctx, n)
+	res := (&SSHService{}).TestConnection(ctx, srv)
 	if res.Success {
 		t.Fatal("TestConnection succeeded with a wrong password, want failure")
 	}
@@ -180,8 +178,7 @@ func TestSSHServiceHostKeyPinMismatch(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	host, port, _ := startTestSSHServer(t, "root", "s3cret")
 
-	n := &model.Node{
-		Mode:                "ssh",
+	srv := &model.ManagedServer{
 		Address:             host,
 		SshPort:             port,
 		SshUser:             "root",
@@ -193,7 +190,7 @@ func TestSSHServiceHostKeyPinMismatch(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	res := (&SSHService{}).TestConnection(ctx, n)
+	res := (&SSHService{}).TestConnection(ctx, srv)
 	if res.Success {
 		t.Fatal("connection succeeded despite host-key mismatch, want failure")
 	}
@@ -206,10 +203,9 @@ func TestSSHServiceEncryptedCredentialDecrypts(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	host, port, _ := startTestSSHServer(t, "root", "s3cret")
 
-	svc := NodeService{}
-	n := &model.Node{
-		Mode:                "ssh",
-		Name:                "enc-node",
+	svc := ManagedServerService{}
+	srv := &model.ManagedServer{
+		Name:                "enc-server",
 		Address:             host,
 		SshPort:             port,
 		SshUser:             "root",
@@ -218,12 +214,12 @@ func TestSSHServiceEncryptedCredentialDecrypts(t *testing.T) {
 		SshHostKeyMode:      "trust",
 		AllowPrivateAddress: true,
 	}
-	if err := svc.normalize(n); err != nil {
+	if err := svc.normalize(srv); err != nil {
 		t.Fatalf("normalize: %v", err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	res := (&SSHService{}).TestConnection(ctx, n)
+	res := (&SSHService{}).TestConnection(ctx, srv)
 	if !res.Success {
 		t.Fatalf("connection with encrypted-at-rest password failed: %q", res.Message)
 	}
