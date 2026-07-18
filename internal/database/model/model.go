@@ -830,6 +830,68 @@ type CommandExecution struct {
 	CreatedAt  int64  `json:"createdAt" gorm:"autoCreateTime:milli;index" example:"1700000000"`
 }
 
+// ManagedServer is a Linux box the panel reaches over SSH: a server under
+// management that may not run a 3x-ui panel at all. It is deliberately a
+// separate model from Node — a Node is a remote panel spoken to over HTTP,
+// a ManagedServer is raw SSH access — because jamming both into one row (the
+// old Node.Mode api|ssh split) polluted every panel-only surface (inbound
+// deploy targets, heartbeats) with servers that are not panels, and installing
+// a panel had to destroy the SSH identity to become one.
+//
+// SshPassword and SshPrivateKey are encrypted at rest with AES-256-GCM under
+// XUI_SECRET_KEY (internal/util/crypto). They must be replayed to the remote
+// host to authenticate, so unlike a login password they cannot be hashed.
+// Both are json:"-": they are write-only over the API and never serialized
+// back to a client. SshPasswordSet / SshPrivateKeySet report whether a
+// credential exists so the UI can show "configured" without reading it.
+//
+// SshHostKeyMode mirrors the node TlsVerifyMode's shape for the SSH transport:
+// "pin" verifies the host key against SshHostKeySha256, "trust" accepts and
+// records the key on first connect (trust on first use), "skip" accepts any
+// host key. Anything other than "skip" prevents handing credentials to a
+// machine-in-the-middle.
+//
+// NodeId links to the panel Node derived from this server by an auto-install:
+// installing 3x-ui creates a NEW Node and records it here, so the server keeps
+// its SSH access and the panel gets its own row. 0 means no derived node.
+//
+// Status is "reachable"/"unreachable"/"unknown" rather than online/offline:
+// "online" drives panel-only work (traffic sync, CPU history) that a bare SSH
+// server does not feed.
+type ManagedServer struct {
+	Id     int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement" example:"1"`
+	Name   string `json:"name" form:"name" gorm:"uniqueIndex" validate:"required" example:"de-fra-1"`
+	Remark string `json:"remark" form:"remark"`
+
+	Address             string `json:"address" form:"address" validate:"required" example:"203.0.113.10"`
+	Enable              bool   `json:"enable" form:"enable" gorm:"default:true" example:"true"`
+	AllowPrivateAddress bool   `json:"allowPrivateAddress" form:"allowPrivateAddress" gorm:"default:false"`
+
+	SshPort          int    `json:"sshPort" form:"sshPort" gorm:"column:ssh_port;default:22" validate:"omitempty,gte=1,lte=65535" example:"22"`
+	SshUser          string `json:"sshUser" form:"sshUser" gorm:"column:ssh_user" example:"root"`
+	SshAuthType      string `json:"sshAuthType" form:"sshAuthType" gorm:"column:ssh_auth_type;default:password" validate:"omitempty,oneof=password key" example:"password"`
+	SshPassword      string `json:"-" form:"sshPassword" gorm:"column:ssh_password"`
+	SshPrivateKey    string `json:"-" form:"sshPrivateKey" gorm:"column:ssh_private_key"`
+	SshKeyPassphrase string `json:"-" form:"sshKeyPassphrase" gorm:"column:ssh_key_passphrase"`
+	SshHostKeyMode   string `json:"sshHostKeyMode" form:"sshHostKeyMode" gorm:"column:ssh_host_key_mode;default:trust" validate:"omitempty,oneof=pin trust skip" example:"trust"`
+	SshHostKeySha256 string `json:"sshHostKeySha256" form:"sshHostKeySha256" gorm:"column:ssh_host_key_sha256"`
+	SshPasswordSet   bool   `json:"sshPasswordSet" gorm:"-"`
+	SshPrivateKeySet bool   `json:"sshPrivateKeySet" gorm:"-"`
+
+	OsName    string `json:"osName" gorm:"column:os_name"`
+	OsVersion string `json:"osVersion" gorm:"column:os_version"`
+
+	NodeId int `json:"nodeId" gorm:"column:node_id;default:0" example:"0"`
+
+	Status        string `json:"status" gorm:"default:unknown" example:"reachable"`
+	LastHeartbeat int64  `json:"lastHeartbeat" example:"1700000000"`
+	LatencyMs     int    `json:"latencyMs" example:"42"`
+	LastError     string `json:"lastError"`
+
+	CreatedAt int64 `json:"createdAt" gorm:"autoCreateTime:milli" example:"1700000000"`
+	UpdatedAt int64 `json:"updatedAt" gorm:"autoUpdateTime:milli" example:"1700000000"`
+}
+
 // NodeSummary is the read-only identity of a node as published one hop up: the
 // view a panel exposes about the nodes it directly manages, so a master can
 // surface transitive sub-nodes in a chained topology (#4983). Counts are
