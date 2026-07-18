@@ -333,8 +333,8 @@ export interface CommandExecution {
   error?: string;
   exitCode: number;
   id: number;
-  nodeId: number;
-  nodeName: string;
+  serverId: number;
+  serverName: string;
   status: string;
   stdout: string;
   username: string;
@@ -351,8 +351,8 @@ export interface ExecResult {
   durationMs: number;
   error?: string;
   exitCode: number;
-  nodeId: number;
-  nodeName: string;
+  serverId: number;
+  serverName: string;
   status: string;
   stdout: string;
 }
@@ -504,10 +504,36 @@ export interface InboundOption {
 
 export interface InstallResult {
   accessUrl?: string;
-  converted: boolean;
+  derived: boolean;
   message?: string;
+  nodeId?: number;
   stdout?: string;
   success: boolean;
+}
+
+export interface ManagedServer {
+  address: string;
+  allowPrivateAddress: boolean;
+  createdAt: number;
+  enable: boolean;
+  id: number;
+  lastError: string;
+  lastHeartbeat: number;
+  latencyMs: number;
+  name: string;
+  nodeId: number;
+  osName: string;
+  osVersion: string;
+  remark: string;
+  sshAuthType: string;
+  sshHostKeyMode: string;
+  sshHostKeySha256: string;
+  sshPasswordSet: boolean;
+  sshPort: number;
+  sshPrivateKeySet: boolean;
+  sshUser: string;
+  status: string;
+  updatedAt: number;
 }
 
 export interface Msg {
@@ -539,7 +565,6 @@ export interface Node {
   lastHeartbeat: number;
   latencyMs: number;
   memPct: number;
-  mode: string;
   name: string;
   netDown: number;
   netUp: number;
@@ -551,15 +576,6 @@ export interface Node {
   port: number;
   remark: string;
   scheme: string;
-  sshAuthType: string;
-  sshHostKeyMode: string;
-  sshHostKeySha256: string;
-  sshOsName: string;
-  sshOsVersion: string;
-  sshPasswordSet: boolean;
-  sshPort: number;
-  sshPrivateKeySet: boolean;
-  sshUser: string;
   status: string;
   tlsVerifyMode: string;
   transitive?: boolean;

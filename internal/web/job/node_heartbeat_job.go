@@ -20,12 +20,13 @@ const (
 	// An SSH handshake is slower than an HTTP status call and runs a small
 	// command to read the remote OS, so it gets a wider budget than the panel
 	// probe rather than reporting a healthy-but-slow server as unreachable.
-	nodeSSHProbeTimeout = 15 * time.Second
+	serverSSHProbeTimeout = 15 * time.Second
 )
 
 type NodeHeartbeatJob struct {
-	nodeService service.NodeService
-	running     sync.Mutex
+	nodeService          service.NodeService
+	managedServerService service.ManagedServerService
+	running              sync.Mutex
 }
 
 func NewNodeHeartbeatJob() *NodeHeartbeatJob {
@@ -43,7 +44,11 @@ func (j *NodeHeartbeatJob) Run() {
 		logger.Warning("node heartbeat: load nodes failed:", err)
 		return
 	}
-	if len(nodes) == 0 {
+	servers, err := j.managedServerService.GetAll()
+	if err != nil {
+		logger.Warning("node heartbeat: load managed servers failed:", err)
+	}
+	if len(nodes) == 0 && len(servers) == 0 {
 		return
 	}
 
@@ -59,14 +64,22 @@ func (j *NodeHeartbeatJob) Run() {
 		common.GoRecover("node-heartbeat:"+n.Name, func() {
 			defer wg.Done()
 			defer func() { <-sem }()
-			// An ssh-mode node has no panel to poll: an HTTP probe would always
-			// fail and park it at "offline" with a misleading error, so its
-			// reachability is measured over SSH instead.
-			if n.Mode == "ssh" {
-				j.probeOneSSH(n)
-				return
-			}
 			j.probeOne(n)
+		})
+	}
+	// Managed servers have no panel to poll: their reachability is measured
+	// over SSH, sharing the same fan-out budget as the node probes.
+	for _, srv := range servers {
+		if !srv.Enable {
+			continue
+		}
+		wg.Add(1)
+		sem <- struct{}{}
+		srv := srv
+		common.GoRecover("server-heartbeat:"+srv.Name, func() {
+			defer wg.Done()
+			defer func() { <-sem }()
+			j.probeOneServer(srv)
 		})
 	}
 	wg.Wait()
@@ -108,15 +121,15 @@ func (j *NodeHeartbeatJob) probeOne(n *model.Node) {
 	}
 }
 
-// probeOneSSH measures an ssh-mode node's reachability. It does not emit
-// node.up / node.down: those events carry panel and Xray health that an SSH
-// probe cannot observe, and their consumers act on panel-level state.
-func (j *NodeHeartbeatJob) probeOneSSH(n *model.Node) {
-	ctx, cancel := context.WithTimeout(context.Background(), nodeSSHProbeTimeout)
+// probeOneServer measures a managed server's SSH reachability. It does not
+// emit node.up / node.down: those events carry panel and Xray health that an
+// SSH probe cannot observe, and their consumers act on panel-level state.
+func (j *NodeHeartbeatJob) probeOneServer(srv *model.ManagedServer) {
+	ctx, cancel := context.WithTimeout(context.Background(), serverSSHProbeTimeout)
 	defer cancel()
-	patch := j.nodeService.ProbeSSH(ctx, n)
-	if err := j.nodeService.UpdateSSHHeartbeat(n.Id, patch); err != nil {
-		logger.Warning("node heartbeat: update ssh node", n.Id, "failed:", err)
+	patch := j.managedServerService.ProbeSSH(ctx, srv)
+	if err := j.managedServerService.UpdateSSHHeartbeat(srv.Id, patch); err != nil {
+		logger.Warning("node heartbeat: update managed server", srv.Id, "failed:", err)
 	}
 }
 

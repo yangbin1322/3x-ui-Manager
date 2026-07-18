@@ -2,12 +2,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, waitFor } from '@testing-library/react';
 
 import ExecCommandModal from '@/pages/nodes/ExecCommandModal';
-import type { NodeRecord } from '@/api/queries/useNodesQuery';
+import type { ManagedServerRecord } from '@/schemas/managedServer';
 import { renderWithProviders } from './test-utils';
 
-const targets: NodeRecord[] = [
-  { id: 3, name: 'hk-1', mode: 'ssh' },
-  { id: 5, name: 'sg-1', mode: 'ssh' },
+const targets: ManagedServerRecord[] = [
+  { id: 3, name: 'hk-1' },
+  { id: 5, name: 'sg-1' },
 ];
 
 function okButton(): HTMLElement {
@@ -18,7 +18,7 @@ function okButton(): HTMLElement {
 }
 
 describe('ExecCommandModal', () => {
-  it('lists every target node so the operator sees the blast radius', () => {
+  it('lists every target server so the operator sees the blast radius', () => {
     renderWithProviders(
       <ExecCommandModal open targets={targets} execCommand={vi.fn()} onOpenChange={() => {}} />,
     );
@@ -27,14 +27,14 @@ describe('ExecCommandModal', () => {
     expect(tags).toContain('sg-1');
   });
 
-  it('requires a two-step confirm before it runs, then shows per-node results', async () => {
+  it('requires a two-step confirm before it runs, then shows per-server results', async () => {
     const execCommand = vi.fn().mockResolvedValue({
       success: true,
       obj: {
         batchId: 'b1',
         results: [
-          { nodeId: 3, nodeName: 'hk-1', status: 'success', exitCode: 0, stdout: 'ok', durationMs: 12 },
-          { nodeId: 5, nodeName: 'sg-1', status: 'unreachable', exitCode: -1, stdout: '', error: 'cannot reach', durationMs: 4 },
+          { serverId: 3, serverName: 'hk-1', status: 'success', exitCode: 0, stdout: 'ok', durationMs: 12 },
+          { serverId: 5, serverName: 'sg-1', status: 'unreachable', exitCode: -1, stdout: '', error: 'cannot reach', durationMs: 4 },
         ],
       },
     });

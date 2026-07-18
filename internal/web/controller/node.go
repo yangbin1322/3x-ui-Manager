@@ -6,26 +6,15 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/logger"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/middleware"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/service"
-	"github.com/mhsanaei/3x-ui/v3/internal/web/session"
 
 	"github.com/gin-gonic/gin"
 )
-
-// execRequestBudget bounds the whole exec HTTP request. It sits above the
-// command timeout ceiling (5m) to leave room for the SSH dial and audit write,
-// so the request context isn't what cuts a still-running command short.
-const execRequestBudget = 6 * time.Minute
-
-// installRequestBudget sits above the service's 10m install timeout to leave
-// room for reading the install result and the node conversion afterward.
-const installRequestBudget = 12 * time.Minute
 
 type NodeController struct {
 	nodeService service.NodeService
@@ -49,11 +38,6 @@ func (a *NodeController) initRouter(g *gin.RouterGroup) {
 	g.POST("/setEnable/:id", a.setEnable)
 
 	g.POST("/test", a.test)
-	g.POST("/testSSH", a.testSSH)
-	g.POST("/exec", a.exec)
-	g.POST("/install", a.install)
-	g.GET("/execHistory", a.execHistory)
-	g.POST("/execHistory/prune", a.pruneExecHistory)
 	g.POST("/certFingerprint", a.certFingerprint)
 	g.POST("/inbounds", a.inbounds)
 	g.POST("/probe/:id", a.probe)
@@ -146,7 +130,7 @@ func (a *NodeController) add(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if n.Mode != "ssh" && n.OutboundTag == "" {
+	if n.OutboundTag == "" {
 		if err := a.ensureReachable(c, n); err != nil {
 			jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.add"), err)
 			return
@@ -183,7 +167,7 @@ func (a *NodeController) update(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.obtain"), err)
 		return
 	}
-	if n.Mode != "ssh" && n.OutboundTag == "" && old.OutboundTag == "" {
+	if n.OutboundTag == "" && old.OutboundTag == "" {
 		if err := a.ensureReachable(c, n); err != nil {
 			jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.update"), err)
 			return
@@ -283,144 +267,6 @@ func (a *NodeController) test(c *gin.Context) {
 		patch, err = a.nodeService.Probe(ctx, n)
 	}
 	jsonObj(c, patch.ToUI(err == nil), nil)
-}
-
-// testSSH verifies an ssh-mode node's credentials before it is saved and
-// reports the host key so an operator can adopt it under trust-on-first-use.
-// When an existing node is edited without re-entering its secret (they are
-// write-only over the API), the stored ciphertext is carried forward so the
-// test reflects what would actually be saved.
-func (a *NodeController) testSSH(c *gin.Context) {
-	n := &model.Node{}
-	if err := c.ShouldBind(n); err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.test"), err)
-		return
-	}
-	n.Mode = "ssh"
-	if n.SshPassword == "" || n.SshPrivateKey == "" || n.SshKeyPassphrase == "" {
-		if id, err := strconv.Atoi(c.Query("id")); err == nil {
-			if old, err := a.nodeService.GetById(id); err == nil && old != nil && old.Mode == "ssh" {
-				if n.SshPassword == "" {
-					n.SshPassword = old.SshPassword
-				}
-				if n.SshPrivateKey == "" {
-					n.SshPrivateKey = old.SshPrivateKey
-				}
-				if n.SshKeyPassphrase == "" {
-					n.SshKeyPassphrase = old.SshKeyPassphrase
-				}
-			}
-		}
-	}
-
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
-	defer cancel()
-	result := (&service.SSHService{}).TestConnection(ctx, n)
-	jsonObj(c, result, nil)
-}
-
-// exec runs a single command on one ssh-mode node and records it in the audit
-// log. It inherits the /panel/api group's admin auth and CSRF middleware, so
-// only an authenticated panel admin can reach it. The initiating username is
-// taken from the session, never the request body, so the audit trail cannot be
-// spoofed.
-func (a *NodeController) exec(c *gin.Context) {
-	var req struct {
-		NodeIds    []int  `json:"nodeIds"`
-		NodeId     int    `json:"nodeId"`
-		Command    string `json:"command"`
-		TimeoutSec int    `json:"timeoutSec"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.exec"), err)
-		return
-	}
-	// Accept either a nodeIds array (batch) or a single nodeId; running one node
-	// is just a batch of one, so the response shape stays uniform for callers.
-	ids := req.NodeIds
-	if len(ids) == 0 && req.NodeId != 0 {
-		ids = []int{req.NodeId}
-	}
-	if len(ids) == 0 {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.exec"), fmt.Errorf("at least one node is required"))
-		return
-	}
-	if strings.TrimSpace(req.Command) == "" {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.exec"), fmt.Errorf("command is required"))
-		return
-	}
-	username := ""
-	if u := session.GetLoginUser(c); u != nil {
-		username = u.Username
-	}
-	ctx, cancel := context.WithTimeout(c.Request.Context(), execRequestBudget)
-	defer cancel()
-	result := a.nodeService.ExecCommandBatch(ctx, ids, req.Command, time.Duration(req.TimeoutSec)*time.Second, username)
-	jsonObj(c, result, nil)
-}
-
-// install installs 3x-ui on an ssh-mode node and, on success, converts it to an
-// api node in place. It is a long-running synchronous call — the install can take
-// minutes — so it carries a wider request budget than exec.
-func (a *NodeController) install(c *gin.Context) {
-	var req struct {
-		NodeId  int    `json:"nodeId"`
-		Version string `json:"version"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
-		return
-	}
-	if req.NodeId == 0 {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), fmt.Errorf("a node is required"))
-		return
-	}
-	username := ""
-	if u := session.GetLoginUser(c); u != nil {
-		username = u.Username
-	}
-	ctx, cancel := context.WithTimeout(c.Request.Context(), installRequestBudget)
-	defer cancel()
-	result, err := a.nodeService.InstallPanel(ctx, req.NodeId, req.Version, username)
-	if err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
-		return
-	}
-	jsonObj(c, result, nil)
-}
-
-// execHistory returns a filtered, paginated page of the command audit log. It is
-// read-only; the audit trail has no per-row delete.
-func (a *NodeController) execHistory(c *gin.Context) {
-	var params service.ExecHistoryParams
-	if err := c.ShouldBindQuery(&params); err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.exec"), err)
-		return
-	}
-	resp, err := a.nodeService.ExecHistory(params)
-	if err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.exec"), err)
-		return
-	}
-	jsonObj(c, resp, nil)
-}
-
-// pruneExecHistory removes audit rows older than olderThanDays. This is the only
-// deletion path for the audit log — retention management, not selective erasure.
-func (a *NodeController) pruneExecHistory(c *gin.Context) {
-	var req struct {
-		OlderThanDays int `json:"olderThanDays"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.exec"), err)
-		return
-	}
-	removed, err := a.nodeService.PruneExecHistory(req.OlderThanDays)
-	if err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.exec"), err)
-		return
-	}
-	jsonObj(c, gin.H{"removed": removed}, nil)
 }
 
 func (a *NodeController) certFingerprint(c *gin.Context) {

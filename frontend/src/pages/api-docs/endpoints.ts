@@ -979,50 +979,6 @@ export const sections: readonly Section[] = [
       },
       {
         method: 'POST',
-        path: '/panel/api/nodes/testSSH',
-        summary: 'Test SSH credentials for an ssh-mode node without saving it. Returns whether the connection succeeded, the host key fingerprint (to adopt under trust-on-first-use), and the detected OS. Pass ?id=<nodeId> when editing an existing node so a stored password/key is reused without re-entering it.',
-        params: [
-          { name: 'id', in: 'query', type: 'number', optional: true, desc: 'Optional existing node ID, so stored SSH credentials are reused when not re-entered.' },
-        ],
-        body: '{\n  "address": "1.2.3.4",\n  "sshPort": 22,\n  "sshUser": "root",\n  "sshAuthType": "password",\n  "sshPassword": "secret",\n  "sshHostKeyMode": "trust"\n}',
-        responseSchema: 'SSHTestResult',
-      },
-      {
-        method: 'POST',
-        path: '/panel/api/nodes/exec',
-        summary: 'Run one shell command on one or more ssh-mode nodes and record each execution in the audit log under a shared batch id. Pass nodeIds (batch) or a single nodeId; nodes run concurrently, bounded internally, and results come back in the order requested. This is a one-shot, non-interactive model: the command runs with an EOF stdin and no PTY, so a command that waits on input (e.g. an apt prompt) fails fast rather than hanging — write commands non-interactively (apt-get install -y, DEBIAN_FRONTEND=noninteractive, rm -f). Requires an authenticated panel admin; the initiating user is taken from the session. timeoutSec is clamped to [1s, 5m] and defaults to 30s. stdout is truncated to 64KB per node in the stored record.',
-        body: '{\n  "nodeIds": [3, 5],\n  "command": "systemctl restart x-ui",\n  "timeoutSec": 30\n}',
-        responseSchema: 'BatchExecResult',
-      },
-      {
-        method: 'POST',
-        path: '/panel/api/nodes/install',
-        summary: 'Install 3x-ui on an ssh-mode node over SSH and, on success, convert the node to api mode in place using the credentials the installer writes to /etc/x-ui/install-result.env (including the API token). The SSH credentials are kept so the box stays SSH-reachable. Long-running and synchronous (up to ~10 minutes). Runs the official install.sh non-interactively; version is optional (defaults to latest stable).',
-        body: '{\n  "nodeId": 3,\n  "version": ""\n}',
-        responseSchema: 'InstallResult',
-      },
-      {
-        method: 'GET',
-        path: '/panel/api/nodes/execHistory',
-        summary: 'Paginated, filterable command audit log, newest first. The audit trail is read-only — there is no per-row delete. Filter by nodeId, username, or status; page is 1-based and pageSize is capped at 200 (default 20).',
-        params: [
-          { name: 'page', in: 'query', type: 'number', optional: true, desc: '1-based page number.' },
-          { name: 'pageSize', in: 'query', type: 'number', optional: true, desc: 'Rows per page (max 200, default 20).' },
-          { name: 'nodeId', in: 'query', type: 'number', optional: true, desc: 'Filter to one node.' },
-          { name: 'username', in: 'query', type: 'string', optional: true, desc: 'Filter to one panel user.' },
-          { name: 'status', in: 'query', type: 'string', optional: true, desc: 'Filter by outcome: success, failed, unreachable, timeout.' },
-        ],
-        responseSchema: 'ExecHistoryResponse',
-      },
-      {
-        method: 'POST',
-        path: '/panel/api/nodes/execHistory/prune',
-        summary: 'Delete audit rows older than olderThanDays. This is the only deletion path for the audit log — retention management, not selective erasure. Returns the number of rows removed.',
-        body: '{\n  "olderThanDays": 90\n}',
-        response: '{\n  "success": true,\n  "obj": { "removed": 128 }\n}',
-      },
-      {
-        method: 'POST',
         path: '/panel/api/nodes/certFingerprint',
         summary: "Connect to the node over HTTPS without verifying its certificate and return the leaf certificate's SHA-256 (base64). Used by the Add/Edit Node dialog to fetch and pin a self-signed certificate. Uses the same body as /test.",
         body: '{\n  "scheme": "https",\n  "address": "node1.example.com",\n  "port": 2053,\n  "basePath": "/"\n}',
@@ -1059,6 +1015,107 @@ export const sections: readonly Section[] = [
           { name: 'metric', in: 'path', type: 'string', desc: 'cpu | mem.' },
           { name: 'bucket', in: 'path', type: 'number', desc: 'Bucket size in seconds. Allowed: 2, 30, 60, 120, 180, 300.' },
         ],
+      },
+    ],
+  },
+
+  {
+    id: 'managed-servers',
+    title: 'Managed Servers',
+    description:
+      'Manage Linux servers over SSH — boxes under management that may not run a 3x-ui panel at all. A managed server keeps its SSH access permanently; installing 3x-ui on one derives a NEW panel node (linked via nodeId) instead of converting the server. All endpoints under /panel/api/managedServers.',
+    endpoints: [
+      {
+        method: 'GET',
+        path: '/panel/api/managedServers/list',
+        summary: 'List every managed server with its SSH connection details, detected OS, reachability, and the derived panel node link (nodeId, 0 = none).',
+        responseSchema: 'ManagedServer',
+        responseSchemaArray: true,
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/managedServers/get/:id',
+        summary: 'Fetch a single managed server by ID.',
+        params: [
+          { name: 'id', in: 'path', type: 'number', desc: 'Managed server ID.' },
+        ],
+        responseSchema: 'ManagedServer',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/managedServers/add',
+        summary: 'Register a new managed server. SSH credentials are write-only: they are encrypted at rest and never returned; sshPasswordSet / sshPrivateKeySet report whether one is stored.',
+        body: '{\n  "name": "de-fra-1",\n  "remark": "",\n  "address": "203.0.113.10",\n  "sshPort": 22,\n  "sshUser": "root",\n  "sshAuthType": "password",\n  "sshPassword": "secret",\n  "sshHostKeyMode": "trust",\n  "enable": true,\n  "allowPrivateAddress": false\n}',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/managedServers/update/:id',
+        summary: 'Replace a managed server’s details. Same body shape as /add. A stored SSH password/key/passphrase is carried forward when not re-entered, and a trust-on-first-use fingerprint is preserved unless the mode is pin.',
+        params: [
+          { name: 'id', in: 'path', type: 'number', desc: 'Managed server ID.' },
+        ],
+        body: '{\n  "name": "de-fra-1",\n  "remark": "",\n  "address": "203.0.113.10",\n  "sshPort": 22,\n  "sshUser": "root",\n  "sshAuthType": "password",\n  "sshHostKeyMode": "trust",\n  "enable": true,\n  "allowPrivateAddress": false\n}',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/managedServers/del/:id',
+        summary: 'Delete a managed server. A derived panel node linked to it is NOT deleted — the link is simply gone.',
+        params: [
+          { name: 'id', in: 'path', type: 'number', desc: 'Managed server ID.' },
+        ],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/managedServers/setEnable/:id',
+        summary: 'Pause or resume SSH heartbeat probing of this server.',
+        params: [
+          { name: 'id', in: 'path', type: 'number', desc: 'Managed server ID.' },
+        ],
+        body: '{\n  "enable": true\n}',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/managedServers/test',
+        summary: 'Test SSH credentials for a managed server without saving it. Returns whether the connection succeeded, the host key fingerprint (to adopt under trust-on-first-use), and the detected OS. Pass ?id=<serverId> when editing an existing server so a stored password/key is reused without re-entering it.',
+        params: [
+          { name: 'id', in: 'query', type: 'number', optional: true, desc: 'Optional existing server ID, so stored SSH credentials are reused when not re-entered.' },
+        ],
+        body: '{\n  "address": "1.2.3.4",\n  "sshPort": 22,\n  "sshUser": "root",\n  "sshAuthType": "password",\n  "sshPassword": "secret",\n  "sshHostKeyMode": "trust"\n}',
+        responseSchema: 'SSHTestResult',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/managedServers/exec',
+        summary: 'Run one shell command on one or more managed servers and record each execution in the audit log under a shared batch id. Pass serverIds (batch); servers run concurrently, bounded internally, and results come back in the order requested. This is a one-shot, non-interactive model: the command runs with an EOF stdin and no PTY, so a command that waits on input (e.g. an apt prompt) fails fast rather than hanging — write commands non-interactively (apt-get install -y, DEBIAN_FRONTEND=noninteractive, rm -f). Requires an authenticated panel admin; the initiating user is taken from the session. timeoutSec is clamped to [1s, 5m] and defaults to 30s. stdout is truncated to 64KB per server in the stored record.',
+        body: '{\n  "serverIds": [3, 5],\n  "command": "systemctl restart x-ui",\n  "timeoutSec": 30\n}',
+        responseSchema: 'BatchExecResult',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/managedServers/install',
+        summary: 'Install 3x-ui on a managed server over SSH and, on success, derive a NEW panel node from the installer’s credentials (Access URL + minted API token), linked back via the server’s nodeId. The server keeps its SSH access; a server that already has a linked node is rejected. Long-running and synchronous (up to ~10 minutes). Runs the official install.sh non-interactively; version is optional (defaults to latest stable).',
+        body: '{\n  "serverId": 3,\n  "version": ""\n}',
+        responseSchema: 'InstallResult',
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/managedServers/execHistory',
+        summary: 'Paginated, filterable command audit log, newest first. The audit trail is read-only — there is no per-row delete. Filter by serverId, username, or status; page is 1-based and pageSize is capped at 200 (default 20).',
+        params: [
+          { name: 'page', in: 'query', type: 'number', optional: true, desc: '1-based page number.' },
+          { name: 'pageSize', in: 'query', type: 'number', optional: true, desc: 'Rows per page (max 200, default 20).' },
+          { name: 'serverId', in: 'query', type: 'number', optional: true, desc: 'Filter to one managed server.' },
+          { name: 'username', in: 'query', type: 'string', optional: true, desc: 'Filter to one panel user.' },
+          { name: 'status', in: 'query', type: 'string', optional: true, desc: 'Filter by outcome: success, failed, unreachable, timeout.' },
+        ],
+        responseSchema: 'ExecHistoryResponse',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/managedServers/execHistory/prune',
+        summary: 'Delete audit rows older than olderThanDays. This is the only deletion path for the audit log — retention management, not selective erasure. Returns the number of rows removed.',
+        body: '{\n  "olderThanDays": 90\n}',
+        response: '{\n  "success": true,\n  "obj": { "removed": 128 }\n}',
       },
     ],
   },

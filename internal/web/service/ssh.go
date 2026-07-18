@@ -32,15 +32,15 @@ const (
 	// audit table.
 	execOutputCap = 64 * 1024
 
-	// execConcurrency caps how many nodes a batch command runs on at once. It is
+	// execConcurrency caps how many servers a batch command runs on at once. It is
 	// deliberately lower than the heartbeat's 32: each execution is a real
 	// side-effecting action, not a read-only probe, so a smaller fan-out limits
 	// the blast radius of a mistaken command.
 	execConcurrency = 8
 )
 
-// SSHService opens SSH sessions to nodes running in "ssh" access mode: servers
-// reachable over SSH that may not have a 3x-ui panel installed yet.
+// SSHService opens SSH sessions to managed servers: machines reachable over SSH
+// that may not have a 3x-ui panel installed at all.
 type SSHService struct{}
 
 // SSHDialResult reports the outcome of a connection attempt. HostKeySha256 is
@@ -59,17 +59,17 @@ func FormatHostKeyFingerprint(key ssh.PublicKey) string {
 	return "sha256:" + base64.RawStdEncoding.EncodeToString(sum[:])
 }
 
-func sshAuthMethods(n *model.Node) ([]ssh.AuthMethod, error) {
-	switch n.SshAuthType {
+func sshAuthMethods(srv *model.ManagedServer) ([]ssh.AuthMethod, error) {
+	switch srv.SshAuthType {
 	case "key":
-		privateKey, err := crypto.DecryptSecret(n.SshPrivateKey)
+		privateKey, err := crypto.DecryptSecret(srv.SshPrivateKey)
 		if err != nil {
 			return nil, err
 		}
 		if strings.TrimSpace(privateKey) == "" {
 			return nil, fmt.Errorf("ssh private key is required")
 		}
-		passphrase, err := crypto.DecryptSecret(n.SshKeyPassphrase)
+		passphrase, err := crypto.DecryptSecret(srv.SshKeyPassphrase)
 		if err != nil {
 			return nil, err
 		}
@@ -88,7 +88,7 @@ func sshAuthMethods(n *model.Node) ([]ssh.AuthMethod, error) {
 		}
 		return []ssh.AuthMethod{ssh.PublicKeys(signer)}, nil
 	default:
-		password, err := crypto.DecryptSecret(n.SshPassword)
+		password, err := crypto.DecryptSecret(srv.SshPassword)
 		if err != nil {
 			return nil, err
 		}
@@ -99,29 +99,30 @@ func sshAuthMethods(n *model.Node) ([]ssh.AuthMethod, error) {
 	}
 }
 
-// hostKeyCallback enforces the node's SshHostKeyMode. "pin" verifies against the
-// stored fingerprint and fails on mismatch; "trust" accepts any key on the first
-// connect and pins it afterwards; "skip" accepts anything. Accepting an unknown
-// host key means handing the credential to whoever answered on the port, so
-// "trust" records what it saw and "pin" refuses to be silently re-pointed.
-func hostKeyCallback(n *model.Node, seen *string) ssh.HostKeyCallback {
+// hostKeyCallback enforces the server's SshHostKeyMode. "pin" verifies against
+// the stored fingerprint and fails on mismatch; "trust" accepts any key on the
+// first connect and pins it afterwards; "skip" accepts anything. Accepting an
+// unknown host key means handing the credential to whoever answered on the
+// port, so "trust" records what it saw and "pin" refuses to be silently
+// re-pointed.
+func hostKeyCallback(srv *model.ManagedServer, seen *string) ssh.HostKeyCallback {
 	return func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 		fingerprint := FormatHostKeyFingerprint(key)
 		*seen = fingerprint
-		switch n.SshHostKeyMode {
+		switch srv.SshHostKeyMode {
 		case "skip":
 			return nil
 		case "pin":
-			expected := strings.TrimSpace(n.SshHostKeySha256)
+			expected := strings.TrimSpace(srv.SshHostKeySha256)
 			if expected == "" {
-				return fmt.Errorf("host key pinning is enabled but no fingerprint is stored for this node")
+				return fmt.Errorf("host key pinning is enabled but no fingerprint is stored for this server")
 			}
 			if !strings.EqualFold(expected, fingerprint) {
 				return fmt.Errorf("host key mismatch: expected %s, server presented %s", expected, fingerprint)
 			}
 			return nil
 		default:
-			pinned := strings.TrimSpace(n.SshHostKeySha256)
+			pinned := strings.TrimSpace(srv.SshHostKeySha256)
 			if pinned != "" && !strings.EqualFold(pinned, fingerprint) {
 				return fmt.Errorf("host key changed: expected %s, server presented %s", pinned, fingerprint)
 			}
@@ -130,22 +131,22 @@ func hostKeyCallback(n *model.Node, seen *string) ssh.HostKeyCallback {
 	}
 }
 
-// Dial opens an SSH connection to the node. The caller owns the returned client
-// and must Close it.
-func (s *SSHService) Dial(ctx context.Context, n *model.Node) (*SSHDialResult, error) {
-	host, err := netsafe.NormalizeHost(n.Address)
+// Dial opens an SSH connection to the server. The caller owns the returned
+// client and must Close it.
+func (s *SSHService) Dial(ctx context.Context, srv *model.ManagedServer) (*SSHDialResult, error) {
+	host, err := netsafe.NormalizeHost(srv.Address)
 	if err != nil {
 		return nil, err
 	}
-	port := n.SshPort
+	port := srv.SshPort
 	if port <= 0 {
 		port = 22
 	}
-	authMethods, err := sshAuthMethods(n)
+	authMethods, err := sshAuthMethods(srv)
 	if err != nil {
 		return nil, err
 	}
-	user := strings.TrimSpace(n.SshUser)
+	user := strings.TrimSpace(srv.SshUser)
 	if user == "" {
 		return nil, fmt.Errorf("ssh username is required")
 	}
@@ -154,7 +155,7 @@ func (s *SSHService) Dial(ctx context.Context, n *model.Node) (*SSHDialResult, e
 	cfg := &ssh.ClientConfig{
 		User:            user,
 		Auth:            authMethods,
-		HostKeyCallback: hostKeyCallback(n, &seenHostKey),
+		HostKeyCallback: hostKeyCallback(srv, &seenHostKey),
 		Timeout:         sshDialTimeout,
 	}
 
@@ -164,7 +165,7 @@ func (s *SSHService) Dial(ctx context.Context, n *model.Node) (*SSHDialResult, e
 	// IsBlockedIP unless AllowPrivateAddress is set, exactly as the HTTP node
 	// probe does. A bare net.Dialer would trust whatever the OS resolver
 	// returned and leak the SSH credential to an internal host.
-	dialCtx := netsafe.ContextWithAllowPrivate(ctx, n.AllowPrivateAddress)
+	dialCtx := netsafe.ContextWithAllowPrivate(ctx, srv.AllowPrivateAddress)
 	conn, err := netsafe.SSRFGuardedDialContext(dialCtx, "tcp", addr)
 	if err != nil {
 		return nil, fmt.Errorf("cannot reach %s: %w", addr, err)
@@ -184,9 +185,9 @@ func (s *SSHService) Dial(ctx context.Context, n *model.Node) (*SSHDialResult, e
 	}, nil
 }
 
-// RunCommand executes cmd on the node and returns its combined output.
-func (s *SSHService) RunCommand(ctx context.Context, n *model.Node, cmd string) (string, error) {
-	res, err := s.Dial(ctx, n)
+// RunCommand executes cmd on the server and returns its combined output.
+func (s *SSHService) RunCommand(ctx context.Context, srv *model.ManagedServer, cmd string) (string, error) {
+	res, err := s.Dial(ctx, srv)
 	if err != nil {
 		return "", err
 	}
@@ -246,11 +247,11 @@ type SSHTestResult struct {
 	OsVersion     string `json:"osVersion,omitempty" example:"24.04"`
 }
 
-// TestConnection verifies the node's SSH credentials and reports the host key
+// TestConnection verifies the server's SSH credentials and reports the host key
 // and detected OS. It never returns the credential itself, and its error text
 // is the transport's, which does not echo the password or key.
-func (s *SSHService) TestConnection(ctx context.Context, n *model.Node) *SSHTestResult {
-	res, err := s.Dial(ctx, n)
+func (s *SSHService) TestConnection(ctx context.Context, srv *model.ManagedServer) *SSHTestResult {
+	res, err := s.Dial(ctx, srv)
 	if err != nil {
 		out := &SSHTestResult{Success: false, Message: err.Error()}
 		if res != nil {

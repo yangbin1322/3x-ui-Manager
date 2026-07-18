@@ -703,14 +703,6 @@ type Node struct {
 	Name   string `json:"name" form:"name" gorm:"uniqueIndex" validate:"required" example:"de-fra-1"`
 	Remark string `json:"remark" form:"remark"`
 
-	// Mode is how the panel reaches this server: "api" talks to an installed
-	// 3x-ui panel over HTTP, "ssh" reaches a plain Linux box over SSH before any
-	// panel exists. It defaults to "api" so every row written before SSH mode
-	// existed keeps its original meaning. The two are access modes of one
-	// server, not separate kinds of server: an "ssh" node becomes an "api" node
-	// in place once a panel is installed on it.
-	Mode string `json:"mode" form:"mode" gorm:"default:api" validate:"omitempty,oneof=api ssh" example:"api"`
-
 	Scheme              string   `json:"scheme" form:"scheme" validate:"omitempty,oneof=http https" example:"https"`
 	Address             string   `json:"address" form:"address" validate:"required" example:"node1.example.com"`
 	Port                int      `json:"port" form:"port" validate:"omitempty,gte=1,lte=65535" example:"2053"`
@@ -723,33 +715,6 @@ type Node struct {
 	InboundSyncMode     string   `json:"inboundSyncMode" form:"inboundSyncMode" gorm:"column:inbound_sync_mode;default:all" validate:"omitempty,oneof=all selected"`
 	InboundTags         []string `json:"inboundTags" form:"inboundTags" gorm:"serializer:json;column:inbound_tags"`
 	OutboundTag         string   `json:"outboundTag" form:"outboundTag" gorm:"column:outbound_tag"`
-
-	// SSH access fields, used only when Mode == "ssh".
-	//
-	// SshPassword and SshPrivateKey are encrypted at rest with AES-256-GCM under
-	// XUI_SECRET_KEY (internal/util/crypto). They must be replayed to the remote
-	// host to authenticate, so unlike a login password they cannot be hashed.
-	// Both are json:"-": they are write-only over the API and never serialized
-	// back to a client. SshPasswordSet / SshPrivateKeySet report whether a
-	// credential exists so the UI can show "configured" without reading it.
-	//
-	// SshHostKeyMode mirrors TlsVerifyMode's shape for the SSH transport:
-	// "pin" verifies the host key against SshHostKeySha256, "trust" accepts and
-	// records the key on first connect (trust on first use), "skip" accepts any
-	// host key. Anything other than "skip" prevents handing credentials to a
-	// machine-in-the-middle.
-	SshPort          int    `json:"sshPort" form:"sshPort" gorm:"column:ssh_port;default:22" validate:"omitempty,gte=1,lte=65535" example:"22"`
-	SshUser          string `json:"sshUser" form:"sshUser" gorm:"column:ssh_user" example:"root"`
-	SshAuthType      string `json:"sshAuthType" form:"sshAuthType" gorm:"column:ssh_auth_type;default:password" validate:"omitempty,oneof=password key" example:"password"`
-	SshPassword      string `json:"-" form:"sshPassword" gorm:"column:ssh_password"`
-	SshPrivateKey    string `json:"-" form:"sshPrivateKey" gorm:"column:ssh_private_key"`
-	SshKeyPassphrase string `json:"-" form:"sshKeyPassphrase" gorm:"column:ssh_key_passphrase"`
-	SshHostKeyMode   string `json:"sshHostKeyMode" form:"sshHostKeyMode" gorm:"column:ssh_host_key_mode;default:trust" validate:"omitempty,oneof=pin trust skip" example:"trust"`
-	SshHostKeySha256 string `json:"sshHostKeySha256" form:"sshHostKeySha256" gorm:"column:ssh_host_key_sha256"`
-	SshPasswordSet   bool   `json:"sshPasswordSet" gorm:"-"`
-	SshPrivateKeySet bool   `json:"sshPrivateKeySet" gorm:"-"`
-	SshOsName        string `json:"sshOsName" gorm:"column:ssh_os_name"`
-	SshOsVersion     string `json:"sshOsVersion" gorm:"column:ssh_os_version"`
 
 	// Guid is the remote panel's stable self-identifier (its panelGuid),
 	// learned from each heartbeat. It is the globally stable node identity used
@@ -804,22 +769,23 @@ type Node struct {
 	UpdatedAt int64 `json:"updatedAt" gorm:"autoUpdateTime:milli" example:"1700000000"`
 }
 
-// CommandExecution is one audit record of a command run on an ssh-mode node.
+// CommandExecution is one audit record of a command run on a managed server.
 // Running an arbitrary command on a remote root shell is the highest-risk action
 // in the panel, so every execution — success or failure — is recorded with who
 // ran it, where, and the result. Records are append-only from the UI's point of
 // view: there is no delete endpoint, only an age-based cleanup, so the trail
 // cannot be erased to cover an action.
 //
-// NodeName is snapshotted rather than referenced because a node may later be
+// ServerName is snapshotted rather than referenced because a server may later be
 // renamed or deleted, and the audit must still say which host was touched.
 // Stdout is truncated to a fixed cap so a single large-output command cannot
-// bloat the database.
+// bloat the database. The node_id/node_name column names predate the
+// Node/ManagedServer split and are kept so existing audit rows survive.
 type CommandExecution struct {
 	Id         int64  `json:"id" gorm:"primaryKey;autoIncrement" example:"1"`
 	BatchId    string `json:"batchId" gorm:"column:batch_id;index" example:"a1b2c3d4"`
-	NodeId     int    `json:"nodeId" gorm:"column:node_id;index" example:"3"`
-	NodeName   string `json:"nodeName" gorm:"column:node_name" example:"hk-1"`
+	ServerId   int    `json:"serverId" gorm:"column:node_id;index" example:"3"`
+	ServerName string `json:"serverName" gorm:"column:node_name" example:"hk-1"`
 	Username   string `json:"username" example:"admin"`
 	Command    string `json:"command" example:"systemctl restart x-ui"`
 	Stdout     string `json:"stdout"`
@@ -828,6 +794,68 @@ type CommandExecution struct {
 	Status     string `json:"status" example:"success"`
 	DurationMs int    `json:"durationMs" example:"142"`
 	CreatedAt  int64  `json:"createdAt" gorm:"autoCreateTime:milli;index" example:"1700000000"`
+}
+
+// ManagedServer is a Linux box the panel reaches over SSH: a server under
+// management that may not run a 3x-ui panel at all. It is deliberately a
+// separate model from Node — a Node is a remote panel spoken to over HTTP,
+// a ManagedServer is raw SSH access — because jamming both into one row (the
+// old Node.Mode api|ssh split) polluted every panel-only surface (inbound
+// deploy targets, heartbeats) with servers that are not panels, and installing
+// a panel had to destroy the SSH identity to become one.
+//
+// SshPassword and SshPrivateKey are encrypted at rest with AES-256-GCM under
+// XUI_SECRET_KEY (internal/util/crypto). They must be replayed to the remote
+// host to authenticate, so unlike a login password they cannot be hashed.
+// Both are json:"-": they are write-only over the API and never serialized
+// back to a client. SshPasswordSet / SshPrivateKeySet report whether a
+// credential exists so the UI can show "configured" without reading it.
+//
+// SshHostKeyMode mirrors the node TlsVerifyMode's shape for the SSH transport:
+// "pin" verifies the host key against SshHostKeySha256, "trust" accepts and
+// records the key on first connect (trust on first use), "skip" accepts any
+// host key. Anything other than "skip" prevents handing credentials to a
+// machine-in-the-middle.
+//
+// NodeId links to the panel Node derived from this server by an auto-install:
+// installing 3x-ui creates a NEW Node and records it here, so the server keeps
+// its SSH access and the panel gets its own row. 0 means no derived node.
+//
+// Status is "reachable"/"unreachable"/"unknown" rather than online/offline:
+// "online" drives panel-only work (traffic sync, CPU history) that a bare SSH
+// server does not feed.
+type ManagedServer struct {
+	Id     int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement" example:"1"`
+	Name   string `json:"name" form:"name" gorm:"uniqueIndex" validate:"required" example:"de-fra-1"`
+	Remark string `json:"remark" form:"remark"`
+
+	Address             string `json:"address" form:"address" validate:"required" example:"203.0.113.10"`
+	Enable              bool   `json:"enable" form:"enable" gorm:"default:true" example:"true"`
+	AllowPrivateAddress bool   `json:"allowPrivateAddress" form:"allowPrivateAddress" gorm:"default:false"`
+
+	SshPort          int    `json:"sshPort" form:"sshPort" gorm:"column:ssh_port;default:22" validate:"omitempty,gte=1,lte=65535" example:"22"`
+	SshUser          string `json:"sshUser" form:"sshUser" gorm:"column:ssh_user" example:"root"`
+	SshAuthType      string `json:"sshAuthType" form:"sshAuthType" gorm:"column:ssh_auth_type;default:password" validate:"omitempty,oneof=password key" example:"password"`
+	SshPassword      string `json:"-" form:"sshPassword" gorm:"column:ssh_password"`
+	SshPrivateKey    string `json:"-" form:"sshPrivateKey" gorm:"column:ssh_private_key"`
+	SshKeyPassphrase string `json:"-" form:"sshKeyPassphrase" gorm:"column:ssh_key_passphrase"`
+	SshHostKeyMode   string `json:"sshHostKeyMode" form:"sshHostKeyMode" gorm:"column:ssh_host_key_mode;default:trust" validate:"omitempty,oneof=pin trust skip" example:"trust"`
+	SshHostKeySha256 string `json:"sshHostKeySha256" form:"sshHostKeySha256" gorm:"column:ssh_host_key_sha256"`
+	SshPasswordSet   bool   `json:"sshPasswordSet" gorm:"-"`
+	SshPrivateKeySet bool   `json:"sshPrivateKeySet" gorm:"-"`
+
+	OsName    string `json:"osName" gorm:"column:os_name"`
+	OsVersion string `json:"osVersion" gorm:"column:os_version"`
+
+	NodeId int `json:"nodeId" gorm:"column:node_id;default:0" example:"0"`
+
+	Status        string `json:"status" gorm:"default:unknown" example:"reachable"`
+	LastHeartbeat int64  `json:"lastHeartbeat" example:"1700000000"`
+	LatencyMs     int    `json:"latencyMs" example:"42"`
+	LastError     string `json:"lastError"`
+
+	CreatedAt int64 `json:"createdAt" gorm:"autoCreateTime:milli" example:"1700000000"`
+	UpdatedAt int64 `json:"updatedAt" gorm:"autoUpdateTime:milli" example:"1700000000"`
 }
 
 // NodeSummary is the read-only identity of a node as published one hop up: the

@@ -7,6 +7,10 @@ export const keys = {
     root: () => ['nodes'] as const,
     list: () => ['nodes', 'list'] as const,
   },
+  managedServers: {
+    root: () => ['managedServers'] as const,
+    list: () => ['managedServers', 'list'] as const,
+  },
   hosts: {
     root: () => ['hosts'] as const,
     list: () => ['hosts', 'list'] as const,

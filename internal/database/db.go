@@ -78,6 +78,7 @@ func allModels() []any {
 		&model.CommandExecution{},
 		&model.ClientGlobalTraffic{},
 		&model.OutboundSubscription{},
+		&model.ManagedServer{},
 	}
 }
 

@@ -10,8 +10,8 @@ describe('ExecHistoryModal', () => {
       success: true,
       obj: {
         items: [
-          { id: 2, nodeId: 1, nodeName: 'hk-1', username: 'admin', command: 'uptime', status: 'success', exitCode: 0, stdout: '10:00 up', durationMs: 12, createdAt: 1700000000000 },
-          { id: 1, nodeId: 2, nodeName: 'sg-1', username: 'ops', command: 'reboot', status: 'unreachable', exitCode: -1, stdout: '', error: 'cannot reach', durationMs: 4, createdAt: 1699999999000 },
+          { id: 2, serverId: 1, serverName: 'hk-1', username: 'admin', command: 'uptime', status: 'success', exitCode: 0, stdout: '10:00 up', durationMs: 12, createdAt: 1700000000000 },
+          { id: 1, serverId: 2, serverName: 'sg-1', username: 'ops', command: 'reboot', status: 'unreachable', exitCode: -1, stdout: '', error: 'cannot reach', durationMs: 4, createdAt: 1699999999000 },
         ],
         total: 2,
         page: 1,

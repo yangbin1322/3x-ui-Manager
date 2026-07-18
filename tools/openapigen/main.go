@@ -40,6 +40,7 @@ func run(root, outDir string) error {
 				"InboundFallback",
 				"Host",
 				"CommandExecution",
+				"ManagedServer",
 			),
 			AliasAllow: setOf("Protocol"),
 			Overrides: map[string][]walkOverride{
