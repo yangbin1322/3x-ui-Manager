@@ -1100,11 +1100,11 @@ export const sections: readonly Section[] = [
       {
         method: 'GET',
         path: '/panel/api/managedServers/execHistory',
-        summary: 'Paginated, filterable command audit log, newest first. The audit trail is read-only — there is no per-row delete. Filter by nodeId (the managed server id in audit rows), username, or status; page is 1-based and pageSize is capped at 200 (default 20).',
+        summary: 'Paginated, filterable command audit log, newest first. The audit trail is read-only — there is no per-row delete. Filter by serverId, username, or status; page is 1-based and pageSize is capped at 200 (default 20).',
         params: [
           { name: 'page', in: 'query', type: 'number', optional: true, desc: '1-based page number.' },
           { name: 'pageSize', in: 'query', type: 'number', optional: true, desc: 'Rows per page (max 200, default 20).' },
-          { name: 'nodeId', in: 'query', type: 'number', optional: true, desc: 'Filter to one managed server (audit rows keep the nodeId field name).' },
+          { name: 'serverId', in: 'query', type: 'number', optional: true, desc: 'Filter to one managed server.' },
           { name: 'username', in: 'query', type: 'string', optional: true, desc: 'Filter to one panel user.' },
           { name: 'status', in: 'query', type: 'string', optional: true, desc: 'Filter by outcome: success, failed, unreachable, timeout.' },
         ],

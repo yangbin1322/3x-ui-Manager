@@ -22,12 +22,12 @@ const (
 	installTimeout = 10 * time.Minute
 )
 
-// InstallResult reports the outcome of an auto-install to the panel. Converted
-// reports that a panel Node was derived from the server and linked to it; the
-// wire name predates the derive semantics. NodeId is the derived node's id.
+// InstallResult reports the outcome of an auto-install to the panel. Derived
+// reports that a panel Node was created from the server and linked to it;
+// NodeId is that node's id.
 type InstallResult struct {
 	Success   bool   `json:"success" example:"true"`
-	Converted bool   `json:"converted" example:"true"`
+	Derived   bool   `json:"derived" example:"true"`
 	NodeId    int    `json:"nodeId,omitempty" example:"7"`
 	Message   string `json:"message,omitempty"`
 	Stdout    string `json:"stdout,omitempty"`
@@ -110,7 +110,7 @@ func (s *ManagedServerService) InstallPanel(ctx context.Context, serverId int, v
 		out.Message = "installed, but creating the panel node failed: " + err.Error()
 		return out, nil
 	}
-	out.Converted = true
+	out.Derived = true
 	out.NodeId = nodeId
 	return out, nil
 }

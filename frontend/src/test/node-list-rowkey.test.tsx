@@ -34,10 +34,7 @@ describe('NodeList desktop table row keys', () => {
         onProbe={noop}
         onToggleEnable={noop}
         onUpdateNode={noop}
-        onInstall={noop}
         onUpdateSelected={noop}
-        onExecSelected={noop}
-        onExecHistory={noop}
       />,
     );
 

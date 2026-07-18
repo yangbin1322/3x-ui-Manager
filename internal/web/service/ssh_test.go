@@ -84,21 +84,18 @@ func TestNormalizeServerRequiresCredential(t *testing.T) {
 	}
 }
 
-func TestNormalizeApiModeUnaffected(t *testing.T) {
+func TestNormalizeNodeDefaultsScheme(t *testing.T) {
 	svc := NodeService{}
 	n := &model.Node{Name: "api-1", Address: "node.example.com", Port: 2053, ApiToken: "tok"}
 	if err := svc.normalize(n); err != nil {
 		t.Fatalf("normalize api node: %v", err)
-	}
-	if n.Mode != "api" {
-		t.Fatalf("Mode = %q, want default api", n.Mode)
 	}
 	if n.Scheme != "https" {
 		t.Fatalf("Scheme = %q, want https", n.Scheme)
 	}
 }
 
-func TestNormalizeApiModeStillRequiresToken(t *testing.T) {
+func TestNormalizeNodeRequiresToken(t *testing.T) {
 	svc := NodeService{}
 	n := &model.Node{Name: "api-2", Address: "node.example.com", Port: 2053, TlsVerifyMode: "verify"}
 	err := svc.normalize(n)

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Checkbox, Col, ConfigProvider, Input, Layout, Modal, Result, Row, Spin, Statistic, Typography, message } from 'antd';
+import { Alert, Button, Card, Checkbox, Col, ConfigProvider, Input, Layout, Modal, Result, Row, Spin, Statistic, Tabs, Typography, message } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -14,9 +14,14 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useNodesQuery } from '@/api/queries/useNodesQuery';
 import type { NodeRecord } from '@/api/queries/useNodesQuery';
 import { useNodeMutations } from '@/api/queries/useNodeMutations';
+import { useManagedServersQuery } from '@/api/queries/useManagedServersQuery';
+import type { ManagedServerRecord } from '@/api/queries/useManagedServersQuery';
+import { useManagedServerMutations } from '@/api/queries/useManagedServerMutations';
 import AppSidebar from '@/layouts/AppSidebar';
 import NodeList from './NodeList';
 import NodeFormModal from './NodeFormModal';
+import ServerList from './ServerList';
+import ServerFormModal from './ServerFormModal';
 import ExecCommandModal from './ExecCommandModal';
 import ExecHistoryModal from './ExecHistoryModal';
 import { setMessageInstance } from '@/utils/messageBus';
@@ -59,7 +64,9 @@ export default function NodesPage() {
   useEffect(() => { setMessageInstance(messageApi); }, [messageApi]);
 
   const { nodes, loading, fetched, fetchError, refetch, totals } = useNodesQuery();
-  const { create, update, remove, setEnable, testConnection, testSSH, fetchFingerprint, fetchInbounds, probe, updatePanels, execCommand, fetchExecHistory, installPanel } = useNodeMutations();
+  const { create, update, remove, setEnable, testConnection, fetchFingerprint, fetchInbounds, probe, updatePanels } = useNodeMutations();
+  const { servers, loading: serversLoading } = useManagedServersQuery();
+  const serverMutations = useManagedServerMutations();
 
   const { data: latestVersion = '' } = useQuery({
     queryKey: ['server', 'panelUpdateInfo'],
@@ -70,17 +77,36 @@ export default function NodesPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const [activeTab, setActiveTab] = useState<'servers' | 'nodes'>('nodes');
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
   const [formNode, setFormNode] = useState<NodeRecord | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [serverFormOpen, setServerFormOpen] = useState(false);
+  const [serverFormMode, setServerFormMode] = useState<'add' | 'edit'>('add');
+  const [formServer, setFormServer] = useState<ManagedServerRecord | null>(null);
+  const [selectedServerIds, setSelectedServerIds] = useState<number[]>([]);
   const [execOpen, setExecOpen] = useState(false);
-  const [execTargets, setExecTargets] = useState<NodeRecord[]>([]);
+  const [execTargets, setExecTargets] = useState<ManagedServerRecord[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [mtlsOpen, setMtlsOpen] = useState(false);
   const [trustCa, setTrustCa] = useState('');
   const [copyingCa, setCopyingCa] = useState(false);
   const [savingTrustCa, setSavingTrustCa] = useState(false);
+
+  // Cross-links between the two tabs: a server row shows the panel node it
+  // derived, a node row shows the server it was installed from.
+  const nodeNameById = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const n of nodes) if (n.id > 0) m.set(n.id, n.name || `#${n.id}`);
+    return m;
+  }, [nodes]);
+
+  const serverNameByNodeId = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const s of servers) if (s.nodeId) m.set(s.nodeId, s.name || `#${s.id}`);
+    return m;
+  }, [servers]);
 
   const onCopyNodeCa = useCallback(async () => {
     setCopyingCa(true);
@@ -218,22 +244,59 @@ export default function NodesPage() {
     });
   }, [modal, t, nodes, selectedIds, runUpdate, messageApi]);
 
-  const onInstall = useCallback((node: NodeRecord) => {
+  const onAddServer = useCallback(() => {
+    setServerFormMode('add');
+    setFormServer(null);
+    setServerFormOpen(true);
+  }, []);
+
+  const onEditServer = useCallback((server: ManagedServerRecord) => {
+    setServerFormMode('edit');
+    setFormServer({ ...server });
+    setServerFormOpen(true);
+  }, []);
+
+  const onSaveServer = useCallback(async (payload: Partial<ManagedServerRecord>) => {
+    if (serverFormMode === 'edit' && formServer?.id) {
+      return serverMutations.update(formServer.id, payload);
+    }
+    return serverMutations.create(payload);
+  }, [serverFormMode, formServer, serverMutations]);
+
+  const onDeleteServer = useCallback((server: ManagedServerRecord) => {
     modal.confirm({
-      title: t('pages.nodes.install.confirmTitle', { name: node.name || `#${node.id}` }),
+      title: t('pages.servers.deleteConfirmTitle', { name: server.name }),
+      content: t('pages.servers.deleteConfirmContent'),
+      okText: t('delete'),
+      okType: 'danger',
+      cancelText: t('cancel'),
+      onOk: async () => {
+        const msg = await serverMutations.remove(server.id);
+        if (msg?.success) messageApi.success(t('pages.nodes.toasts.deleted'));
+      },
+    });
+  }, [modal, t, serverMutations, messageApi]);
+
+  const onToggleServerEnable = useCallback(async (server: ManagedServerRecord, next: boolean) => {
+    await serverMutations.setEnable(server.id, next);
+  }, [serverMutations]);
+
+  const onInstall = useCallback((server: ManagedServerRecord) => {
+    modal.confirm({
+      title: t('pages.nodes.install.confirmTitle', { name: server.name || `#${server.id}` }),
       content: t('pages.nodes.install.confirmBody'),
       okText: t('pages.nodes.install.action'),
       cancelText: t('cancel'),
       onOk: async () => {
         const hide = messageApi.loading(t('pages.nodes.install.running'), 0);
         try {
-          const msg = await installPanel(node.id, '');
+          const msg = await serverMutations.installPanel(server.id, '');
           hide();
           if (msg?.success && msg.obj?.success) {
-            if (msg.obj.converted) {
-              messageApi.success(t('pages.nodes.install.convertedOk'));
+            if (msg.obj.derived) {
+              messageApi.success(t('pages.nodes.install.derivedOk'));
             } else {
-              messageApi.warning(msg.obj.message || t('pages.nodes.install.installedNotConverted'));
+              messageApi.warning(msg.obj.message || t('pages.nodes.install.installedNotDerived'));
             }
           } else {
             messageApi.error(msg?.obj?.message || msg?.msg || t('pages.nodes.install.failed'));
@@ -244,17 +307,18 @@ export default function NodesPage() {
         }
       },
     });
-  }, [modal, t, messageApi, installPanel]);
+  }, [modal, t, messageApi, serverMutations]);
 
   const onExecSelected = useCallback(() => {
-    const sshTargets = nodes.filter((n) => selectedIds.includes(n.id) && n.mode === 'ssh');
-    if (sshTargets.length === 0) {
-      messageApi.warning(t('pages.nodes.exec.noSshSelected'));
-      return;
-    }
-    setExecTargets(sshTargets);
+    const targets = servers.filter((s) => selectedServerIds.includes(s.id));
+    if (targets.length === 0) return;
+    setExecTargets(targets);
     setExecOpen(true);
-  }, [nodes, selectedIds, messageApi, t]);
+  }, [servers, selectedServerIds]);
+
+  const onViewNode = useCallback(() => {
+    setActiveTab('nodes');
+  }, []);
 
   const pageClass = useMemo(() => {
     const classes = ['nodes-page'];
@@ -262,6 +326,87 @@ export default function NodesPage() {
     if (isUltra) classes.push('is-ultra');
     return classes.join(' ');
   }, [isDark, isUltra]);
+
+  const nodesTab = (
+    <Row gutter={[isMobile ? 8 : 16, isMobile ? 8 : 12]}>
+      <Col span={24}>
+        <Card size="small" hoverable className="summary-card">
+          <Row gutter={[16, isMobile ? 16 : 12]}>
+            <Col xs={12} sm={12} md={6}>
+              <Statistic
+                title={t('pages.nodes.totalNodes')}
+                value={String(totals.total)}
+                prefix={<CloudServerOutlined />}
+              />
+            </Col>
+            <Col xs={12} sm={12} md={6}>
+              <Statistic
+                title={t('pages.nodes.onlineNodes')}
+                value={String(totals.online)}
+                prefix={<CheckCircleOutlined style={{ color: 'var(--ant-color-success)' }} />}
+              />
+            </Col>
+            <Col xs={12} sm={12} md={6}>
+              <Statistic
+                title={t('pages.nodes.offlineNodes')}
+                value={String(totals.offline)}
+                prefix={<CloseCircleOutlined style={{ color: 'var(--ant-color-error)' }} />}
+              />
+            </Col>
+            <Col xs={12} sm={12} md={6}>
+              <Statistic
+                title={t('pages.nodes.avgLatency')}
+                value={totals.avgLatency > 0 ? `${totals.avgLatency} ms` : '-'}
+                prefix={<ThunderboltOutlined />}
+              />
+            </Col>
+          </Row>
+        </Card>
+      </Col>
+
+      <Col span={24}>
+        <NodeList
+          nodes={nodes}
+          loading={loading}
+          isMobile={isMobile}
+          latestVersion={latestVersion}
+          serverNameByNodeId={serverNameByNodeId}
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+          onAdd={onAdd}
+          onMtls={() => setMtlsOpen(true)}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onProbe={onProbe}
+          onToggleEnable={onToggleEnable}
+          onUpdateNode={onUpdateNode}
+          onUpdateSelected={onUpdateSelected}
+        />
+      </Col>
+    </Row>
+  );
+
+  const serversTab = (
+    <Row gutter={[isMobile ? 8 : 16, isMobile ? 8 : 12]}>
+      <Col span={24}>
+        <ServerList
+          servers={servers}
+          loading={serversLoading}
+          nodeNameById={nodeNameById}
+          selectedIds={selectedServerIds}
+          onSelectionChange={setSelectedServerIds}
+          onAdd={onAddServer}
+          onEdit={onEditServer}
+          onDelete={onDeleteServer}
+          onToggleEnable={onToggleServerEnable}
+          onInstall={onInstall}
+          onViewNode={onViewNode}
+          onExecSelected={onExecSelected}
+          onExecHistory={() => setHistoryOpen(true)}
+        />
+      </Col>
+    </Row>
+  );
 
   return (
     <ConfigProvider theme={antdThemeConfig}>
@@ -283,64 +428,14 @@ export default function NodesPage() {
                   extra={<Button type="primary" loading={loading} onClick={() => refetch()}>{t('refresh')}</Button>}
                 />
               ) : (
-                <Row gutter={[isMobile ? 8 : 16, isMobile ? 8 : 12]}>
-                  <Col span={24}>
-                    <Card size="small" hoverable className="summary-card">
-                      <Row gutter={[16, isMobile ? 16 : 12]}>
-                        <Col xs={12} sm={12} md={6}>
-                          <Statistic
-                            title={t('pages.nodes.totalNodes')}
-                            value={String(totals.total)}
-                            prefix={<CloudServerOutlined />}
-                          />
-                        </Col>
-                        <Col xs={12} sm={12} md={6}>
-                          <Statistic
-                            title={t('pages.nodes.onlineNodes')}
-                            value={String(totals.online)}
-                            prefix={<CheckCircleOutlined style={{ color: 'var(--ant-color-success)' }} />}
-                          />
-                        </Col>
-                        <Col xs={12} sm={12} md={6}>
-                          <Statistic
-                            title={t('pages.nodes.offlineNodes')}
-                            value={String(totals.offline)}
-                            prefix={<CloseCircleOutlined style={{ color: 'var(--ant-color-error)' }} />}
-                          />
-                        </Col>
-                        <Col xs={12} sm={12} md={6}>
-                          <Statistic
-                            title={t('pages.nodes.avgLatency')}
-                            value={totals.avgLatency > 0 ? `${totals.avgLatency} ms` : '-'}
-                            prefix={<ThunderboltOutlined />}
-                          />
-                        </Col>
-                      </Row>
-                    </Card>
-                  </Col>
-
-                  <Col span={24}>
-                    <NodeList
-                      nodes={nodes}
-                      loading={loading}
-                      isMobile={isMobile}
-                      latestVersion={latestVersion}
-                      selectedIds={selectedIds}
-                      onSelectionChange={setSelectedIds}
-                      onAdd={onAdd}
-                      onMtls={() => setMtlsOpen(true)}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      onProbe={onProbe}
-                      onToggleEnable={onToggleEnable}
-                      onUpdateNode={onUpdateNode}
-                      onInstall={onInstall}
-                      onUpdateSelected={onUpdateSelected}
-                      onExecSelected={onExecSelected}
-                      onExecHistory={() => setHistoryOpen(true)}
-                    />
-                  </Col>
-                </Row>
+                <Tabs
+                  activeKey={activeTab}
+                  onChange={(key) => setActiveTab(key as 'servers' | 'nodes')}
+                  items={[
+                    { key: 'nodes', label: t('pages.nodes.tab'), children: nodesTab },
+                    { key: 'servers', label: t('pages.servers.tab'), children: serversTab },
+                  ]}
+                />
               )}
             </Spin>
           </Layout.Content>
@@ -351,23 +446,31 @@ export default function NodesPage() {
           mode={formMode}
           node={formNode}
           testConnection={testConnection}
-          testSSH={testSSH}
           fetchFingerprint={fetchFingerprint}
           fetchInbounds={fetchInbounds}
           save={onSave}
           onOpenChange={setFormOpen}
         />
 
+        <ServerFormModal
+          open={serverFormOpen}
+          mode={serverFormMode}
+          server={formServer}
+          testSSH={serverMutations.testSSH}
+          save={onSaveServer}
+          onOpenChange={setServerFormOpen}
+        />
+
         <ExecCommandModal
           open={execOpen}
           targets={execTargets}
-          execCommand={execCommand}
+          execCommand={serverMutations.execCommand}
           onOpenChange={setExecOpen}
         />
 
         <ExecHistoryModal
           open={historyOpen}
-          fetchHistory={fetchExecHistory}
+          fetchHistory={serverMutations.fetchExecHistory}
           onOpenChange={setHistoryOpen}
         />
 

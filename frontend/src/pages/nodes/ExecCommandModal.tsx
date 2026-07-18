@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Input, InputNumber, Modal, Tag, Tooltip } from 'antd';
-import type { NodeRecord } from '@/api/queries/useNodesQuery';
+import type { ManagedServerRecord } from '@/schemas/managedServer';
 import type { BatchExecResult, ExecResult } from '@/generated/types';
 import type { Msg } from '@/utils';
 import './ExecCommandModal.css';
 
 interface ExecCommandModalProps {
   open: boolean;
-  targets: NodeRecord[];
-  execCommand: (nodeIds: number[], command: string, timeoutSec: number) => Promise<Msg<BatchExecResult>>;
+  targets: ManagedServerRecord[];
+  execCommand: (serverIds: number[], command: string, timeoutSec: number) => Promise<Msg<BatchExecResult>>;
   onOpenChange: (open: boolean) => void;
 }
 
@@ -40,14 +40,14 @@ export default function ExecCommandModal({ open, targets, execCommand, onOpenCha
     }
   }, [open]);
 
-  const nodeIds = useMemo(() => targets.map((n) => n.id), [targets]);
-  const canRun = command.trim().length > 0 && nodeIds.length > 0 && !running;
+  const serverIds = useMemo(() => targets.map((s) => s.id), [targets]);
+  const canRun = command.trim().length > 0 && serverIds.length > 0 && !running;
 
   async function doRun() {
     setRunning(true);
     setResults(null);
     try {
-      const msg = await execCommand(nodeIds, command.trim(), timeoutSec);
+      const msg = await execCommand(serverIds, command.trim(), timeoutSec);
       if (msg?.success && msg.obj) {
         setResults(msg.obj.results ?? []);
       } else {
@@ -84,8 +84,8 @@ export default function ExecCommandModal({ open, targets, execCommand, onOpenCha
       <div className="exec-targets">
         <span className="exec-label">{t('pages.nodes.exec.targets', { count: targets.length })}</span>
         <div className="exec-target-tags">
-          {targets.map((n) => (
-            <Tag key={n.id} color="processing">{n.name || `#${n.id}`}</Tag>
+          {targets.map((s) => (
+            <Tag key={s.id} color="processing">{s.name || `#${s.id}`}</Tag>
           ))}
         </div>
       </div>
@@ -141,9 +141,9 @@ export default function ExecCommandModal({ open, targets, execCommand, onOpenCha
             </div>
           )}
           {results.map((r) => (
-            <div key={r.nodeId} className="exec-result-row">
+            <div key={r.serverId} className="exec-result-row">
               <div className="exec-result-head">
-                <span className="exec-result-node">{r.nodeName || `#${r.nodeId}`}</span>
+                <span className="exec-result-node">{r.serverName || `#${r.serverId}`}</span>
                 <Tag color={statusColor(r.status)}>{t(`pages.nodes.exec.status.${r.status}`)}</Tag>
                 <span className="exec-result-exit">exit {r.exitCode}</span>
                 <span className="exec-result-dur">{r.durationMs} ms</span>

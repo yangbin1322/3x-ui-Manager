@@ -1105,7 +1105,19 @@
         "badVlessRoute": "Enter a single number between 0 and 65535"
       }
     },
+    "servers": {
+      "tab": "Servers",
+      "addServer": "Add Server",
+      "editServer": "Edit Server",
+      "os": "OS",
+      "linkedNode": "Panel Node",
+      "viewNode": "View the linked panel node",
+      "deleteConfirmTitle": "Delete server \"{name}\"?",
+      "deleteConfirmContent": "This removes the server and its stored SSH credentials from the panel. A linked panel node is not deleted, and the machine itself is unaffected."
+    },
     "nodes": {
+      "tab": "Panel Nodes",
+      "fromServer": "Installed from server \"{name}\"",
       "title": "Nodes",
       "addNode": "Add Node",
       "editNode": "Edit Node",
@@ -1223,10 +1235,6 @@
       "fetchPin": "Fetch",
       "pinFetched": "Fetched the node's current certificate",
       "pinFetchFailed": "Could not fetch the certificate",
-      "accessMode": "Access Mode",
-      "accessModeHint": "How the panel reaches this server. \"API\" manages an installed 3x-ui panel over HTTP. \"SSH\" connects to a plain Linux server over SSH.",
-      "accessModeApi": "API (3x-ui panel)",
-      "accessModeSsh": "SSH (Linux server)",
       "sshPort": "SSH Port",
       "sshUser": "SSH Username",
       "sshAuthType": "Authentication",
@@ -1245,20 +1253,19 @@
       "sshConnectionOk": "SSH connection OK",
       "exec": {
         "action": "Run command",
-        "title": "Run command on nodes",
-        "targets": "Target nodes ({count})",
+        "title": "Run command on servers",
+        "targets": "Target servers ({count})",
         "command": "Command",
         "timeout": "Timeout",
         "timeoutHint": "Per-node timeout in seconds (max 300).",
         "run": "Run",
         "confirmRun": "Confirm and run",
         "close": "Close",
-        "confirmTitle": "Run on {count} node(s)?",
-        "confirmBody": "This runs the command on every listed node. Batch commands are not reversible — review the targets before confirming.",
+        "confirmTitle": "Run on {count} server(s)?",
+        "confirmBody": "This runs the command on every listed server. Batch commands are not reversible — review the targets before confirming.",
         "nonInteractiveHint": "Non-interactive only: a command that waits for input fails fast. Use flags like -y or DEBIAN_FRONTEND=noninteractive.",
         "okCount": "{count} succeeded",
         "failedCount": "{count} failed",
-        "noSshSelected": "Select at least one SSH node.",
         "status": {
           "success": "Success",
           "failed": "Failed",
@@ -1276,10 +1283,10 @@
       "install": {
         "action": "Install 3x-ui",
         "confirmTitle": "Install 3x-ui on \"{name}\"?",
-        "confirmBody": "This runs the official installer over SSH and, on success, converts this node to API mode automatically. It can take a few minutes.",
+        "confirmBody": "This runs the official installer over SSH and, on success, creates a linked panel node for this server. The server keeps its SSH access. It can take a few minutes.",
         "running": "Installing 3x-ui… this can take a few minutes",
-        "convertedOk": "Installed and converted to an API node",
-        "installedNotConverted": "Installed, but automatic conversion failed — add the API node manually",
+        "derivedOk": "Installed — a linked panel node was created",
+        "installedNotDerived": "Installed, but creating the panel node failed — add the node manually",
         "failed": "Install failed"
       }
     },

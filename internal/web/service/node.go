@@ -375,7 +375,6 @@ func (s *NodeService) normalize(n *model.Node) error {
 		return common.NewError(err.Error())
 	}
 	n.Address = addr
-	n.Mode = "api"
 	if n.Port <= 0 || n.Port > 65535 {
 		return common.NewError("node port must be 1-65535")
 	}
@@ -444,7 +443,6 @@ func (s *NodeService) Update(id int, in *model.Node) error {
 	updates := map[string]any{
 		"name":                  in.Name,
 		"remark":                in.Remark,
-		"mode":                  in.Mode,
 		"scheme":                in.Scheme,
 		"address":               in.Address,
 		"port":                  in.Port,

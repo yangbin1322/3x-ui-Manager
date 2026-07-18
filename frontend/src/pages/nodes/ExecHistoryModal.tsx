@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal, Table, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { CommandExecution } from '@/generated/types';
-import type { ExecHistoryFilter } from '@/api/queries/useNodeMutations';
+import type { ExecHistoryFilter } from '@/api/queries/useManagedServerMutations';
 import type { Msg } from '@/utils';
 import type { ExecHistoryResponse } from '@/generated/types';
 import './ExecHistoryModal.css';
@@ -62,7 +62,7 @@ export default function ExecHistoryModal({ open, fetchHistory, onOpenChange }: E
       width: 160,
       render: (v: number) => new Date(v).toLocaleString(),
     },
-    { title: t('pages.nodes.name'), dataIndex: 'nodeName', width: 120, ellipsis: true },
+    { title: t('pages.nodes.name'), dataIndex: 'serverName', width: 120, ellipsis: true },
     { title: t('pages.nodes.exec.history.user'), dataIndex: 'username', width: 110, ellipsis: true },
     {
       title: t('pages.nodes.exec.command'),

@@ -176,8 +176,6 @@ func (a *ManagedServerController) test(c *gin.Context) {
 func (a *ManagedServerController) exec(c *gin.Context) {
 	var req struct {
 		ServerIds  []int  `json:"serverIds"`
-		NodeIds    []int  `json:"nodeIds"`
-		NodeId     int    `json:"nodeId"`
 		Command    string `json:"command"`
 		TimeoutSec int    `json:"timeoutSec"`
 	}
@@ -185,16 +183,9 @@ func (a *ManagedServerController) exec(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.exec"), err)
 		return
 	}
-	// serverIds is the canonical field; nodeIds / nodeId are accepted as the
-	// pre-split spellings so existing callers keep working. Running one server
-	// is just a batch of one, so the response shape stays uniform.
+	// Running one server is just a batch of one, so the response shape stays
+	// uniform for every caller.
 	ids := req.ServerIds
-	if len(ids) == 0 {
-		ids = req.NodeIds
-	}
-	if len(ids) == 0 && req.NodeId != 0 {
-		ids = []int{req.NodeId}
-	}
 	if len(ids) == 0 {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.exec"), fmt.Errorf("at least one server is required"))
 		return
@@ -219,18 +210,13 @@ func (a *ManagedServerController) exec(c *gin.Context) {
 func (a *ManagedServerController) install(c *gin.Context) {
 	var req struct {
 		ServerId int    `json:"serverId"`
-		NodeId   int    `json:"nodeId"`
 		Version  string `json:"version"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
 		return
 	}
-	id := req.ServerId
-	if id == 0 {
-		id = req.NodeId
-	}
-	if id == 0 {
+	if req.ServerId == 0 {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), fmt.Errorf("a server is required"))
 		return
 	}
@@ -240,7 +226,7 @@ func (a *ManagedServerController) install(c *gin.Context) {
 	}
 	ctx, cancel := context.WithTimeout(c.Request.Context(), installRequestBudget)
 	defer cancel()
-	result, err := a.serverService.InstallPanel(ctx, id, req.Version, username)
+	result, err := a.serverService.InstallPanel(ctx, req.ServerId, req.Version, username)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
 		return

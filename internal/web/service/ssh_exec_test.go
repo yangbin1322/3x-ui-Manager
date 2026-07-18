@@ -67,8 +67,8 @@ func TestExecCommandSuccessWritesAudit(t *testing.T) {
 	if rec.Username != "admin" || rec.Command != "echo hello" || rec.Status != execStatusSuccess {
 		t.Fatalf("audit row = %+v, want admin/echo hello/success", rec)
 	}
-	if rec.NodeName != "exec-server" {
-		t.Fatalf("audit NodeName = %q, want snapshot exec-server", rec.NodeName)
+	if rec.ServerName != "exec-server" {
+		t.Fatalf("audit NodeName = %q, want snapshot exec-server", rec.ServerName)
 	}
 }
 
@@ -198,12 +198,12 @@ func TestExecCommandBatchAllSucceed(t *testing.T) {
 	if len(batch.Results) != 2 {
 		t.Fatalf("got %d results, want 2", len(batch.Results))
 	}
-	if batch.Results[0].NodeId != s1.Id || batch.Results[1].NodeId != s2.Id {
-		t.Fatalf("results out of order: %d, %d", batch.Results[0].NodeId, batch.Results[1].NodeId)
+	if batch.Results[0].ServerId != s1.Id || batch.Results[1].ServerId != s2.Id {
+		t.Fatalf("results out of order: %d, %d", batch.Results[0].ServerId, batch.Results[1].ServerId)
 	}
 	for _, r := range batch.Results {
 		if r.Status != execStatusSuccess {
-			t.Fatalf("server %d status = %q, want success", r.NodeId, r.Status)
+			t.Fatalf("server %d status = %q, want success", r.ServerId, r.Status)
 		}
 	}
 

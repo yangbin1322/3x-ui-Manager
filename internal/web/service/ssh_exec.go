@@ -14,12 +14,10 @@ import (
 )
 
 // ExecResult is the outcome of running a command on one managed server,
-// returned to the caller and mirrored into the audit log. NodeId/NodeName carry
-// the managed server's id and name; the wire field names predate the
-// Node/ManagedServer split.
+// returned to the caller and mirrored into the audit log.
 type ExecResult struct {
-	NodeId     int    `json:"nodeId" example:"3"`
-	NodeName   string `json:"nodeName" example:"hk-1"`
+	ServerId   int    `json:"serverId" example:"3"`
+	ServerName string `json:"serverName" example:"hk-1"`
 	Status     string `json:"status" example:"success"`
 	ExitCode   int    `json:"exitCode" example:"0"`
 	Stdout     string `json:"stdout"`
@@ -97,7 +95,7 @@ func (s *ManagedServerService) ExecCommandBatch(ctx context.Context, serverIds [
 	for i, id := range serverIds {
 		srv, err := s.GetById(id)
 		if err != nil || srv == nil {
-			results[i] = ExecResult{NodeId: id, Status: execStatusFailed, ExitCode: -1, Error: "server not found"}
+			results[i] = ExecResult{ServerId: id, Status: execStatusFailed, ExitCode: -1, Error: "server not found"}
 			continue
 		}
 		wg.Add(1)
@@ -119,7 +117,7 @@ func (s *ManagedServerService) ExecCommandBatch(ctx context.Context, serverIds [
 // transport outcome onto an ExecResult + status. It never returns an error: a
 // failure is a recorded result, not an exception, so a batch caller keeps going.
 func (s *ManagedServerService) execOnServer(ctx context.Context, srv *model.ManagedServer, cmd string, timeout time.Duration) *ExecResult {
-	out := &ExecResult{NodeId: srv.Id, NodeName: srv.Name}
+	out := &ExecResult{ServerId: srv.Id, ServerName: srv.Name}
 	started := time.Now()
 	defer func() { out.DurationMs = int(time.Since(started).Milliseconds()) }()
 	runCtx, cancel := context.WithTimeout(ctx, timeout)
@@ -162,8 +160,8 @@ func (s *ManagedServerService) execOnServer(ctx context.Context, srv *model.Mana
 func (s *ManagedServerService) writeAudit(batchId string, srv *model.ManagedServer, cmd, username string, res *ExecResult) {
 	rec := &model.CommandExecution{
 		BatchId:    batchId,
-		NodeId:     srv.Id,
-		NodeName:   srv.Name,
+		ServerId:   srv.Id,
+		ServerName: srv.Name,
 		Username:   username,
 		Command:    cmd,
 		Stdout:     res.Stdout,
@@ -182,7 +180,7 @@ func (s *ManagedServerService) writeAudit(batchId string, srv *model.ManagedServ
 type ExecHistoryParams struct {
 	Page     int    `form:"page"`
 	PageSize int    `form:"pageSize"`
-	NodeId   int    `form:"nodeId"`
+	ServerId int    `form:"serverId"`
 	Username string `form:"username"`
 	Status   string `form:"status"`
 }
@@ -218,8 +216,8 @@ func (s *ManagedServerService) ExecHistory(p ExecHistoryParams) (*ExecHistoryRes
 	}
 
 	q := database.GetDB().Model(&model.CommandExecution{})
-	if p.NodeId > 0 {
-		q = q.Where("node_id = ?", p.NodeId)
+	if p.ServerId > 0 {
+		q = q.Where("node_id = ?", p.ServerId)
 	}
 	if p.Username != "" {
 		q = q.Where("username = ?", p.Username)

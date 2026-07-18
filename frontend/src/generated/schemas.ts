@@ -1338,7 +1338,7 @@ export const SCHEMAS: Record<string, unknown> = {
     "type": "object"
   },
   "CommandExecution": {
-    "description": "CommandExecution is one audit record of a command run on an ssh-mode node.\nRunning an arbitrary command on a remote root shell is the highest-risk action\nin the panel, so every execution — success or failure — is recorded with who\nran it, where, and the result. Records are append-only from the UI's point of\nview: there is no delete endpoint, only an age-based cleanup, so the trail\ncannot be erased to cover an action.\n\nNodeName is snapshotted rather than referenced because a node may later be\nrenamed or deleted, and the audit must still say which host was touched.\nStdout is truncated to a fixed cap so a single large-output command cannot\nbloat the database.",
+    "description": "CommandExecution is one audit record of a command run on a managed server.\nRunning an arbitrary command on a remote root shell is the highest-risk action\nin the panel, so every execution — success or failure — is recorded with who\nran it, where, and the result. Records are append-only from the UI's point of\nview: there is no delete endpoint, only an age-based cleanup, so the trail\ncannot be erased to cover an action.\n\nServerName is snapshotted rather than referenced because a server may later be\nrenamed or deleted, and the audit must still say which host was touched.\nStdout is truncated to a fixed cap so a single large-output command cannot\nbloat the database. The node_id/node_name column names predate the\nNode/ManagedServer split and are kept so existing audit rows survive.",
     "properties": {
       "batchId": {
         "example": "a1b2c3d4",
@@ -1369,11 +1369,11 @@ export const SCHEMAS: Record<string, unknown> = {
         "format": "int64",
         "type": "integer"
       },
-      "nodeId": {
+      "serverId": {
         "example": 3,
         "type": "integer"
       },
-      "nodeName": {
+      "serverName": {
         "example": "hk-1",
         "type": "string"
       },
@@ -1396,8 +1396,8 @@ export const SCHEMAS: Record<string, unknown> = {
       "durationMs",
       "exitCode",
       "id",
-      "nodeId",
-      "nodeName",
+      "serverId",
+      "serverName",
       "status",
       "stdout",
       "username"
@@ -1435,7 +1435,7 @@ export const SCHEMAS: Record<string, unknown> = {
     "type": "object"
   },
   "ExecResult": {
-    "description": "ExecResult is the outcome of running a command on one managed server,\nreturned to the caller and mirrored into the audit log. NodeId/NodeName carry\nthe managed server's id and name; the wire field names predate the\nNode/ManagedServer split.",
+    "description": "ExecResult is the outcome of running a command on one managed server,\nreturned to the caller and mirrored into the audit log.",
     "properties": {
       "durationMs": {
         "example": 142,
@@ -1448,11 +1448,11 @@ export const SCHEMAS: Record<string, unknown> = {
         "example": 0,
         "type": "integer"
       },
-      "nodeId": {
+      "serverId": {
         "example": 3,
         "type": "integer"
       },
-      "nodeName": {
+      "serverName": {
         "example": "hk-1",
         "type": "string"
       },
@@ -1467,8 +1467,8 @@ export const SCHEMAS: Record<string, unknown> = {
     "required": [
       "durationMs",
       "exitCode",
-      "nodeId",
-      "nodeName",
+      "serverId",
+      "serverName",
       "status",
       "stdout"
     ],
@@ -2147,13 +2147,13 @@ export const SCHEMAS: Record<string, unknown> = {
     "type": "object"
   },
   "InstallResult": {
-    "description": "InstallResult reports the outcome of an auto-install to the panel. Converted\nreports that a panel Node was derived from the server and linked to it; the\nwire name predates the derive semantics. NodeId is the derived node's id.",
+    "description": "InstallResult reports the outcome of an auto-install to the panel. Derived\nreports that a panel Node was created from the server and linked to it;\nNodeId is that node's id.",
     "properties": {
       "accessUrl": {
         "example": "https://1.2.3.4:2053/abc/",
         "type": "string"
       },
-      "converted": {
+      "derived": {
         "example": true,
         "type": "boolean"
       },
@@ -2173,7 +2173,7 @@ export const SCHEMAS: Record<string, unknown> = {
       }
     },
     "required": [
-      "converted",
+      "derived",
       "success"
     ],
     "type": "object"
@@ -2415,15 +2415,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "example": 45.1,
         "type": "number"
       },
-      "mode": {
-        "description": "Mode is how the panel reaches this server: \"api\" talks to an installed\n3x-ui panel over HTTP, \"ssh\" reaches a plain Linux box over SSH before any\npanel exists. It defaults to \"api\" so every row written before SSH mode\nexisted keeps its original meaning. The two are access modes of one\nserver, not separate kinds of server: an \"ssh\" node becomes an \"api\" node\nin place once a panel is installed on it.",
-        "enum": [
-          "api",
-          "ssh"
-        ],
-        "example": "api",
-        "type": "string"
-      },
       "name": {
         "example": "de-fra-1",
         "type": "string"
@@ -2471,49 +2462,6 @@ export const SCHEMAS: Record<string, unknown> = {
           "https"
         ],
         "example": "https",
-        "type": "string"
-      },
-      "sshAuthType": {
-        "enum": [
-          "password",
-          "key"
-        ],
-        "example": "password",
-        "type": "string"
-      },
-      "sshHostKeyMode": {
-        "enum": [
-          "pin",
-          "trust",
-          "skip"
-        ],
-        "example": "trust",
-        "type": "string"
-      },
-      "sshHostKeySha256": {
-        "type": "string"
-      },
-      "sshOsName": {
-        "type": "string"
-      },
-      "sshOsVersion": {
-        "type": "string"
-      },
-      "sshPasswordSet": {
-        "type": "boolean"
-      },
-      "sshPort": {
-        "description": "SSH access fields, used only when Mode == \"ssh\".\n\nSshPassword and SshPrivateKey are encrypted at rest with AES-256-GCM under\nXUI_SECRET_KEY (internal/util/crypto). They must be replayed to the remote\nhost to authenticate, so unlike a login password they cannot be hashed.\nBoth are json:\"-\": they are write-only over the API and never serialized\nback to a client. SshPasswordSet / SshPrivateKeySet report whether a\ncredential exists so the UI can show \"configured\" without reading it.\n\nSshHostKeyMode mirrors TlsVerifyMode's shape for the SSH transport:\n\"pin\" verifies the host key against SshHostKeySha256, \"trust\" accepts and\nrecords the key on first connect (trust on first use), \"skip\" accepts any\nhost key. Anything other than \"skip\" prevents handing credentials to a\nmachine-in-the-middle.",
-        "example": 22,
-        "maximum": 65535,
-        "minimum": 1,
-        "type": "integer"
-      },
-      "sshPrivateKeySet": {
-        "type": "boolean"
-      },
-      "sshUser": {
-        "example": "root",
         "type": "string"
       },
       "status": {
@@ -2578,7 +2526,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "lastHeartbeat",
       "latencyMs",
       "memPct",
-      "mode",
       "name",
       "netDown",
       "netUp",
@@ -2589,15 +2536,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "port",
       "remark",
       "scheme",
-      "sshAuthType",
-      "sshHostKeyMode",
-      "sshHostKeySha256",
-      "sshOsName",
-      "sshOsVersion",
-      "sshPasswordSet",
-      "sshPort",
-      "sshPrivateKeySet",
-      "sshUser",
       "status",
       "tlsVerifyMode",
       "updatedAt",
