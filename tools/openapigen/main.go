@@ -85,6 +85,7 @@ func run(root, outDir string) error {
 				"ExecResult",
 				"BatchExecResult",
 				"ExecHistoryResponse",
+				"InstallResult",
 			),
 		},
 		{

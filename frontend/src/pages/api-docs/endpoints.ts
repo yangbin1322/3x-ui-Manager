@@ -995,6 +995,13 @@ export const sections: readonly Section[] = [
         responseSchema: 'BatchExecResult',
       },
       {
+        method: 'POST',
+        path: '/panel/api/nodes/install',
+        summary: 'Install 3x-ui on an ssh-mode node over SSH and, on success, convert the node to api mode in place using the credentials the installer writes to /etc/x-ui/install-result.env (including the API token). The SSH credentials are kept so the box stays SSH-reachable. Long-running and synchronous (up to ~10 minutes). Runs the official install.sh non-interactively; version is optional (defaults to latest stable).',
+        body: '{\n  "nodeId": 3,\n  "version": ""\n}',
+        responseSchema: 'InstallResult',
+      },
+      {
         method: 'GET',
         path: '/panel/api/nodes/execHistory',
         summary: 'Paginated, filterable command audit log, newest first. The audit trail is read-only — there is no per-row delete. Filter by nodeId, username, or status; page is 1-based and pageSize is capped at 200 (default 20).',

@@ -1076,7 +1076,8 @@
         "updateResult": "Actualización iniciada en {ok} nodo(s), {failed} fallaron",
         "updateNoneEligible": "Selecciona al menos un nodo en línea y habilitado",
         "saveMtls": "Guardar mTLS del nodo",
-        "exec": "Ejecutar comando"
+        "exec": "Ejecutar comando",
+        "install": "Instalar 3x-ui"
       },
       "tlsVerifyMode": "Verificación TLS",
       "tlsVerifyModeHint": "Cómo valida el panel el certificado HTTPS del nodo. Fijar u Omitir son para certificados autofirmados (solo nodos https).",
@@ -1154,6 +1155,15 @@
           "user": "Usuario",
           "status": "Estado"
         }
+      },
+      "install": {
+        "action": "Instalar 3x-ui",
+        "confirmTitle": "¿Instalar 3x-ui en «{name}»?",
+        "confirmBody": "Ejecuta el instalador oficial por SSH y, si tiene éxito, convierte este nodo a modo API automáticamente. Puede tardar unos minutos.",
+        "running": "Instalando 3x-ui… puede tardar unos minutos",
+        "convertedOk": "Instalado y convertido en un nodo API",
+        "installedNotConverted": "Instalado, pero la conversión automática falló: añada el nodo API manualmente",
+        "failed": "Error de instalación"
       }
     },
     "settings": {

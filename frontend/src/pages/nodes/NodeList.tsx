@@ -19,6 +19,7 @@ import {
   ClusterOutlined,
   CloudDownloadOutlined,
   CodeOutlined,
+  DeploymentUnitOutlined,
   HistoryOutlined,
   DeleteOutlined,
   EditOutlined,
@@ -54,6 +55,7 @@ interface NodeListProps {
   onProbe: (node: NodeRecord) => void;
   onToggleEnable: (node: NodeRecord, next: boolean) => void;
   onUpdateNode: (node: NodeRecord) => void;
+  onInstall: (node: NodeRecord) => void;
   onUpdateSelected: () => void;
   onExecSelected: () => void;
   onExecHistory: () => void;
@@ -186,6 +188,7 @@ export default function NodeList({
   onProbe,
   onToggleEnable,
   onUpdateNode,
+  onInstall,
   onUpdateSelected,
   onExecSelected,
   onExecHistory,
@@ -273,6 +276,11 @@ export default function NodeList({
           {isUpdateEligible(record) && (
             <Tooltip title={t('pages.nodes.updatePanel')}>
               <Button type="text" size="small" style={{ fontSize: 16 }} icon={<CloudDownloadOutlined />} aria-label={t('pages.nodes.updatePanel')} onClick={() => onUpdateNode(record)} />
+            </Tooltip>
+          )}
+          {record.mode === 'ssh' && (
+            <Tooltip title={t('pages.nodes.install.action')}>
+              <Button type="text" size="small" style={{ fontSize: 16 }} icon={<DeploymentUnitOutlined />} aria-label={t('pages.nodes.install.action')} onClick={() => onInstall(record)} />
             </Tooltip>
           )}
           <Tooltip title={t('edit')}>
@@ -450,7 +458,7 @@ export default function NodeList({
       width: 120,
       render: (_value, record) => relativeTime(record.lastHeartbeat),
     },
-  ], [t, showAddress, relativeTime, latestVersion, onToggleEnable, onProbe, onEdit, onDelete, onUpdateNode, nameByGuid]);
+  ], [t, showAddress, relativeTime, latestVersion, onToggleEnable, onProbe, onEdit, onDelete, onUpdateNode, onInstall, nameByGuid]);
 
   return (
     <Card size="small" hoverable>

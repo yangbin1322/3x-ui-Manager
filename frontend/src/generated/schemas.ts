@@ -2146,6 +2146,34 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "InstallResult": {
+    "description": "InstallResult reports the outcome of an auto-install to the panel.",
+    "properties": {
+      "accessUrl": {
+        "example": "https://1.2.3.4:2053/abc/",
+        "type": "string"
+      },
+      "converted": {
+        "example": true,
+        "type": "boolean"
+      },
+      "message": {
+        "type": "string"
+      },
+      "stdout": {
+        "type": "string"
+      },
+      "success": {
+        "example": true,
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "converted",
+      "success"
+    ],
+    "type": "object"
+  },
   "Msg": {
     "properties": {
       "msg": {

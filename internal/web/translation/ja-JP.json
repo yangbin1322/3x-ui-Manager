@@ -1076,7 +1076,8 @@
         "updateResult": "{ok} 個のノードで更新を開始、{failed} 個失敗",
         "updateNoneEligible": "オンラインで有効なノードを少なくとも1つ選択してください",
         "saveMtls": "ノード mTLS を保存",
-        "exec": "コマンドを実行"
+        "exec": "コマンドを実行",
+        "install": "3x-ui をインストール"
       },
       "tlsVerifyMode": "TLS 検証",
       "tlsVerifyModeHint": "パネルがノードの HTTPS 証明書を検証する方法。ピン留めやスキップは自己署名証明書向け（https ノードのみ）。",
@@ -1154,6 +1155,15 @@
           "user": "ユーザー",
           "status": "状態"
         }
+      },
+      "install": {
+        "action": "3x-ui をインストール",
+        "confirmTitle": "「{name}」に 3x-ui をインストールしますか？",
+        "confirmBody": "SSH 経由で公式インストーラーを実行し、成功するとこのノードを自動的に API モードに変換します。数分かかることがあります。",
+        "running": "3x-ui をインストール中…数分かかることがあります",
+        "convertedOk": "インストールして API ノードに変換しました",
+        "installedNotConverted": "インストールしましたが自動変換に失敗しました。API ノードを手動で追加してください",
+        "failed": "インストールに失敗しました"
       }
     },
     "settings": {

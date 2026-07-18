@@ -1076,7 +1076,8 @@
         "updateResult": "已在 {ok} 个节点上触发更新，{failed} 个失败",
         "updateNoneEligible": "请至少选择一个在线且已启用的节点",
         "saveMtls": "保存节点 mTLS",
-        "exec": "执行命令"
+        "exec": "执行命令",
+        "install": "安装 3x-ui"
       },
       "tlsVerifyMode": "TLS 校验",
       "tlsVerifyModeHint": "面板如何校验节点的 HTTPS 证书。固定或跳过用于自签名证书（仅 https 节点）。",
@@ -1154,6 +1155,15 @@
           "user": "用户",
           "status": "状态"
         }
+      },
+      "install": {
+        "action": "安装 3x-ui",
+        "confirmTitle": "在\"{name}\"上安装 3x-ui？",
+        "confirmBody": "将通过 SSH 运行官方安装脚本，成功后自动把该节点转为 API 模式。可能需要几分钟。",
+        "running": "正在安装 3x-ui…可能需要几分钟",
+        "convertedOk": "已安装并转为 API 节点",
+        "installedNotConverted": "已安装，但自动转换失败——请手动添加 API 节点",
+        "failed": "安装失败"
       }
     },
     "settings": {

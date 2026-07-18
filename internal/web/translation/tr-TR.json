@@ -1076,7 +1076,8 @@
         "updateResult": "{ok} düğümde güncelleme başlatıldı, {failed} başarısız",
         "updateNoneEligible": "En az bir çevrimiçi ve etkin düğüm seçin",
         "saveMtls": "Düğüm mTLS kaydet",
-        "exec": "Komut çalıştır"
+        "exec": "Komut çalıştır",
+        "install": "3x-ui yükle"
       },
       "tlsVerifyMode": "TLS Doğrulaması",
       "tlsVerifyModeHint": "Panelin düğümün HTTPS sertifikasını nasıl doğrulayacağını belirler. Sabitle veya Atla, kendinden imzalı sertifikalar içindir (yalnızca https düğümleri).",
@@ -1154,6 +1155,15 @@
           "user": "Kullanıcı",
           "status": "Durum"
         }
+      },
+      "install": {
+        "action": "3x-ui yükle",
+        "confirmTitle": "\"{name}\" üzerine 3x-ui yüklensin mi?",
+        "confirmBody": "Resmi yükleyiciyi SSH üzerinden çalıştırır ve başarılı olursa bu düğümü otomatik olarak API moduna dönüştürür. Birkaç dakika sürebilir.",
+        "running": "3x-ui yükleniyor… birkaç dakika sürebilir",
+        "convertedOk": "Yüklendi ve API düğümüne dönüştürüldü",
+        "installedNotConverted": "Yüklendi ancak otomatik dönüştürme başarısız oldu — API düğümünü elle ekleyin",
+        "failed": "Yükleme başarısız"
       }
     },
     "settings": {

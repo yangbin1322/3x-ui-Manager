@@ -59,7 +59,7 @@ export default function NodesPage() {
   useEffect(() => { setMessageInstance(messageApi); }, [messageApi]);
 
   const { nodes, loading, fetched, fetchError, refetch, totals } = useNodesQuery();
-  const { create, update, remove, setEnable, testConnection, testSSH, fetchFingerprint, fetchInbounds, probe, updatePanels, execCommand, fetchExecHistory } = useNodeMutations();
+  const { create, update, remove, setEnable, testConnection, testSSH, fetchFingerprint, fetchInbounds, probe, updatePanels, execCommand, fetchExecHistory, installPanel } = useNodeMutations();
 
   const { data: latestVersion = '' } = useQuery({
     queryKey: ['server', 'panelUpdateInfo'],
@@ -218,6 +218,34 @@ export default function NodesPage() {
     });
   }, [modal, t, nodes, selectedIds, runUpdate, messageApi]);
 
+  const onInstall = useCallback((node: NodeRecord) => {
+    modal.confirm({
+      title: t('pages.nodes.install.confirmTitle', { name: node.name || `#${node.id}` }),
+      content: t('pages.nodes.install.confirmBody'),
+      okText: t('pages.nodes.install.action'),
+      cancelText: t('cancel'),
+      onOk: async () => {
+        const hide = messageApi.loading(t('pages.nodes.install.running'), 0);
+        try {
+          const msg = await installPanel(node.id, '');
+          hide();
+          if (msg?.success && msg.obj?.success) {
+            if (msg.obj.converted) {
+              messageApi.success(t('pages.nodes.install.convertedOk'));
+            } else {
+              messageApi.warning(msg.obj.message || t('pages.nodes.install.installedNotConverted'));
+            }
+          } else {
+            messageApi.error(msg?.obj?.message || msg?.msg || t('pages.nodes.install.failed'));
+          }
+        } catch {
+          hide();
+          messageApi.error(t('pages.nodes.install.failed'));
+        }
+      },
+    });
+  }, [modal, t, messageApi, installPanel]);
+
   const onExecSelected = useCallback(() => {
     const sshTargets = nodes.filter((n) => selectedIds.includes(n.id) && n.mode === 'ssh');
     if (sshTargets.length === 0) {
@@ -306,6 +334,7 @@ export default function NodesPage() {
                       onProbe={onProbe}
                       onToggleEnable={onToggleEnable}
                       onUpdateNode={onUpdateNode}
+                      onInstall={onInstall}
                       onUpdateSelected={onUpdateSelected}
                       onExecSelected={onExecSelected}
                       onExecHistory={() => setHistoryOpen(true)}
