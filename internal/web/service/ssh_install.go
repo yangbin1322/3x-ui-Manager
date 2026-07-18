@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -20,11 +21,6 @@ const (
 	// 3x-ui can take a few minutes on a slow box, and a install cut short at the
 	// 5m command limit would leave a half-installed panel.
 	installTimeout = 10 * time.Minute
-
-	// installResultPath is where install.sh's write_install_result persists the
-	// panel credentials (root-only, mode 600), including the API token an
-	// api-mode node needs.
-	installResultPath = "/etc/x-ui/install-result.env"
 )
 
 // InstallResult reports the outcome of an auto-install to the panel.
@@ -96,12 +92,12 @@ func (s *NodeService) InstallPanel(ctx context.Context, nodeId int, version stri
 	}
 	out.Success = true
 
-	// Read the credentials the installer wrote and convert the node. A failure
-	// here does not undo the install (the panel is up); it just means the
-	// operator must add the api node by hand, so it is reported, not fatal.
-	env, err := s.readInstallResult(runCtx, n)
+	// Read the panel's credentials and convert the node. A failure here does not
+	// undo the install (the panel is up); it just means the operator must add the
+	// api node by hand, so it is reported, not fatal.
+	env, err := s.readPanelCredentials(runCtx, n, res.Stdout)
 	if err != nil {
-		out.Message = "installed, but could not read install result: " + err.Error()
+		out.Message = "installed, but could not read panel credentials: " + err.Error()
 		return out, nil
 	}
 	out.AccessUrl = env.url
@@ -113,52 +109,63 @@ func (s *NodeService) InstallPanel(ctx context.Context, nodeId int, version stri
 	return out, nil
 }
 
-// readInstallResult cats the installer's credentials file and parses it.
-func (s *NodeService) readInstallResult(ctx context.Context, n *model.Node) (*installEnv, error) {
-	res := s.execOnNode(ctx, n, "cat "+installResultPath, sshCommandTimeout)
-	if res.Status != execStatusSuccess {
-		return nil, fmt.Errorf("%s not found", installResultPath)
-	}
-	return parseInstallResult(res.Stdout)
-}
+// accessURLPattern extracts the panel URL the installer prints ("Access URL:
+// scheme://host:port/basePath/"). This is the most reliable source of the
+// port/path/scheme because the installer always prints it, unlike the optional
+// install-result.env file whose write is gated on internal script branches.
+var accessURLPattern = regexp.MustCompile(`Access URL:\s*(https?)://[^:/\s]+:(\d+)/([^\s]*)`)
 
-// parseInstallResult reads the KEY=value lines the installer writes. Values are
-// shell-quoted with printf %q; for the alphanumeric randoms the installer emits
-// this is a no-op, but surrounding single/double quotes are stripped defensively.
-func parseInstallResult(content string) (*installEnv, error) {
-	fields := map[string]string{}
-	for _, line := range strings.Split(content, "\n") {
-		key, value, found := strings.Cut(strings.TrimSpace(line), "=")
-		if !found {
-			continue
-		}
-		fields[key] = unquoteEnv(strings.TrimSpace(value))
+// readPanelCredentials assembles what an api node needs after an install. The
+// port/path/scheme come from the installer's own "Access URL" line (always
+// printed); the API token comes from `x-ui setting -getApiToken true`, the same
+// command the installer uses — it mints one if none exists. This does not rely
+// on /etc/x-ui/install-result.env, which is only written on some install paths.
+func (s *NodeService) readPanelCredentials(ctx context.Context, n *model.Node, installStdout string) (*installEnv, error) {
+	env := parseAccessURL(installStdout)
+	if env == nil {
+		return nil, fmt.Errorf("could not find the panel access URL in the install output")
 	}
-	env := &installEnv{
-		basePath: fields["XUI_WEB_BASE_PATH"],
-		token:    fields["XUI_API_TOKEN"],
-		url:      fields["XUI_ACCESS_URL"],
+	tokenRes := s.execOnNode(ctx, n, "x-ui setting -getApiToken true", sshCommandTimeout)
+	if tokenRes.Status != execStatusSuccess {
+		return nil, fmt.Errorf("could not read the API token from the panel")
 	}
-	if p, err := strconv.Atoi(fields["XUI_PANEL_PORT"]); err == nil {
-		env.port = p
+	token := parseApiToken(tokenRes.Stdout)
+	if token == "" {
+		return nil, fmt.Errorf("the panel did not return an API token")
 	}
-	env.scheme = "https"
-	if strings.HasPrefix(env.url, "http://") {
-		env.scheme = "http"
-	}
-	if env.port == 0 || env.token == "" {
-		return nil, fmt.Errorf("install result missing panel port or api token")
-	}
+	env.token = token
 	return env, nil
 }
 
-func unquoteEnv(s string) string {
-	if len(s) >= 2 {
-		if (s[0] == '\'' && s[len(s)-1] == '\'') || (s[0] == '"' && s[len(s)-1] == '"') {
-			return s[1 : len(s)-1]
+// parseAccessURL pulls scheme/port/basePath out of the installer's Access URL
+// line. Returns nil if the line is absent.
+func parseAccessURL(stdout string) *installEnv {
+	m := accessURLPattern.FindStringSubmatch(stdout)
+	if m == nil {
+		return nil
+	}
+	port, err := strconv.Atoi(m[2])
+	if err != nil || port == 0 {
+		return nil
+	}
+	return &installEnv{
+		scheme:   m[1],
+		port:     port,
+		basePath: strings.TrimSuffix(m[3], "/"),
+		url:      m[0][len("Access URL:"):],
+	}
+}
+
+// parseApiToken pulls the token out of `x-ui setting -getApiToken true`, whose
+// output line is "apiToken: <token>".
+func parseApiToken(stdout string) string {
+	for _, line := range strings.Split(stdout, "\n") {
+		line = strings.TrimSpace(line)
+		if after, ok := strings.CutPrefix(line, "apiToken:"); ok {
+			return strings.TrimSpace(after)
 		}
 	}
-	return s
+	return ""
 }
 
 // convertToApiNode flips the node from ssh to api mode, filling the api fields

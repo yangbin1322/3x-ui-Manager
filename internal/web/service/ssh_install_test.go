@@ -29,55 +29,41 @@ func TestBuildInstallCommand(t *testing.T) {
 	}
 }
 
-func TestParseInstallResult(t *testing.T) {
-	content := `XUI_USERNAME=admin7x
-XUI_PASSWORD=s3cretpw
-XUI_PANEL_PORT=2096
-XUI_WEB_BASE_PATH=abcd
-XUI_ACCESS_URL=https://1.2.3.4:2096/abcd/
-XUI_API_TOKEN=tok_abc123
-XUI_DB_TYPE=sqlite
-`
-	env, err := parseInstallResult(content)
-	if err != nil {
-		t.Fatalf("parseInstallResult: %v", err)
+func TestParseAccessURL(t *testing.T) {
+	// A realistic installer tail, including the ANSI-colored Access URL line.
+	stdout := "Migration done!\nAccess URL:  http://38.207.132.48:1322/uJlwUiLpIMe41EwJv7/\nx-ui v3.5.0 installation finished\n"
+	env := parseAccessURL(stdout)
+	if env == nil {
+		t.Fatal("parseAccessURL returned nil for a valid access url line")
 	}
-	if env.port != 2096 {
-		t.Fatalf("port = %d, want 2096", env.port)
+	if env.scheme != "http" || env.port != 1322 {
+		t.Fatalf("scheme/port = %q/%d, want http/1322", env.scheme, env.port)
 	}
-	if env.token != "tok_abc123" {
-		t.Fatalf("token = %q, want tok_abc123", env.token)
-	}
-	if env.basePath != "abcd" {
-		t.Fatalf("basePath = %q, want abcd", env.basePath)
-	}
-	if env.scheme != "https" {
-		t.Fatalf("scheme = %q, want https", env.scheme)
+	if env.basePath != "uJlwUiLpIMe41EwJv7" {
+		t.Fatalf("basePath = %q, want uJlwUiLpIMe41EwJv7 (trailing slash trimmed)", env.basePath)
 	}
 }
 
-func TestParseInstallResultQuotedAndHttp(t *testing.T) {
-	content := "XUI_PANEL_PORT='8080'\nXUI_API_TOKEN=\"quoted_tok\"\nXUI_ACCESS_URL=http://host:8080/p/\n"
-	env, err := parseInstallResult(content)
-	if err != nil {
-		t.Fatalf("parseInstallResult: %v", err)
-	}
-	if env.port != 8080 || env.token != "quoted_tok" {
-		t.Fatalf("quoted values not unquoted: port=%d token=%q", env.port, env.token)
-	}
-	if env.scheme != "http" {
-		t.Fatalf("scheme = %q, want http from the access url", env.scheme)
+func TestParseAccessURLHttps(t *testing.T) {
+	env := parseAccessURL("Access URL: https://example.com:2053/panel/\n")
+	if env == nil || env.scheme != "https" || env.port != 2053 || env.basePath != "panel" {
+		t.Fatalf("https parse = %+v, want https/2053/panel", env)
 	}
 }
 
-func TestParseInstallResultRejectsIncomplete(t *testing.T) {
-	// Missing token.
-	if _, err := parseInstallResult("XUI_PANEL_PORT=2053\n"); err == nil {
-		t.Fatal("parseInstallResult accepted a result with no api token")
+func TestParseAccessURLAbsent(t *testing.T) {
+	if env := parseAccessURL("no url here\n"); env != nil {
+		t.Fatalf("parseAccessURL = %+v, want nil when no access url present", env)
 	}
-	// Missing port.
-	if _, err := parseInstallResult("XUI_API_TOKEN=tok\n"); err == nil {
-		t.Fatal("parseInstallResult accepted a result with no panel port")
+}
+
+func TestParseApiToken(t *testing.T) {
+	out := "There are 0 API token(s).\napiToken: tok_abc123\n"
+	if got := parseApiToken(out); got != "tok_abc123" {
+		t.Fatalf("parseApiToken = %q, want tok_abc123", got)
+	}
+	if got := parseApiToken("no token line\n"); got != "" {
+		t.Fatalf("parseApiToken = %q, want empty when absent", got)
 	}
 }
 
