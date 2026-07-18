@@ -137,7 +137,7 @@ export default function NodeFormModal({
     [mode, t],
   );
 
-  function buildPayload(values: NodeFormValues): Partial<NodeRecord> {
+  function buildPayload(values: NodeFormValues, forTest = false): Partial<NodeRecord> {
     const base: Partial<NodeRecord> = {
       id: values.id || 0,
       name: values.name.trim(),
@@ -148,13 +148,21 @@ export default function NodeFormModal({
       allowPrivateAddress: values.allowPrivateAddress,
     };
     if (values.mode === 'ssh') {
+      // For a test connection, a trust-mode node must send an empty fingerprint
+      // so the server's current host key is accepted (and returned) rather than
+      // compared against a possibly-stale stored one. For a save, send the form's
+      // fingerprint (which a successful test just refreshed) so trust re-anchors
+      // to the current key. pin always carries its fingerprint through.
+      const fingerprintForSave = forTest && values.sshHostKeyMode === 'trust'
+        ? ''
+        : values.sshHostKeySha256.trim();
       const ssh: Partial<NodeRecord> = {
         ...base,
         sshPort: values.sshPort,
         sshUser: values.sshUser.trim(),
         sshAuthType: values.sshAuthType,
         sshHostKeyMode: values.sshHostKeyMode,
-        sshHostKeySha256: values.sshHostKeyMode === 'pin' ? values.sshHostKeySha256.trim() : '',
+        sshHostKeySha256: fingerprintForSave,
       };
       // Credentials are write-only: send them only when the operator entered a
       // value, so an untouched edit keeps the stored secret instead of blanking it.
@@ -200,10 +208,16 @@ export default function NodeFormModal({
     setSshTestResult(null);
     try {
       const values = methods.getValues();
-      const msg = await testSSH(buildPayload(values), values.id || undefined);
+      const msg = await testSSH(buildPayload(values, true), values.id || undefined);
       if (msg?.success && msg.obj) {
         setSshTestResult(msg.obj);
-        if (msg.obj.success && msg.obj.hostKeySha256 && values.sshHostKeyMode === 'pin' && !values.sshHostKeySha256) {
+        // A successful test is the moment we (re)establish trust: the operator's
+        // own credentials authenticated against whatever host key the server now
+        // presents. Adopt that fingerprint so saving updates a stale trust-mode
+        // anchor (e.g. after the box was reinstalled) — and fills a pin the first
+        // time. Without this, a changed host key blocks install/exec on the saved
+        // node even though the test just succeeded.
+        if (msg.obj.success && msg.obj.hostKeySha256 && values.sshHostKeyMode !== 'skip') {
           methods.setValue('sshHostKeySha256', msg.obj.hostKeySha256);
         }
       } else {
@@ -255,24 +269,29 @@ export default function NodeFormModal({
     }
     setSubmitting(true);
     try {
-      const payload = buildPayload(result.data);
       if (result.data.mode === 'ssh') {
-        // An SSH node is gated on a successful SSH handshake, not an "online"
-        // panel probe: it has no panel to answer /status.
-        const test = await testSSH(payload, result.data.id || undefined);
+        // Gate the save on a real SSH handshake (an ssh node has no panel to
+        // answer /status). Test with forTest so a trust-mode node accepts the
+        // server's current host key rather than being blocked by a stale stored
+        // fingerprint, then persist whatever key it actually presented so trust
+        // re-anchors to the current one.
+        const testPayload = buildPayload(result.data, true);
+        const test = await testSSH(testPayload, result.data.id || undefined);
         const obj = test?.success ? test.obj : null;
         if (!obj || !obj.success) {
           setSshTestResult(obj ?? { success: false, message: test?.msg || t('pages.nodes.connectionFailed') });
           return;
         }
         setSshTestResult(obj);
-        if (obj.hostKeySha256 && result.data.sshHostKeyMode === 'pin' && !payload.sshHostKeySha256) {
-          payload.sshHostKeySha256 = obj.hostKeySha256;
+        const sshPayload = buildPayload(result.data);
+        if (obj.hostKeySha256 && result.data.sshHostKeyMode !== 'skip') {
+          sshPayload.sshHostKeySha256 = obj.hostKeySha256;
         }
-        const msg = await save(payload);
+        const msg = await save(sshPayload);
         if (msg?.success) onOpenChange(false);
         return;
       }
+      const payload = buildPayload(result.data);
       const test = await testConnection(payload);
       const probe = test?.success ? test.obj : null;
       if (!probe || probe.status !== 'online') {

@@ -57,6 +57,21 @@ func TestParseAccessURLAbsent(t *testing.T) {
 	}
 }
 
+func TestGetApiTokenCommandUsesBinaryPath(t *testing.T) {
+	// Must call the x-ui BINARY at its install dir, not the global `x-ui`
+	// wrapper (which is the management script with no `setting` subcommand), and
+	// must cd there so the binary finds the panel database.
+	if !strings.Contains(getApiTokenCommand, "/usr/local/x-ui") {
+		t.Fatalf("token command must use the binary install path, got %q", getApiTokenCommand)
+	}
+	if !strings.Contains(getApiTokenCommand, "-getApiToken true") {
+		t.Fatalf("token command must call -getApiToken, got %q", getApiTokenCommand)
+	}
+	if !strings.HasPrefix(getApiTokenCommand, "cd ") {
+		t.Fatalf("token command must cd into the install dir first, got %q", getApiTokenCommand)
+	}
+}
+
 func TestParseApiToken(t *testing.T) {
 	out := "There are 0 API token(s).\napiToken: tok_abc123\n"
 	if got := parseApiToken(out); got != "tok_abc123" {

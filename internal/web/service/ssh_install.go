@@ -115,9 +115,16 @@ func (s *NodeService) InstallPanel(ctx context.Context, nodeId int, version stri
 // install-result.env file whose write is gated on internal script branches.
 var accessURLPattern = regexp.MustCompile(`Access URL:\s*(https?)://[^:/\s]+:(\d+)/([^\s]*)`)
 
+// getApiTokenCommand reads (minting if needed) the panel's API token. It calls
+// the x-ui BINARY at its install path, not the global `x-ui` wrapper: the global
+// command is the management shell script (x-ui.sh), which has no `setting`
+// subcommand and would silently do nothing. The binary must run from its own
+// directory so it finds the panel database, matching how install.sh calls it.
+const getApiTokenCommand = "cd /usr/local/x-ui && ./x-ui setting -getApiToken true"
+
 // readPanelCredentials assembles what an api node needs after an install. The
 // port/path/scheme come from the installer's own "Access URL" line (always
-// printed); the API token comes from `x-ui setting -getApiToken true`, the same
+// printed); the API token comes from the x-ui binary's -getApiToken, the same
 // command the installer uses — it mints one if none exists. This does not rely
 // on /etc/x-ui/install-result.env, which is only written on some install paths.
 func (s *NodeService) readPanelCredentials(ctx context.Context, n *model.Node, installStdout string) (*installEnv, error) {
@@ -125,7 +132,7 @@ func (s *NodeService) readPanelCredentials(ctx context.Context, n *model.Node, i
 	if env == nil {
 		return nil, fmt.Errorf("could not find the panel access URL in the install output")
 	}
-	tokenRes := s.execOnNode(ctx, n, "x-ui setting -getApiToken true", sshCommandTimeout)
+	tokenRes := s.execOnNode(ctx, n, getApiTokenCommand, sshCommandTimeout)
 	if tokenRes.Status != execStatusSuccess {
 		return nil, fmt.Errorf("could not read the API token from the panel")
 	}
