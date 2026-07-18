@@ -156,9 +156,13 @@ func parseAccessURL(stdout string) *installEnv {
 		return nil
 	}
 	return &installEnv{
-		scheme:   m[1],
-		port:     port,
-		basePath: strings.TrimSuffix(m[3], "/"),
+		scheme: m[1],
+		port:   port,
+		// Strip ALL leading/trailing slashes to a bare path; normalizeBasePath
+		// re-adds exactly one on each side. TrimSuffix would leave a second slash
+		// if the installer prints a trailing "//", which then reaches the panel
+		// URL as a base path with a double slash and 404s.
+		basePath: strings.Trim(m[3], "/"),
 		url:      m[0][len("Access URL:"):],
 	}
 }
@@ -179,14 +183,22 @@ func parseApiToken(stdout string) string {
 // from the install result. The SSH credentials are left in place so the box
 // stays SSH-reachable for later automation; only the access mode changes.
 func (s *NodeService) convertToApiNode(id int, env *installEnv) error {
+	// An install that skipped SSL serves plain HTTP, so pin the verify mode to
+	// match the scheme — otherwise the node carries "http + verify", a
+	// contradictory config the SSH-mode default left behind.
+	tlsVerifyMode := "verify"
+	if env.scheme == "http" {
+		tlsVerifyMode = "skip"
+	}
 	updates := map[string]any{
-		"mode":       "api",
-		"scheme":     env.scheme,
-		"port":       env.port,
-		"base_path":  normalizeBasePath(env.basePath),
-		"api_token":  env.token,
-		"status":     "unknown",
-		"last_error": "",
+		"mode":            "api",
+		"scheme":          env.scheme,
+		"port":            env.port,
+		"base_path":       normalizeBasePath(env.basePath),
+		"api_token":       env.token,
+		"tls_verify_mode": tlsVerifyMode,
+		"status":          "unknown",
+		"last_error":      "",
 	}
 	db := database.GetDB()
 	if err := db.Transaction(func(tx *gorm.DB) error {

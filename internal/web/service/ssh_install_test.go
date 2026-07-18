@@ -51,6 +51,29 @@ func TestParseAccessURLHttps(t *testing.T) {
 	}
 }
 
+func TestParseAccessURLStripsExtraSlashes(t *testing.T) {
+	// If the installer prints a trailing "//", the base path must still come out
+	// as a bare segment so normalizeBasePath produces a single-slashed path and
+	// the panel URL doesn't 404 on a double slash.
+	cases := []struct{ url, want string }{
+		{"Access URL: http://h:3518/abc/\n", "abc"},
+		{"Access URL: http://h:3518/abc//\n", "abc"},
+		{"Access URL: http://h:3518/abc\n", "abc"},
+	}
+	for _, c := range cases {
+		env := parseAccessURL(c.url)
+		if env == nil {
+			t.Fatalf("parseAccessURL(%q) = nil", c.url)
+		}
+		if env.basePath != c.want {
+			t.Fatalf("parseAccessURL(%q) basePath = %q, want %q", c.url, env.basePath, c.want)
+		}
+		if got := normalizeBasePath(env.basePath); got != "/abc/" {
+			t.Fatalf("normalized basePath for %q = %q, want /abc/", c.url, got)
+		}
+	}
+}
+
 func TestParseAccessURLAbsent(t *testing.T) {
 	if env := parseAccessURL("no url here\n"); env != nil {
 		t.Fatalf("parseAccessURL = %+v, want nil when no access url present", env)
@@ -115,6 +138,12 @@ func TestConvertToApiNode(t *testing.T) {
 	if got.Port != 2096 || got.ApiToken != "tok_x" || got.Scheme != "https" {
 		t.Fatalf("api fields not filled: port=%d token=%q scheme=%q", got.Port, got.ApiToken, got.Scheme)
 	}
+	if got.BasePath != "/abcd/" {
+		t.Fatalf("BasePath = %q, want /abcd/ (single-slashed)", got.BasePath)
+	}
+	if got.TlsVerifyMode != "verify" {
+		t.Fatalf("TlsVerifyMode = %q, want verify for an https install", got.TlsVerifyMode)
+	}
 	// SSH credentials must be kept so the box stays SSH-reachable.
 	if got.SshPassword == "" {
 		t.Fatalf("SSH password was cleared on conversion, want it kept")
@@ -122,6 +151,29 @@ func TestConvertToApiNode(t *testing.T) {
 	// Status reset so the heartbeat re-evaluates it as an api node.
 	if got.Status != "unknown" {
 		t.Fatalf("Status = %q, want unknown after conversion", got.Status)
+	}
+}
+
+func TestConvertToApiNodeHttpSkipsTlsVerify(t *testing.T) {
+	t.Setenv("XUI_SECRET_KEY", "test-key")
+	setupConflictDB(t)
+	svc := &NodeService{}
+	n := &model.Node{
+		Mode: "ssh", Name: "http-convert", Address: "203.0.113.41",
+		SshUser: "root", SshAuthType: "password", SshPassword: "pw",
+	}
+	if err := svc.Create(n); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	// A skipped-SSL install serves plain HTTP; the node must not carry a
+	// contradictory "http + verify" config.
+	env := &installEnv{port: 1322, basePath: "p", scheme: "http", token: "t"}
+	if err := svc.convertToApiNode(n.Id, env); err != nil {
+		t.Fatalf("convertToApiNode: %v", err)
+	}
+	got, _ := svc.GetById(n.Id)
+	if got.Scheme != "http" || got.TlsVerifyMode != "skip" {
+		t.Fatalf("http install => scheme=%q tls=%q, want http/skip", got.Scheme, got.TlsVerifyMode)
 	}
 }
 
