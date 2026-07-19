@@ -10,6 +10,9 @@ import type { DBInbound } from '@/models/dbinbound';
 interface AttachExistingClientsModalProps {
   open: boolean;
   target: DBInbound | null;
+  // When set, attaches the selected clients to EVERY inbound in the list (batch
+  // mode). `target` is the single-inbound path.
+  targets?: DBInbound[] | null;
   onClose: () => void;
   onAttached?: () => void;
 }
@@ -37,6 +40,7 @@ interface RawClient {
 export default function AttachExistingClientsModal({
   open,
   target,
+  targets,
   onClose,
   onAttached,
 }: AttachExistingClientsModalProps) {
@@ -49,8 +53,16 @@ export default function AttachExistingClientsModal({
   const [search, setSearch] = useState('');
   const [groupFilter, setGroupFilter] = useState<string | undefined>(undefined);
 
+  // The inbounds to attach to: the batch targets when given, else the single
+  // target. A client counts as "already attached" only when it is on ALL of
+  // them, so a batch attach still offers a client missing from any one inbound.
+  const inboundIds = useMemo(
+    () => (targets && targets.length > 0 ? targets.map((ib) => ib.id) : target ? [target.id] : []),
+    [targets, target],
+  );
+
   useEffect(() => {
-    if (!open || !target) return;
+    if (!open || inboundIds.length === 0) return;
     let cancelled = false;
     setLoading(true);
     setSearch('');
@@ -64,7 +76,7 @@ export default function AttachExistingClientsModal({
             email: (c?.email || '').trim(),
             group: (c?.group || '').trim(),
             enable: c?.enable !== false,
-            alreadyAttached: Array.isArray(c?.inboundIds) && c.inboundIds.includes(target.id),
+            alreadyAttached: Array.isArray(c?.inboundIds) && inboundIds.every((id) => c.inboundIds!.includes(id)),
           }))
           .filter((r) => r.email);
         setClientRows(rows);
@@ -76,7 +88,7 @@ export default function AttachExistingClientsModal({
     return () => {
       cancelled = true;
     };
-  }, [open, target]);
+  }, [open, inboundIds]);
 
   const groupOptions = useMemo(() => {
     const set = new Set<string>();
@@ -133,12 +145,12 @@ export default function AttachExistingClientsModal({
   );
 
   async function submit() {
-    if (!target || selectedEmails.length === 0) return;
+    if (inboundIds.length === 0 || selectedEmails.length === 0) return;
     setSaving(true);
     try {
       const msg = await HttpUtil.post(
         '/panel/api/clients/bulkAttach',
-        { emails: selectedEmails, inboundIds: [target.id] },
+        { emails: selectedEmails, inboundIds },
         { headers: { 'Content-Type': 'application/json' } },
       );
       if (!msg?.success) {
@@ -171,7 +183,9 @@ export default function AttachExistingClientsModal({
       okButtonProps={{ disabled: selectedEmails.length === 0, loading: saving }}
       okText={t('pages.inbounds.attachClients')}
       cancelText={t('cancel')}
-      title={t('pages.inbounds.attachExistingTitle', { remark: formatInboundLabel(target?.tag, target?.remark) })}
+      title={targets && targets.length > 0
+        ? t('pages.inbounds.attachExistingTitleBatch', { count: inboundIds.length })
+        : t('pages.inbounds.attachExistingTitle', { remark: formatInboundLabel(target?.tag, target?.remark) })}
       width={680}
     >
       {messageContextHolder}

@@ -9,6 +9,10 @@ import { coerceInboundJsonField, type DBInbound } from '@/models/dbinbound';
 interface DetachClientsModalProps {
   open: boolean;
   source: DBInbound | null;
+  // When set, the modal detaches across every inbound in the list (batch mode):
+  // the client rows are the union of all their clients, and the selected clients
+  // are removed from all of them. `source` is used for the single-inbound path.
+  targets?: DBInbound[] | null;
   onClose: () => void;
   onDetached?: () => void;
 }
@@ -42,6 +46,7 @@ function readClientRows(settings: unknown): ClientRow[] {
 export default function DetachClientsModal({
   open,
   source,
+  targets,
   onClose,
   onDetached,
 }: DetachClientsModalProps) {
@@ -52,13 +57,26 @@ export default function DetachClientsModal({
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
+  // The set of inbounds this modal acts on: the batch targets when given,
+  // otherwise the single source.
+  const inbounds = useMemo(
+    () => (targets && targets.length > 0 ? targets : source ? [source] : []),
+    [targets, source],
+  );
+
   useEffect(() => {
     if (!open) return;
-    const rows = source ? readClientRows(source.settings) : [];
-    setClientRows(rows);
+    // Union the client rows across all target inbounds, de-duplicated by email.
+    const byEmail = new Map<string, ClientRow>();
+    for (const ib of inbounds) {
+      for (const row of readClientRows(ib.settings)) {
+        if (!byEmail.has(row.email)) byEmail.set(row.email, row);
+      }
+    }
+    setClientRows([...byEmail.values()]);
     setSelectedEmails([]);
     setSearch('');
-  }, [open, source]);
+  }, [open, inbounds]);
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -99,12 +117,12 @@ export default function DetachClientsModal({
   );
 
   async function submit() {
-    if (!source || selectedEmails.length === 0) return;
+    if (inbounds.length === 0 || selectedEmails.length === 0) return;
     setSaving(true);
     try {
       const msg = await HttpUtil.post(
         '/panel/api/clients/bulkDetach',
-        { emails: selectedEmails, inboundIds: [source.id] },
+        { emails: selectedEmails, inboundIds: inbounds.map((ib) => ib.id) },
         { headers: { 'Content-Type': 'application/json' } },
       );
       if (!msg?.success) {
@@ -139,7 +157,9 @@ export default function DetachClientsModal({
       }}
       okText={t('pages.inbounds.detachClients')}
       cancelText={t('cancel')}
-      title={t('pages.inbounds.detachClientsTitle', { remark: source?.tag ?? '' })}
+      title={targets && targets.length > 0
+        ? t('pages.inbounds.detachClientsTitleBatch', { count: inbounds.length })
+        : t('pages.inbounds.detachClientsTitle', { remark: source?.tag ?? '' })}
       width={680}
     >
       {messageContextHolder}

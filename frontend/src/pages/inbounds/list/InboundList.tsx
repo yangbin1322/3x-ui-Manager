@@ -24,6 +24,8 @@ import {
   InfoCircleOutlined,
   DeleteOutlined,
   SearchOutlined,
+  UsergroupAddOutlined,
+  UsergroupDeleteOutlined,
 } from '@ant-design/icons';
 
 import { HttpUtil } from '@/utils';
@@ -51,6 +53,9 @@ export default function InboundList({
   onGeneralAction,
   onRowAction,
   onBulkDelete,
+  onBulkAttach,
+  onBulkDetach,
+  onBulkDelClients,
 }: InboundListProps) {
   const { t } = useTranslation();
   const [statsRecord, setStatsRecord] = useState<DBInboundRecord | null>(null);
@@ -200,15 +205,34 @@ export default function InboundList({
             aria-label={t('search')}
           />
           {selectedRowKeys.length > 0 && (
-            <>
-              <Tag color="blue" closable onClose={() => setSelectedRowKeys([])} style={{ marginInlineEnd: 0 }}>
-                {t('pages.inbounds.selectedCount', { count: selectedRowKeys.length })}
-              </Tag>
-              <Button danger icon={<DeleteOutlined />} onClick={handleBulkDelete} aria-label={t('delete')}>
-                {!isMobile && t('delete')}
-              </Button>
-            </>
+            <Tag color="blue" closable onClose={() => setSelectedRowKeys([])} style={{ marginInlineEnd: 0 }}>
+              {t('pages.inbounds.selectedCount', { count: selectedRowKeys.length })}
+            </Tag>
           )}
+          <Dropdown
+            trigger={['click']}
+            disabled={selectedRowKeys.length === 0}
+            menu={{
+              items: [
+                { key: 'attach', icon: <UsergroupAddOutlined />, label: t('pages.inbounds.attachExistingClients') },
+                { key: 'detach', icon: <UsergroupDeleteOutlined />, label: t('pages.inbounds.detachClients') },
+                { type: 'divider' },
+                { key: 'detachAll', icon: <UsergroupDeleteOutlined />, label: t('pages.inbounds.detachAllClients') },
+              ],
+              onClick: ({ key }) => {
+                if (key === 'attach') onBulkAttach(selectedRowKeys);
+                else if (key === 'detach') onBulkDetach(selectedRowKeys);
+                else if (key === 'detachAll') onBulkDelClients(selectedRowKeys);
+              },
+            }}
+          >
+            <Button icon={<UsergroupAddOutlined />} disabled={selectedRowKeys.length === 0}>
+              {!isMobile && t('pages.inbounds.batchClientOps')}
+            </Button>
+          </Dropdown>
+          <Button danger icon={<DeleteOutlined />} disabled={selectedRowKeys.length === 0} onClick={handleBulkDelete} aria-label={t('delete')}>
+            {!isMobile && t('delete')}
+          </Button>
         </Space>
       )}
     >

@@ -144,6 +144,10 @@ export default function InboundsPage() {
   const [attachExistingTarget, setAttachExistingTarget] = useState<DBInbound | null>(null);
   const [detachOpen, setDetachOpen] = useState(false);
   const [detachSource, setDetachSource] = useState<DBInbound | null>(null);
+  // Batch client ops reuse the attach/detach modals with a list of target
+  // inbounds instead of a single one.
+  const [batchAttachTargets, setBatchAttachTargets] = useState<DBInbound[] | null>(null);
+  const [batchDetachTargets, setBatchDetachTargets] = useState<DBInbound[] | null>(null);
 
   const [groupOpen, setGroupOpen] = useState(false);
   const [groupSource, setGroupSource] = useState<DBInbound | null>(null);
@@ -432,6 +436,55 @@ export default function InboundsPage() {
     });
   }, [modal, refresh, t, clientCount]);
 
+  const onBulkAttach = useCallback((ids: number[]) => {
+    const targets = dbInbounds.filter((ib) => ids.includes(ib.id)) as unknown as DBInbound[];
+    if (targets.length === 0) return;
+    setBatchAttachTargets(targets);
+    setAttachExistingTarget(null);
+    setAttachExistingOpen(true);
+  }, [dbInbounds]);
+
+  const onBulkDetach = useCallback(async (ids: number[]) => {
+    // Detach reads each inbound's clients, so hydrate the selected inbounds
+    // first (the slim list omits client secrets/settings).
+    const hydrated = await Promise.all(ids.map((id) => hydrateInbound(id)));
+    const targets = hydrated.filter((ib): ib is DBInbound => !!ib);
+    if (targets.length === 0) return;
+    setBatchDetachTargets(targets);
+    setDetachSource(null);
+    setDetachOpen(true);
+  }, [hydrateInbound]);
+
+  const onBulkDelClients = useCallback((ids: number[]) => {
+    if (ids.length === 0) return;
+    modal.confirm({
+      title: t('pages.inbounds.detachAllClientsTitle', { count: ids.length }),
+      content: t('pages.inbounds.detachAllClientsContent'),
+      okText: t('pages.inbounds.detachAllClients'),
+      cancelText: t('cancel'),
+      onOk: async () => {
+        // Detach (not delete): gather the union of client emails across the
+        // selected inbounds and remove them from those inbounds only. The
+        // clients themselves survive (they may live on other inbounds).
+        const hydrated = await Promise.all(ids.map((id) => hydrateInbound(id)));
+        const emails = new Set<string>();
+        for (const ib of hydrated) {
+          if (!ib) continue;
+          try {
+            const parsed = coerceInboundJsonField(ib.settings) as { clients?: Array<{ email?: string }> };
+            for (const c of parsed?.clients ?? []) {
+              const e = (c?.email || '').trim();
+              if (e) emails.add(e);
+            }
+          } catch { /* skip an inbound whose settings won't parse */ }
+        }
+        if (emails.size === 0) { await refresh(); return; }
+        const msg = await HttpUtil.post('/panel/api/clients/bulkDetach', { emails: [...emails], inboundIds: ids }, { headers: { 'Content-Type': 'application/json' } });
+        if (msg?.success) await refresh();
+      },
+    });
+  }, [modal, t, refresh, hydrateInbound]);
+
   const confirmClone = useCallback((dbInbound: DBInbound) => {
     modal.confirm({
       title: t('pages.inbounds.cloneConfirmTitle', { remark: dbInbound.remark }),
@@ -639,6 +692,9 @@ export default function InboundsPage() {
                       onGeneralAction={onGeneralAction}
                       onRowAction={({ key, dbInbound }) => onRowAction({ key, dbInbound: dbInbound as unknown as DBInbound })}
                       onBulkDelete={confirmBulkDelete}
+                      onBulkAttach={onBulkAttach}
+                      onBulkDetach={onBulkDetach}
+                      onBulkDelClients={onBulkDelClients}
                     />
                   </Col>
                 </Row>
@@ -696,17 +752,19 @@ export default function InboundsPage() {
         <LazyMount when={attachExistingOpen}>
           <AttachExistingClientsModal
             open={attachExistingOpen}
-            onClose={() => setAttachExistingOpen(false)}
+            onClose={() => { setAttachExistingOpen(false); setBatchAttachTargets(null); }}
             onAttached={refresh}
             target={attachExistingTarget}
+            targets={batchAttachTargets}
           />
         </LazyMount>
         <LazyMount when={detachOpen}>
           <DetachClientsModal
             open={detachOpen}
-            onClose={() => setDetachOpen(false)}
+            onClose={() => { setDetachOpen(false); setBatchDetachTargets(null); }}
             onDetached={refresh}
             source={detachSource}
+            targets={batchDetachTargets}
           />
         </LazyMount>
         <LazyMount when={groupOpen}>
