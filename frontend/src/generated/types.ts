@@ -362,6 +362,18 @@ export interface CommandExecution {
   username: string;
 }
 
+export interface DeployResponse {
+  results: DeployResult[];
+}
+
+export interface DeployResult {
+  message?: string;
+  nodeId: number;
+  nodeName: string;
+  success: boolean;
+  tag?: string;
+}
+
 export interface ExecHistoryResponse {
   items: CommandExecution[];
   page: number;

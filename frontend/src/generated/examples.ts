@@ -367,6 +367,24 @@ export const EXAMPLES: Record<string, unknown> = {
     "stdout": "",
     "username": "admin"
   },
+  "DeployResponse": {
+    "results": [
+      {
+        "message": "",
+        "nodeId": 3,
+        "nodeName": "hk-1",
+        "success": true,
+        "tag": "in-443-tcp-hk1"
+      }
+    ]
+  },
+  "DeployResult": {
+    "message": "",
+    "nodeId": 3,
+    "nodeName": "hk-1",
+    "success": true,
+    "tag": "in-443-tcp-hk1"
+  },
   "ExecHistoryResponse": {
     "items": [
       {

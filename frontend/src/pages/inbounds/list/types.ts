@@ -59,7 +59,8 @@ export type RowAction =
   | 'delete'
   | 'resetTraffic'
   | 'delAllClients'
-  | 'clone';
+  | 'clone'
+  | 'deployToNodes';
 
 export type GeneralAction = 'import' | 'export' | 'subs' | 'resetInbounds';
 

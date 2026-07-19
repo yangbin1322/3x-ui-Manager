@@ -389,6 +389,20 @@ export const CommandExecutionSchema = z.object({
 });
 export type CommandExecution = z.infer<typeof CommandExecutionSchema>;
 
+export const DeployResponseSchema = z.object({
+  results: z.array(z.lazy(() => DeployResultSchema)),
+});
+export type DeployResponse = z.infer<typeof DeployResponseSchema>;
+
+export const DeployResultSchema = z.object({
+  message: z.string().optional(),
+  nodeId: z.number().int(),
+  nodeName: z.string(),
+  success: z.boolean(),
+  tag: z.string().optional(),
+});
+export type DeployResult = z.infer<typeof DeployResultSchema>;
+
 export const ExecHistoryResponseSchema = z.object({
   items: z.array(z.lazy(() => CommandExecutionSchema)),
   page: z.number().int(),

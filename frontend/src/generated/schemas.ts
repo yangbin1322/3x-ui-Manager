@@ -1483,6 +1483,50 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "DeployResponse": {
+    "properties": {
+      "results": {
+        "items": {
+          "$ref": "#/components/schemas/DeployResult"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "results"
+    ],
+    "type": "object"
+  },
+  "DeployResult": {
+    "description": "DeployResult is one node's outcome from copying an inbound to several nodes.",
+    "properties": {
+      "message": {
+        "type": "string"
+      },
+      "nodeId": {
+        "example": 3,
+        "type": "integer"
+      },
+      "nodeName": {
+        "example": "hk-1",
+        "type": "string"
+      },
+      "success": {
+        "example": true,
+        "type": "boolean"
+      },
+      "tag": {
+        "example": "in-443-tcp-hk1",
+        "type": "string"
+      }
+    },
+    "required": [
+      "nodeId",
+      "nodeName",
+      "success"
+    ],
+    "type": "object"
+  },
   "ExecHistoryResponse": {
     "description": "ExecHistoryResponse is one page of audit rows, newest first, plus the total\nmatching the filter so the UI can paginate.",
     "properties": {

@@ -92,6 +92,8 @@ func run(root, outDir string) error {
 				"BatchInstallResponse",
 				"BulkAddResult",
 				"BulkAddResponse",
+				"DeployResult",
+				"DeployResponse",
 			),
 		},
 		{
