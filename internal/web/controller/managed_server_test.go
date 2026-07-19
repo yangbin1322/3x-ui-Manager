@@ -37,6 +37,9 @@ func TestAddBatchBindsJSONCredentials(t *testing.T) {
 	NewManagedServerController(engine.Group("/managedServers"))
 
 	body := map[string]any{
+		// verify=false: no reachable host in a unit test; this asserts the JSON
+		// credential binding + storage, not connectivity.
+		"verify": false,
 		"servers": []map[string]any{
 			{"name": "", "address": "203.0.113.5", "sshPort": 22, "sshUser": "root", "sshAuthType": "password", "sshPassword": "secret", "sshHostKeyMode": "trust"},
 		},

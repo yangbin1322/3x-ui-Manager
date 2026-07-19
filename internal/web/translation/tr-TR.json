@@ -997,6 +997,7 @@
       "bulkUpload": "CSV yükle",
       "bulkParse": "Ayrıştır",
       "bulkImport": "İçe aktar ({count})",
+      "bulkVerify": "İçe aktarmadan önce her bağlantıyı test et (başarısız satırları atla)",
       "bulkNothingParsed": "Hiç satır ayrıştırılmadı — biçimi kontrol edin.",
       "bulkParseErrors": "Kimlik bilgisi olmayan {count} satır atlanacak.",
       "bulkNoCredential": "Parola veya özel anahtar yok",

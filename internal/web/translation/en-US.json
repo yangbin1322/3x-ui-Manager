@@ -1114,6 +1114,7 @@
       "bulkUpload": "Upload CSV",
       "bulkParse": "Parse",
       "bulkImport": "Import ({count})",
+      "bulkVerify": "Test each connection before importing (skip rows that fail)",
       "bulkNothingParsed": "No rows parsed — check the format.",
       "bulkParseErrors": "{count} row(s) have no credential and will be skipped.",
       "bulkNoCredential": "No password or private key",

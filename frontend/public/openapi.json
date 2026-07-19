@@ -8939,7 +8939,7 @@
         "tags": [
           "Managed Servers"
         ],
-        "summary": "Register several managed servers in one request. Each row is validated and created independently, so one bad row does not block the others; the response reports per-row success/failure in the input order (with the row index). A row with an empty name defaults to its address.",
+        "summary": "Register several managed servers in one request. Each row is validated and created independently, so one bad row does not block the others; the response reports per-row success/failure in the input order (with the row index). A row with an empty name defaults to its address. When \"verify\" is true (the default), each row is SSH-tested concurrently and only rows that connect are created — a bad password or unreachable host is rejected with its error; send verify=false to import without a connection test.",
         "operationId": "post_panel_api_managedServers_addBatch",
         "requestBody": {
           "required": true,
@@ -8949,6 +8949,7 @@
                 "type": "object"
               },
               "example": {
+                "verify": true,
                 "servers": [
                   {
                     "name": "",

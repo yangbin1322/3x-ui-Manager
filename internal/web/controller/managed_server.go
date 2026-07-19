@@ -116,6 +116,10 @@ type bulkAddRow struct {
 func (a *ManagedServerController) addBatch(c *gin.Context) {
 	var req struct {
 		Servers []bulkAddRow `json:"servers"`
+		// Verify defaults to true (matching the UI default): only rows whose SSH
+		// test connection succeeds are created. Send verify=false to import
+		// without a connection test.
+		Verify *bool `json:"verify"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.add"), err)
@@ -125,6 +129,7 @@ func (a *ManagedServerController) addBatch(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.add"), fmt.Errorf("at least one server is required"))
 		return
 	}
+	verify := req.Verify == nil || *req.Verify
 	servers := make([]*model.ManagedServer, len(req.Servers))
 	for i, r := range req.Servers {
 		servers[i] = &model.ManagedServer{
@@ -142,7 +147,11 @@ func (a *ManagedServerController) addBatch(c *gin.Context) {
 			SshHostKeySha256: r.SshHostKeySha256,
 		}
 	}
-	result := a.serverService.CreateBatch(servers)
+	// A verified add opens an SSH connection per row (bounded internally), so it
+	// needs a wider budget than a plain DB insert.
+	ctx, cancel := context.WithTimeout(c.Request.Context(), execRequestBudget)
+	defer cancel()
+	result := a.serverService.CreateBatch(ctx, servers, verify)
 	jsonObj(c, result, nil)
 }
 

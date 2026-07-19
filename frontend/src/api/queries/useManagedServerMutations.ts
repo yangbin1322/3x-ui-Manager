@@ -32,8 +32,8 @@ export function useManagedServerMutations() {
   });
 
   const createBatchMut = useMutation({
-    mutationFn: (servers: Partial<ManagedServerRecord>[]) =>
-      HttpUtil.post<BulkAddResponse>('/panel/api/managedServers/addBatch', { servers }, {
+    mutationFn: ({ servers, verify }: { servers: Partial<ManagedServerRecord>[]; verify: boolean }) =>
+      HttpUtil.post<BulkAddResponse>('/panel/api/managedServers/addBatch', { servers, verify }, {
         headers: { 'Content-Type': 'application/json' },
       }),
     onSuccess: (msg) => { if (msg?.success) invalidate(); },
@@ -103,7 +103,7 @@ export function useManagedServerMutations() {
 
   return {
     create: (payload: Partial<ManagedServerRecord>) => createMut.mutateAsync(payload),
-    createBatch: (servers: Partial<ManagedServerRecord>[]): Promise<Msg<BulkAddResponse>> => createBatchMut.mutateAsync(servers),
+    createBatch: (servers: Partial<ManagedServerRecord>[], verify: boolean): Promise<Msg<BulkAddResponse>> => createBatchMut.mutateAsync({ servers, verify }),
     update: (id: number, payload: Partial<ManagedServerRecord>) => updateMut.mutateAsync({ id, payload }),
     remove: (id: number) => removeMut.mutateAsync(id),
     setEnable: (id: number, enable: boolean) => setEnableMut.mutateAsync({ id, enable }),

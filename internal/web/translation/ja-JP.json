@@ -997,6 +997,7 @@
       "bulkUpload": "CSV をアップロード",
       "bulkParse": "解析",
       "bulkImport": "インポート({count})",
+      "bulkVerify": "インポート前に各接続をテストする(失敗した行はスキップ)",
       "bulkNothingParsed": "行を解析できませんでした。形式を確認してください。",
       "bulkParseErrors": "認証情報のない {count} 行はスキップされます。",
       "bulkNoCredential": "パスワードも秘密鍵もありません",

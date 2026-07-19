@@ -997,6 +997,7 @@
       "bulkUpload": "上传 CSV",
       "bulkParse": "解析",
       "bulkImport": "导入({count})",
+      "bulkVerify": "导入前测试每台连接(连不上的行跳过)",
       "bulkNothingParsed": "未解析到任何行——请检查格式。",
       "bulkParseErrors": "{count} 行没有凭据,将被跳过。",
       "bulkNoCredential": "缺少密码或私钥",

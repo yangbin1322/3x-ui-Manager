@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Input, Modal, Space, Table, Tag, Tooltip, Upload } from 'antd';
+import { Alert, Button, Checkbox, Input, Modal, Space, Table, Tag, Tooltip, Upload } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import type { ManagedServerRecord } from '@/schemas/managedServer';
@@ -9,7 +9,7 @@ import type { Msg } from '@/utils';
 
 interface BulkAddServersModalProps {
   open: boolean;
-  createBatch: (servers: Partial<ManagedServerRecord>[]) => Promise<Msg<BulkAddResponse>>;
+  createBatch: (servers: Partial<ManagedServerRecord>[], verify: boolean) => Promise<Msg<BulkAddResponse>>;
   onOpenChange: (open: boolean) => void;
 }
 
@@ -82,6 +82,7 @@ export default function BulkAddServersModal({ open, createBatch, onOpenChange }:
   const [text, setText] = useState('');
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [parsed, setParsed] = useState(false);
+  const [verify, setVerify] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -89,6 +90,7 @@ export default function BulkAddServersModal({ open, createBatch, onOpenChange }:
       setText('');
       setRows([]);
       setParsed(false);
+      setVerify(true);
       setSubmitting(false);
     }
   }, [open]);
@@ -147,7 +149,7 @@ export default function BulkAddServersModal({ open, createBatch, onOpenChange }:
           ? { sshAuthType: 'key', sshPrivateKey: r.sshPrivateKey }
           : { sshAuthType: 'password', sshPassword: r.sshPassword }),
       }));
-      const msg = await createBatch(payload);
+      const msg = await createBatch(payload, verify);
       const results = msg?.obj?.results ?? [];
       // Map results (indexed over validRows) back onto row keys for inline marks.
       setRows((prev) => prev.map((r) => {
@@ -253,6 +255,14 @@ export default function BulkAddServersModal({ open, createBatch, onOpenChange }:
               {failedCount > 0 && (
                 <Alert type="warning" showIcon style={{ marginTop: 8 }} message={t('pages.servers.bulkAddFailed', { count: failedCount })} />
               )}
+              <Checkbox
+                checked={verify}
+                onChange={(e) => setVerify(e.target.checked)}
+                disabled={submitting}
+                style={{ marginTop: 12 }}
+              >
+                {t('pages.servers.bulkVerify')}
+              </Checkbox>
             </>
           )}
         </div>

@@ -42,10 +42,11 @@ describe('BulkAddServersModal (paste import)', () => {
     fireEvent.click(buttonByText(/import/i));
     await waitFor(() => expect(createBatch).toHaveBeenCalledTimes(1));
 
-    // Only the row with a credential is submitted.
-    const payload = createBatch.mock.calls[0][0];
+    // Only the row with a credential is submitted, and verify defaults to true.
+    const [payload, verify] = createBatch.mock.calls[0];
     expect(payload).toHaveLength(1);
     expect(payload[0]).toMatchObject({ name: 'hk-1', address: '203.0.113.5', sshAuthType: 'password', sshPassword: 'secret' });
+    expect(verify).toBe(true);
   });
 
   it('keeps the import button disabled until rows are parsed', () => {

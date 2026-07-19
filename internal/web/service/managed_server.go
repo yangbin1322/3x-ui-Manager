@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
@@ -122,15 +123,60 @@ type BulkAddResponse struct {
 	Results []BulkAddResult `json:"results"`
 }
 
+// bulkVerifyTimeout bounds each row's SSH test during a verified batch add, so
+// one unreachable host can't stall the whole import.
+const bulkVerifyTimeout = 15 * time.Second
+
 // CreateBatch adds several managed servers in one call. Each row is validated
 // and created independently, so one bad row does not block the others; the
 // response reports per-row success/failure in the input order. A row with an
 // empty name defaults to its address, matching the single-add convention.
-func (s *ManagedServerService) CreateBatch(servers []*model.ManagedServer) *BulkAddResponse {
+//
+// When verify is true, each row is first SSH-tested (concurrently, bounded by
+// execConcurrency) and only rows that connect are created — a bad password or
+// unreachable host is rejected with its error instead of being stored, matching
+// what the single add enforces. When verify is false the rows are created
+// without a connection test and reachability is left to the heartbeat.
+func (s *ManagedServerService) CreateBatch(ctx context.Context, servers []*model.ManagedServer, verify bool) *BulkAddResponse {
 	results := make([]BulkAddResult, len(servers))
+
+	// verifyErr[i] is set to a non-nil failure message when row i fails its SSH
+	// test; it stays "" for a row that connected or when verify is off.
+	verifyErr := make([]string, len(servers))
+	if verify {
+		sshService := SSHService{}
+		sem := make(chan struct{}, execConcurrency)
+		var wg sync.WaitGroup
+		for i, srv := range servers {
+			wg.Add(1)
+			sem <- struct{}{}
+			go func(i int, srv *model.ManagedServer) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				// Test on a copy with a defaulted host-key mode so a blank mode
+				// (trust) does not reject the connection before create normalizes it.
+				probe := *srv
+				if probe.SshHostKeyMode == "" {
+					probe.SshHostKeyMode = "trust"
+				}
+				testCtx, cancel := context.WithTimeout(ctx, bulkVerifyTimeout)
+				defer cancel()
+				res := sshService.TestConnection(testCtx, &probe)
+				if !res.Success {
+					verifyErr[i] = res.Message
+				}
+			}(i, srv)
+		}
+		wg.Wait()
+	}
+
 	for i, srv := range servers {
 		if strings.TrimSpace(srv.Name) == "" {
 			srv.Name = strings.TrimSpace(srv.Address)
+		}
+		if verifyErr[i] != "" {
+			results[i] = BulkAddResult{Index: i, Name: srv.Name, Success: false, Message: verifyErr[i]}
+			continue
 		}
 		if err := s.Create(srv); err != nil {
 			results[i] = BulkAddResult{Index: i, Success: false, Message: err.Error()}

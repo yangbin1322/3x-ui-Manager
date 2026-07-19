@@ -997,6 +997,7 @@
       "bulkUpload": "رفع CSV",
       "bulkParse": "تحليل",
       "bulkImport": "استيراد ({count})",
+      "bulkVerify": "اختبر كل اتصال قبل الاستيراد (تخطّي الصفوف الفاشلة)",
       "bulkNothingParsed": "لم يُحلَّل أي صف — تحقق من التنسيق.",
       "bulkParseErrors": "سيتم تخطي {count} صف بلا بيانات اعتماد.",
       "bulkNoCredential": "لا كلمة مرور ولا مفتاح خاص",

@@ -46,7 +46,9 @@ func TestCreateBatch(t *testing.T) {
 		// Invalid: no credential -> fails without blocking the others.
 		{Name: "bad", Address: "203.0.113.7", SshUser: "root", SshAuthType: "password"},
 	}
-	resp := svc.CreateBatch(servers)
+	// verify=false: these are placeholder addresses with no reachable SSH host,
+	// so this exercises validation + creation, not connectivity.
+	resp := svc.CreateBatch(t.Context(), servers, false)
 	if len(resp.Results) != 3 {
 		t.Fatalf("got %d results, want 3", len(resp.Results))
 	}

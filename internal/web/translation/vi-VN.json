@@ -997,6 +997,7 @@
       "bulkUpload": "Tải lên CSV",
       "bulkParse": "Phân tích",
       "bulkImport": "Nhập ({count})",
+      "bulkVerify": "Kiểm tra từng kết nối trước khi nhập (bỏ qua dòng lỗi)",
       "bulkNothingParsed": "Không phân tích được dòng nào — kiểm tra định dạng.",
       "bulkParseErrors": "{count} dòng không có thông tin đăng nhập sẽ bị bỏ qua.",
       "bulkNoCredential": "Không có mật khẩu hoặc khóa riêng",

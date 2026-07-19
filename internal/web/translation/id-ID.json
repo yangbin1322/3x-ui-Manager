@@ -997,6 +997,7 @@
       "bulkUpload": "Unggah CSV",
       "bulkParse": "Uraikan",
       "bulkImport": "Impor ({count})",
+      "bulkVerify": "Uji setiap koneksi sebelum impor (lewati baris yang gagal)",
       "bulkNothingParsed": "Tidak ada baris terurai — periksa formatnya.",
       "bulkParseErrors": "{count} baris tanpa kredensial akan dilewati.",
       "bulkNoCredential": "Tanpa kata sandi atau kunci privat",

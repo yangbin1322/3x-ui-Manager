@@ -997,6 +997,7 @@
       "bulkUpload": "Subir CSV",
       "bulkParse": "Analizar",
       "bulkImport": "Importar ({count})",
+      "bulkVerify": "Probar cada conexión antes de importar (omitir las filas que fallen)",
       "bulkNothingParsed": "No se analizó ninguna fila: revise el formato.",
       "bulkParseErrors": "{count} fila(s) sin credencial se omitirán.",
       "bulkNoCredential": "Sin contraseña ni clave privada",
