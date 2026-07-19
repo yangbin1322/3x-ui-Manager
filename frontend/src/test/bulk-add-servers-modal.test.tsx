@@ -4,42 +4,54 @@ import { fireEvent, waitFor } from '@testing-library/react';
 import BulkAddServersModal from '@/pages/nodes/BulkAddServersModal';
 import { renderWithProviders } from './test-utils';
 
-function okButton(): HTMLElement {
-  const btn = Array.from(document.querySelectorAll('.ant-modal-footer button'))
-    .find((b) => /save/i.test(b.textContent ?? ''));
-  if (!btn) throw new Error('save button not found');
+function buttonByText(re: RegExp): HTMLElement {
+  const btn = Array.from(document.querySelectorAll('button')).find((b) => re.test(b.textContent ?? ''));
+  if (!btn) throw new Error(`button matching ${re} not found`);
   return btn as HTMLElement;
 }
 
-describe('BulkAddServersModal', () => {
-  it('submits only rows with an address and reports per-row failures', async () => {
+describe('BulkAddServersModal (paste import)', () => {
+  it('parses pasted CSV into a preview, then imports only valid rows', async () => {
     const createBatch = vi.fn().mockResolvedValue({
       success: true,
-      obj: { results: [{ index: 0, success: true, name: '203.0.113.5' }] },
+      obj: { results: [{ index: 0, success: true, name: 'hk-1' }] },
     });
 
     renderWithProviders(
       <BulkAddServersModal open createBatch={createBatch} onOpenChange={() => {}} />,
     );
 
-    // The first (and only) row starts blank; fill its address + password.
-    const addressInputs = document.querySelectorAll('input[placeholder="203.0.113.5"]');
-    fireEvent.change(addressInputs[0], { target: { value: '203.0.113.5' } });
-    const passwordInputs = document.querySelectorAll('input[type="password"]');
-    fireEvent.change(passwordInputs[0], { target: { value: 'secret' } });
+    // Paste a header + one valid row + one row with no credential (skipped).
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    fireEvent.change(textarea, {
+      target: {
+        value: 'name,address,sshPort,sshUser,sshPassword,sshPrivateKey,sshHostKeyMode\n'
+          + 'hk-1,203.0.113.5,22,root,secret,,trust\n'
+          + 'bad,203.0.113.6,22,root,,,trust',
+      },
+    });
+    fireEvent.click(buttonByText(/parse/i));
 
-    fireEvent.click(okButton());
+    // Preview shows both parsed rows.
+    await waitFor(() => {
+      const body = document.body.textContent ?? '';
+      expect(body).toContain('203.0.113.5');
+      expect(body).toContain('203.0.113.6');
+    });
 
+    fireEvent.click(buttonByText(/import/i));
     await waitFor(() => expect(createBatch).toHaveBeenCalledTimes(1));
+
+    // Only the row with a credential is submitted.
     const payload = createBatch.mock.calls[0][0];
     expect(payload).toHaveLength(1);
-    expect(payload[0]).toMatchObject({ address: '203.0.113.5', sshPassword: 'secret' });
+    expect(payload[0]).toMatchObject({ name: 'hk-1', address: '203.0.113.5', sshAuthType: 'password', sshPassword: 'secret' });
   });
 
-  it('keeps the save button disabled until at least one row has an address', () => {
+  it('keeps the import button disabled until rows are parsed', () => {
     renderWithProviders(
       <BulkAddServersModal open createBatch={vi.fn()} onOpenChange={() => {}} />,
     );
-    expect(okButton().hasAttribute('disabled')).toBe(true);
+    expect(buttonByText(/import/i).hasAttribute('disabled')).toBe(true);
   });
 });
