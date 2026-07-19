@@ -90,6 +90,8 @@ func run(root, outDir string) error {
 				"UninstallResult",
 				"BatchServerResult",
 				"BatchInstallResponse",
+				"BulkAddResult",
+				"BulkAddResponse",
 			),
 		},
 		{

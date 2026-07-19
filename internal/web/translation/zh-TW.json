@@ -991,6 +991,11 @@
     "servers": {
       "tab": "伺服器",
       "addServer": "新增伺服器",
+      "bulkAdd": "批次新增",
+      "bulkAddRow": "新增列",
+      "bulkNamePlaceholder": "自動(位址)",
+      "bulkAddHint": "一次新增多台伺服器。每列一台;名稱留空則用其位址。憑證可共用也可逐列填寫。每列獨立建立——有問題的列不會阻塞其它列。",
+      "bulkAddFailed": "{count} 列失敗——將滑鼠移到紅色標記上檢視原因",
       "editServer": "編輯伺服器",
       "os": "作業系統",
       "linkedNode": "面板節點",

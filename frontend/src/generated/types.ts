@@ -253,6 +253,17 @@ export interface BatchServerResult {
   success: boolean;
 }
 
+export interface BulkAddResponse {
+  results: BulkAddResult[];
+}
+
+export interface BulkAddResult {
+  index: number;
+  message?: string;
+  name?: string;
+  success: boolean;
+}
+
 export interface Client {
   adTag?: string;
   allowedIPs?: string[];

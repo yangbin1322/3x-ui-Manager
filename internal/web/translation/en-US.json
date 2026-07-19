@@ -1108,6 +1108,11 @@
     "servers": {
       "tab": "Servers",
       "addServer": "Add Server",
+      "bulkAdd": "Bulk add",
+      "bulkAddRow": "Add row",
+      "bulkNamePlaceholder": "auto (address)",
+      "bulkAddHint": "Add several servers at once. One row per server; leave the name blank to use its address. A shared or per-row credential is fine. Each row is created independently — a bad row does not block the others.",
+      "bulkAddFailed": "{count} row(s) failed — hover the red marker for the reason",
       "editServer": "Edit Server",
       "os": "OS",
       "linkedNode": "Panel Node",

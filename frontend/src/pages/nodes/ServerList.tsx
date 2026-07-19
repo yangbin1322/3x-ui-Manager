@@ -26,6 +26,7 @@ import {
   LinkOutlined,
   MinusCircleOutlined,
   PlusOutlined,
+  UsergroupAddOutlined,
 } from '@ant-design/icons';
 
 import type { ManagedServerRecord } from '@/schemas/managedServer';
@@ -39,6 +40,7 @@ interface ServerListProps {
   selectedIds: number[];
   onSelectionChange: (ids: number[]) => void;
   onAdd: () => void;
+  onBulkAdd: () => void;
   onEdit: (server: ManagedServerRecord) => void;
   onDelete: (server: ManagedServerRecord) => void;
   onToggleEnable: (server: ManagedServerRecord, next: boolean) => void;
@@ -81,6 +83,7 @@ export default function ServerList({
   selectedIds,
   onSelectionChange,
   onAdd,
+  onBulkAdd,
   onEdit,
   onDelete,
   onToggleEnable,
@@ -264,6 +267,9 @@ export default function ServerList({
       <div className="toolbar">
         <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
           {t('pages.servers.addServer')}
+        </Button>
+        <Button icon={<UsergroupAddOutlined />} onClick={onBulkAdd}>
+          {t('pages.servers.bulkAdd')}
         </Button>
         <Button icon={<HistoryOutlined />} onClick={onExecHistory}>
           {t('pages.nodes.exec.history.action')}

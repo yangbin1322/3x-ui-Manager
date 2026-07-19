@@ -1029,6 +1029,45 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "BulkAddResponse": {
+    "properties": {
+      "results": {
+        "items": {
+          "$ref": "#/components/schemas/BulkAddResult"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "results"
+    ],
+    "type": "object"
+  },
+  "BulkAddResult": {
+    "description": "BulkAddResult is one row's outcome from a batch add, carrying the row index so\nthe UI can point the operator at the exact line that failed. Name echoes what\nwas created (after the address fallback) for the success rows.",
+    "properties": {
+      "index": {
+        "example": 0,
+        "type": "integer"
+      },
+      "message": {
+        "type": "string"
+      },
+      "name": {
+        "example": "203.0.113.5",
+        "type": "string"
+      },
+      "success": {
+        "example": true,
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "index",
+      "success"
+    ],
+    "type": "object"
+  },
   "Client": {
     "description": "Client represents a client configuration for Xray inbounds with traffic limits and settings.",
     "properties": {

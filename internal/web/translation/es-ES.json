@@ -991,6 +991,11 @@
     "servers": {
       "tab": "Servidores",
       "addServer": "Añadir servidor",
+      "bulkAdd": "Añadir en lote",
+      "bulkAddRow": "Añadir fila",
+      "bulkNamePlaceholder": "auto (dirección)",
+      "bulkAddHint": "Añada varios servidores a la vez. Una fila por servidor; deje el nombre vacío para usar su dirección. Las credenciales pueden ser compartidas o por fila. Cada fila se crea de forma independiente: una fila incorrecta no bloquea las demás.",
+      "bulkAddFailed": "{count} fila(s) fallaron: pase el ratón sobre la marca roja para ver el motivo",
       "editServer": "Editar servidor",
       "os": "SO",
       "linkedNode": "Nodo del panel",

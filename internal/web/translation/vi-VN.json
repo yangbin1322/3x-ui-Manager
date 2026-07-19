@@ -991,6 +991,11 @@
     "servers": {
       "tab": "Máy chủ",
       "addServer": "Thêm máy chủ",
+      "bulkAdd": "Thêm hàng loạt",
+      "bulkAddRow": "Thêm dòng",
+      "bulkNamePlaceholder": "tự động (địa chỉ)",
+      "bulkAddHint": "Thêm nhiều máy chủ cùng lúc. Mỗi dòng một máy chủ; để trống tên để dùng địa chỉ của nó. Thông tin đăng nhập có thể dùng chung hoặc theo từng dòng. Mỗi dòng được tạo độc lập — dòng lỗi không chặn các dòng khác.",
+      "bulkAddFailed": "{count} dòng thất bại — di chuột lên dấu đỏ để xem lý do",
       "editServer": "Sửa máy chủ",
       "os": "Hệ điều hành",
       "linkedNode": "Node bảng điều khiển",

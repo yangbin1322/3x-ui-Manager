@@ -1055,6 +1055,45 @@
         ],
         "type": "object"
       },
+      "BulkAddResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/BulkAddResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "type": "object"
+      },
+      "BulkAddResult": {
+        "description": "BulkAddResult is one row's outcome from a batch add, carrying the row index so\nthe UI can point the operator at the exact line that failed. Name echoes what\nwas created (after the address fallback) for the success rows.",
+        "properties": {
+          "index": {
+            "example": 0,
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "name": {
+            "example": "203.0.113.5",
+            "type": "string"
+          },
+          "success": {
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "index",
+          "success"
+        ],
+        "type": "object"
+      },
       "Client": {
         "description": "Client represents a client configuration for Xray inbounds with traffic limits and settings.",
         "properties": {
@@ -8887,6 +8926,83 @@
                       "type": "string"
                     },
                     "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/addBatch": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Register several managed servers in one request. Each row is validated and created independently, so one bad row does not block the others; the response reports per-row success/failure in the input order (with the row index). A row with an empty name defaults to its address.",
+        "operationId": "post_panel_api_managedServers_addBatch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "servers": [
+                  {
+                    "name": "",
+                    "address": "203.0.113.5",
+                    "sshPort": 22,
+                    "sshUser": "root",
+                    "sshAuthType": "password",
+                    "sshPassword": "secret",
+                    "sshHostKeyMode": "trust"
+                  },
+                  {
+                    "name": "hk-2",
+                    "address": "203.0.113.6",
+                    "sshPort": 22,
+                    "sshUser": "root",
+                    "sshAuthType": "password",
+                    "sshPassword": "secret",
+                    "sshHostKeyMode": "trust"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/BulkAddResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "results": [
+                      {
+                        "index": 0,
+                        "message": "",
+                        "name": "203.0.113.5",
+                        "success": true
+                      }
+                    ]
                   }
                 }
               }

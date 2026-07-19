@@ -991,6 +991,11 @@
     "servers": {
       "tab": "服务器",
       "addServer": "添加服务器",
+      "bulkAdd": "批量添加",
+      "bulkAddRow": "添加行",
+      "bulkNamePlaceholder": "自动(地址)",
+      "bulkAddHint": "一次添加多台服务器。每行一台;名称留空则用其地址。凭据可共用也可逐行填写。每行独立创建——有问题的行不会阻塞其它行。",
+      "bulkAddFailed": "{count} 行失败——将鼠标悬停在红色标记上查看原因",
       "editServer": "编辑服务器",
       "os": "操作系统",
       "linkedNode": "面板节点",

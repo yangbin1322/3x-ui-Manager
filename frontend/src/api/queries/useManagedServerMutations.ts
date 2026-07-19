@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { HttpUtil, Msg } from '@/utils';
 import { keys } from '@/api/queryKeys';
 import type { ManagedServerRecord } from '@/schemas/managedServer';
-import type { SSHTestResult, BatchExecResult, ExecHistoryResponse, InstallResult, UninstallResult, BatchInstallResponse } from '@/generated/types';
+import type { SSHTestResult, BatchExecResult, ExecHistoryResponse, InstallResult, UninstallResult, BatchInstallResponse, BulkAddResponse } from '@/generated/types';
 
 export interface ExecHistoryFilter {
   page?: number;
@@ -28,6 +28,14 @@ export function useManagedServerMutations() {
   const updateMut = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: Partial<ManagedServerRecord> }) =>
       HttpUtil.post(`/panel/api/managedServers/update/${id}`, payload),
+    onSuccess: (msg) => { if (msg?.success) invalidate(); },
+  });
+
+  const createBatchMut = useMutation({
+    mutationFn: (servers: Partial<ManagedServerRecord>[]) =>
+      HttpUtil.post<BulkAddResponse>('/panel/api/managedServers/addBatch', { servers }, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
     onSuccess: (msg) => { if (msg?.success) invalidate(); },
   });
 
@@ -95,6 +103,7 @@ export function useManagedServerMutations() {
 
   return {
     create: (payload: Partial<ManagedServerRecord>) => createMut.mutateAsync(payload),
+    createBatch: (servers: Partial<ManagedServerRecord>[]): Promise<Msg<BulkAddResponse>> => createBatchMut.mutateAsync(servers),
     update: (id: number, payload: Partial<ManagedServerRecord>) => updateMut.mutateAsync({ id, payload }),
     remove: (id: number) => removeMut.mutateAsync(id),
     setEnable: (id: number, enable: boolean) => setEnableMut.mutateAsync({ id, enable }),

@@ -33,6 +33,42 @@ func TestDeleteNodeClearsServerLink(t *testing.T) {
 	}
 }
 
+func TestCreateBatch(t *testing.T) {
+	t.Setenv("XUI_SECRET_KEY", "test-key")
+	setupConflictDB(t)
+	svc := &ManagedServerService{}
+
+	servers := []*model.ManagedServer{
+		// Empty name -> defaults to the address.
+		{Address: "203.0.113.5", SshUser: "root", SshAuthType: "password", SshPassword: "pw"},
+		// Named row.
+		{Name: "hk-2", Address: "203.0.113.6", SshUser: "root", SshAuthType: "password", SshPassword: "pw"},
+		// Invalid: no credential -> fails without blocking the others.
+		{Name: "bad", Address: "203.0.113.7", SshUser: "root", SshAuthType: "password"},
+	}
+	resp := svc.CreateBatch(servers)
+	if len(resp.Results) != 3 {
+		t.Fatalf("got %d results, want 3", len(resp.Results))
+	}
+	if !resp.Results[0].Success || resp.Results[0].Name != "203.0.113.5" {
+		t.Fatalf("row 0 = %+v, want success with name defaulted to address", resp.Results[0])
+	}
+	if !resp.Results[1].Success || resp.Results[1].Name != "hk-2" {
+		t.Fatalf("row 1 = %+v, want success named hk-2", resp.Results[1])
+	}
+	if resp.Results[2].Success || !strings.Contains(resp.Results[2].Message, "ssh password is required") {
+		t.Fatalf("row 2 = %+v, want failure for the missing credential", resp.Results[2])
+	}
+
+	all, err := svc.GetAll()
+	if err != nil {
+		t.Fatalf("GetAll: %v", err)
+	}
+	if len(all) != 2 {
+		t.Fatalf("stored %d servers, want 2 (the invalid row was skipped)", len(all))
+	}
+}
+
 func TestParsePanelVersion(t *testing.T) {
 	tests := []struct {
 		name string

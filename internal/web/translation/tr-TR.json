@@ -991,6 +991,11 @@
     "servers": {
       "tab": "Sunucular",
       "addServer": "Sunucu Ekle",
+      "bulkAdd": "Toplu ekle",
+      "bulkAddRow": "Satır ekle",
+      "bulkNamePlaceholder": "otomatik (adres)",
+      "bulkAddHint": "Birden çok sunucu ekleyin. Sunucu başına bir satır; adı boş bırakırsanız adresi kullanılır. Kimlik bilgileri ortak veya satır başına olabilir. Her satır bağımsız oluşturulur — hatalı bir satır diğerlerini engellemez.",
+      "bulkAddFailed": "{count} satır başarısız — nedeni için kırmızı işaretin üzerine gelin",
       "editServer": "Sunucuyu Düzenle",
       "os": "İşletim Sistemi",
       "linkedNode": "Panel Düğümü",

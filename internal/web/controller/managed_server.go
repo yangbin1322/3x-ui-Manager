@@ -39,6 +39,7 @@ func (a *ManagedServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/get/:id", a.get)
 
 	g.POST("/add", a.add)
+	g.POST("/addBatch", a.addBatch)
 	g.POST("/update/:id", a.update)
 	g.POST("/del/:id", a.del)
 	g.POST("/setEnable/:id", a.setEnable)
@@ -88,6 +89,25 @@ func (a *ManagedServerController) add(c *gin.Context) {
 		return
 	}
 	jsonMsgObj(c, I18nWeb(c, "pages.nodes.toasts.add"), srv, nil)
+}
+
+// addBatch registers several managed servers in one request. Each row is
+// validated and created independently; the response reports per-row outcomes in
+// the input order so the operator can fix only the rows that failed.
+func (a *ManagedServerController) addBatch(c *gin.Context) {
+	var req struct {
+		Servers []*model.ManagedServer `json:"servers"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.add"), err)
+		return
+	}
+	if len(req.Servers) == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.add"), fmt.Errorf("at least one server is required"))
+		return
+	}
+	result := a.serverService.CreateBatch(req.Servers)
+	jsonObj(c, result, nil)
 }
 
 func (a *ManagedServerController) update(c *gin.Context) {

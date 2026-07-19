@@ -991,6 +991,11 @@
     "servers": {
       "tab": "Server",
       "addServer": "Tambah Server",
+      "bulkAdd": "Tambah massal",
+      "bulkAddRow": "Tambah baris",
+      "bulkNamePlaceholder": "otomatis (alamat)",
+      "bulkAddHint": "Tambahkan beberapa server sekaligus. Satu baris per server; kosongkan nama untuk memakai alamatnya. Kredensial boleh bersama atau per baris. Tiap baris dibuat mandiri — baris yang salah tidak menghalangi yang lain.",
+      "bulkAddFailed": "{count} baris gagal — arahkan kursor ke penanda merah untuk alasannya",
       "editServer": "Ubah Server",
       "os": "OS",
       "linkedNode": "Node Panel",

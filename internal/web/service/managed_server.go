@@ -108,6 +108,39 @@ func (s *ManagedServerService) Create(srv *model.ManagedServer) error {
 	return database.GetDB().Create(srv).Error
 }
 
+// BulkAddResult is one row's outcome from a batch add, carrying the row index so
+// the UI can point the operator at the exact line that failed. Name echoes what
+// was created (after the address fallback) for the success rows.
+type BulkAddResult struct {
+	Index   int    `json:"index" example:"0"`
+	Name    string `json:"name,omitempty" example:"203.0.113.5"`
+	Success bool   `json:"success" example:"true"`
+	Message string `json:"message,omitempty"`
+}
+
+type BulkAddResponse struct {
+	Results []BulkAddResult `json:"results"`
+}
+
+// CreateBatch adds several managed servers in one call. Each row is validated
+// and created independently, so one bad row does not block the others; the
+// response reports per-row success/failure in the input order. A row with an
+// empty name defaults to its address, matching the single-add convention.
+func (s *ManagedServerService) CreateBatch(servers []*model.ManagedServer) *BulkAddResponse {
+	results := make([]BulkAddResult, len(servers))
+	for i, srv := range servers {
+		if strings.TrimSpace(srv.Name) == "" {
+			srv.Name = strings.TrimSpace(srv.Address)
+		}
+		if err := s.Create(srv); err != nil {
+			results[i] = BulkAddResult{Index: i, Success: false, Message: err.Error()}
+			continue
+		}
+		results[i] = BulkAddResult{Index: i, Name: srv.Name, Success: true}
+	}
+	return &BulkAddResponse{Results: results}
+}
+
 func (s *ManagedServerService) Update(id int, in *model.ManagedServer) error {
 	db := database.GetDB()
 	existing := &model.ManagedServer{}
