@@ -177,6 +177,12 @@ type SSHHeartbeatPatch struct {
 	OsName        string
 	OsVersion     string
 	HostKeySha256 string
+	// PanelKnown is set only when the probe actually reached the box and could
+	// evaluate whether a panel is installed, so an unreachable probe leaves the
+	// last-known PanelInstalled/PanelVersion untouched instead of clearing them.
+	PanelKnown     bool
+	PanelInstalled bool
+	PanelVersion   string
 }
 
 // UpdateSSHHeartbeat records the outcome of an SSH reachability probe. It never
@@ -199,6 +205,14 @@ func (s *ManagedServerService) UpdateSSHHeartbeat(id int, p SSHHeartbeatPatch) e
 	if p.HostKeySha256 != "" {
 		updates["ssh_host_key_sha256"] = p.HostKeySha256
 	}
+	// Only overwrite the panel-installed state when the probe reached the box.
+	// An unreachable probe must not flip a known-installed server to "not
+	// installed". Updates with a map writes false/"" explicitly, so this is
+	// gated on PanelKnown rather than on the value.
+	if p.PanelKnown {
+		updates["panel_installed"] = p.PanelInstalled
+		updates["panel_version"] = p.PanelVersion
+	}
 	return db.Model(model.ManagedServer{}).Where("id = ?", id).Updates(updates).Error
 }
 
@@ -220,6 +234,10 @@ func (s *ManagedServerService) ProbeSSH(ctx context.Context, srv *model.ManagedS
 		if srv.SshHostKeyMode == "trust" && strings.TrimSpace(srv.SshHostKeySha256) == "" {
 			patch.HostKeySha256 = result.HostKeySha256
 		}
+		// The panel state is only trustworthy when we actually connected.
+		patch.PanelKnown = true
+		patch.PanelInstalled = result.PanelInstalled
+		patch.PanelVersion = result.PanelVersion
 		return patch
 	}
 	patch.Status = "unreachable"

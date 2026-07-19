@@ -989,6 +989,46 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "BatchInstallResponse": {
+    "properties": {
+      "results": {
+        "items": {
+          "$ref": "#/components/schemas/BatchServerResult"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "results"
+    ],
+    "type": "object"
+  },
+  "BatchServerResult": {
+    "description": "BatchInstallResult / BatchUninstallResult carry one per-server outcome each so\nthe UI can show which servers succeeded and which failed in a bulk action.",
+    "properties": {
+      "message": {
+        "type": "string"
+      },
+      "serverId": {
+        "example": 3,
+        "type": "integer"
+      },
+      "serverName": {
+        "example": "hk-1",
+        "type": "string"
+      },
+      "success": {
+        "example": true,
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "serverId",
+      "serverName",
+      "success"
+    ],
+    "type": "object"
+  },
   "Client": {
     "description": "Client represents a client configuration for Xray inbounds with traffic limits and settings.",
     "properties": {
@@ -2227,6 +2267,13 @@ export const SCHEMAS: Record<string, unknown> = {
       "osVersion": {
         "type": "string"
       },
+      "panelInstalled": {
+        "description": "PanelInstalled / PanelVersion are learned by the SSH heartbeat: if the\nx-ui binary answers a version query, the box already runs a panel even\nwhen no node has been derived from it yet. This lets the UI offer \"import\nas node\" instead of a fresh install, and show which version is running.\nObserved-state only — never user-edited.",
+        "type": "boolean"
+      },
+      "panelVersion": {
+        "type": "string"
+      },
       "remark": {
         "type": "string"
       },
@@ -2289,6 +2336,8 @@ export const SCHEMAS: Record<string, unknown> = {
       "nodeId",
       "osName",
       "osVersion",
+      "panelInstalled",
+      "panelVersion",
       "remark",
       "sshAuthType",
       "sshHostKeyMode",
@@ -2779,12 +2828,21 @@ export const SCHEMAS: Record<string, unknown> = {
         "example": "24.04",
         "type": "string"
       },
+      "panelInstalled": {
+        "example": true,
+        "type": "boolean"
+      },
+      "panelVersion": {
+        "example": "v2.6.0",
+        "type": "string"
+      },
       "success": {
         "example": true,
         "type": "boolean"
       }
     },
     "required": [
+      "panelInstalled",
       "success"
     ],
     "type": "object"
@@ -2806,6 +2864,25 @@ export const SCHEMAS: Record<string, unknown> = {
       "id",
       "key",
       "value"
+    ],
+    "type": "object"
+  },
+  "UninstallResult": {
+    "description": "UninstallResult reports the outcome of removing a panel from a managed server.",
+    "properties": {
+      "message": {
+        "type": "string"
+      },
+      "stdout": {
+        "type": "string"
+      },
+      "success": {
+        "example": true,
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "success"
     ],
     "type": "object"
   },

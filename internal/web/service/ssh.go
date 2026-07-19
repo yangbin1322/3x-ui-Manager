@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -240,16 +241,26 @@ func exitCodeOf(err error) int {
 
 // SSHTestResult is what the panel shows after a connection test.
 type SSHTestResult struct {
-	Success       bool   `json:"success" example:"true"`
-	Message       string `json:"message,omitempty" example:"Authentication failed"`
-	HostKeySha256 string `json:"hostKeySha256,omitempty" example:"sha256:abc123"`
-	OsName        string `json:"osName,omitempty" example:"Ubuntu"`
-	OsVersion     string `json:"osVersion,omitempty" example:"24.04"`
+	Success        bool   `json:"success" example:"true"`
+	Message        string `json:"message,omitempty" example:"Authentication failed"`
+	HostKeySha256  string `json:"hostKeySha256,omitempty" example:"sha256:abc123"`
+	OsName         string `json:"osName,omitempty" example:"Ubuntu"`
+	OsVersion      string `json:"osVersion,omitempty" example:"24.04"`
+	PanelInstalled bool   `json:"panelInstalled" example:"true"`
+	PanelVersion   string `json:"panelVersion,omitempty" example:"v2.6.0"`
 }
 
-// TestConnection verifies the server's SSH credentials and reports the host key
-// and detected OS. It never returns the credential itself, and its error text
-// is the transport's, which does not echo the password or key.
+// panelVersionCommand asks the installed x-ui binary for its version. It targets
+// the binary at its install path (not the global `x-ui` management wrapper) so a
+// box with no panel simply fails the command rather than printing the wrapper's
+// menu; a non-existent binary makes `bash -c` exit non-zero, which we treat as
+// "no panel". Output is a single line like "x-ui version v2.6.0".
+const panelVersionCommand = "/usr/local/x-ui/x-ui -v"
+
+// TestConnection verifies the server's SSH credentials and reports the host key,
+// detected OS, and whether a 3x-ui panel is already installed. It never returns
+// the credential itself, and its error text is the transport's, which does not
+// echo the password or key.
 func (s *SSHService) TestConnection(ctx context.Context, srv *model.ManagedServer) *SSHTestResult {
 	res, err := s.Dial(ctx, srv)
 	if err != nil {
@@ -272,7 +283,37 @@ func (s *SSHService) TestConnection(ctx context.Context, srv *model.ManagedServe
 		out.OsName = name
 		out.OsVersion = version
 	}
+	// Reuse the same connection to learn whether a panel is installed. A
+	// failure (no binary, non-zero exit) just means "not installed" and must
+	// never fail the overall test, so the error is intentionally ignored.
+	verCtx, verCancel := context.WithTimeout(ctx, sshCommandTimeout)
+	defer verCancel()
+	if verOut, err := runOnClient(verCtx, res.Client, panelVersionCommand); err == nil {
+		if version := parsePanelVersion(verOut); version != "" {
+			out.PanelInstalled = true
+			out.PanelVersion = version
+		}
+	}
 	return out
+}
+
+// panelVersionToken matches a release token like "v2.6.0" or "2.6.0" so noise
+// (a "command not found" message, a shell banner) is not mistaken for a version.
+var panelVersionToken = regexp.MustCompile(`^v?\d+\.\d+`)
+
+// parsePanelVersion extracts a version token from `x-ui -v` output. The binary
+// prints a line such as "x-ui version v2.6.0"; we scan its whitespace fields for
+// the first that looks like a version. Returns "" when none is present so a
+// garbled response, an error message, or empty output reads as "no panel".
+func parsePanelVersion(out string) string {
+	for _, line := range strings.Split(stripANSI(out), "\n") {
+		for _, field := range strings.Fields(strings.TrimSpace(line)) {
+			if panelVersionToken.MatchString(field) {
+				return field
+			}
+		}
+	}
+	return ""
 }
 
 // parseOsRelease pulls the distro name and version out of /etc/os-release,

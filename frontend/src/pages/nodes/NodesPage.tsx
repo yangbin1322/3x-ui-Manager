@@ -22,6 +22,7 @@ import NodeList from './NodeList';
 import NodeFormModal from './NodeFormModal';
 import ServerList from './ServerList';
 import ServerFormModal from './ServerFormModal';
+import InstallPanelModal from './InstallPanelModal';
 import ExecCommandModal from './ExecCommandModal';
 import ExecHistoryModal from './ExecHistoryModal';
 import { setMessageInstance } from '@/utils/messageBus';
@@ -86,6 +87,8 @@ export default function NodesPage() {
   const [serverFormMode, setServerFormMode] = useState<'add' | 'edit'>('add');
   const [formServer, setFormServer] = useState<ManagedServerRecord | null>(null);
   const [selectedServerIds, setSelectedServerIds] = useState<number[]>([]);
+  const [installOpen, setInstallOpen] = useState(false);
+  const [installTargets, setInstallTargets] = useState<ManagedServerRecord[]>([]);
   const [execOpen, setExecOpen] = useState(false);
   const [execTargets, setExecTargets] = useState<ManagedServerRecord[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -281,33 +284,150 @@ export default function NodesPage() {
     await serverMutations.setEnable(server.id, next);
   }, [serverMutations]);
 
+  // The install modal drives both single and batch installs; targets carries
+  // which servers it will act on and the version picker collects the version.
   const onInstall = useCallback((server: ManagedServerRecord) => {
+    setInstallTargets([server]);
+    setInstallOpen(true);
+  }, []);
+
+  const onBatchInstall = useCallback(() => {
+    const targets = servers.filter((s) => selectedServerIds.includes(s.id) && !s.panelInstalled && !s.nodeId);
+    if (targets.length === 0) return;
+    setInstallTargets(targets);
+    setInstallOpen(true);
+  }, [servers, selectedServerIds]);
+
+  // runInstall executes the actual install once the version is chosen. One
+  // server shows a detailed derived/not-derived toast; a batch shows a summary.
+  const runInstall = useCallback(async (version: string) => {
+    if (installTargets.length === 1) {
+      const server = installTargets[0];
+      const hide = messageApi.loading(t('pages.nodes.install.running'), 0);
+      try {
+        const msg = await serverMutations.installPanel(server.id, version);
+        hide();
+        if (msg?.success && msg.obj?.success) {
+          if (msg.obj.derived) messageApi.success(t('pages.nodes.install.derivedOk'));
+          else messageApi.warning(msg.obj.message || t('pages.nodes.install.installedNotDerived'));
+        } else {
+          messageApi.error(msg?.obj?.message || msg?.msg || t('pages.nodes.install.failed'));
+        }
+      } catch {
+        hide();
+        messageApi.error(t('pages.nodes.install.failed'));
+      }
+      return;
+    }
+    const ids = installTargets.map((s) => s.id);
+    const hide = messageApi.loading(t('pages.nodes.install.running'), 0);
+    try {
+      const msg = await serverMutations.installPanelBatch(ids, version);
+      hide();
+      const results = msg?.obj?.results ?? [];
+      const ok = results.filter((r) => r.success).length;
+      messageApi.open({ type: ok === results.length ? 'success' : 'warning', content: t('pages.servers.batchResult', { ok, failed: results.length - ok }) });
+      setSelectedServerIds([]);
+    } catch {
+      hide();
+      messageApi.error(t('pages.nodes.install.failed'));
+    }
+  }, [installTargets, serverMutations, messageApi, t]);
+
+  const onImport = useCallback((server: ManagedServerRecord) => {
     modal.confirm({
-      title: t('pages.nodes.install.confirmTitle', { name: server.name || `#${server.id}` }),
-      content: t('pages.nodes.install.confirmBody'),
-      okText: t('pages.nodes.install.action'),
+      title: t('pages.servers.importConfirmTitle', { name: server.name || `#${server.id}` }),
+      content: t('pages.servers.importConfirmBody'),
+      okText: t('pages.servers.importAction'),
       cancelText: t('cancel'),
       onOk: async () => {
         const hide = messageApi.loading(t('pages.nodes.install.running'), 0);
         try {
-          const msg = await serverMutations.installPanel(server.id, '');
+          const msg = await serverMutations.importPanel(server.id);
           hide();
-          if (msg?.success && msg.obj?.success) {
-            if (msg.obj.derived) {
-              messageApi.success(t('pages.nodes.install.derivedOk'));
-            } else {
-              messageApi.warning(msg.obj.message || t('pages.nodes.install.installedNotDerived'));
-            }
-          } else {
-            messageApi.error(msg?.obj?.message || msg?.msg || t('pages.nodes.install.failed'));
-          }
+          if (msg?.success && msg.obj?.success) messageApi.success(t('pages.servers.importOk'));
+          else messageApi.error(msg?.obj?.message || msg?.msg || t('pages.servers.importFailed'));
         } catch {
           hide();
-          messageApi.error(t('pages.nodes.install.failed'));
+          messageApi.error(t('pages.servers.importFailed'));
         }
       },
     });
   }, [modal, t, messageApi, serverMutations]);
+
+  const onBatchImport = useCallback(() => {
+    const targets = servers.filter((s) => selectedServerIds.includes(s.id) && s.panelInstalled && !s.nodeId);
+    if (targets.length === 0) return;
+    modal.confirm({
+      title: t('pages.servers.batchImportConfirmTitle', { count: targets.length }),
+      content: t('pages.servers.importConfirmBody'),
+      okText: t('pages.servers.importAction'),
+      cancelText: t('cancel'),
+      onOk: async () => {
+        const hide = messageApi.loading(t('pages.nodes.install.running'), 0);
+        try {
+          // Import is light (no install), so the servers are imported
+          // concurrently client-side rather than through a batch endpoint.
+          const results = await Promise.all(targets.map((s) => serverMutations.importPanel(s.id)));
+          hide();
+          const ok = results.filter((m) => m?.success && m.obj?.success).length;
+          messageApi.open({ type: ok === results.length ? 'success' : 'warning', content: t('pages.servers.batchResult', { ok, failed: results.length - ok }) });
+          setSelectedServerIds([]);
+        } catch {
+          hide();
+          messageApi.error(t('pages.servers.importFailed'));
+        }
+      },
+    });
+  }, [modal, t, messageApi, serverMutations, servers, selectedServerIds]);
+
+  const onUninstall = useCallback((server: ManagedServerRecord) => {
+    modal.confirm({
+      title: t('pages.servers.uninstallConfirmTitle', { name: server.name || `#${server.id}` }),
+      content: t('pages.servers.uninstallConfirmBody'),
+      okText: t('pages.servers.uninstallAction'),
+      okType: 'danger',
+      cancelText: t('cancel'),
+      onOk: async () => {
+        const hide = messageApi.loading(t('pages.nodes.install.running'), 0);
+        try {
+          const msg = await serverMutations.uninstallPanel(server.id);
+          hide();
+          if (msg?.success && msg.obj?.success) messageApi.success(t('pages.servers.uninstallOk'));
+          else messageApi.error(msg?.obj?.message || msg?.msg || t('pages.servers.uninstallFailed'));
+        } catch {
+          hide();
+          messageApi.error(t('pages.servers.uninstallFailed'));
+        }
+      },
+    });
+  }, [modal, t, messageApi, serverMutations]);
+
+  const onBatchUninstall = useCallback(() => {
+    const targets = servers.filter((s) => selectedServerIds.includes(s.id) && (s.panelInstalled || s.nodeId));
+    if (targets.length === 0) return;
+    modal.confirm({
+      title: t('pages.servers.batchUninstallConfirmTitle', { count: targets.length }),
+      content: t('pages.servers.uninstallConfirmBody'),
+      okText: t('pages.servers.uninstallAction'),
+      okType: 'danger',
+      cancelText: t('cancel'),
+      onOk: async () => {
+        const hide = messageApi.loading(t('pages.nodes.install.running'), 0);
+        try {
+          const msg = await serverMutations.uninstallPanelBatch(targets.map((s) => s.id));
+          hide();
+          const results = msg?.obj?.results ?? [];
+          const ok = results.filter((r) => r.success).length;
+          messageApi.open({ type: ok === results.length ? 'success' : 'warning', content: t('pages.servers.batchResult', { ok, failed: results.length - ok }) });
+          setSelectedServerIds([]);
+        } catch {
+          hide();
+          messageApi.error(t('pages.servers.uninstallFailed'));
+        }
+      },
+    });
+  }, [modal, t, messageApi, serverMutations, servers, selectedServerIds]);
 
   const onExecSelected = useCallback(() => {
     const targets = servers.filter((s) => selectedServerIds.includes(s.id));
@@ -400,8 +520,13 @@ export default function NodesPage() {
           onDelete={onDeleteServer}
           onToggleEnable={onToggleServerEnable}
           onInstall={onInstall}
+          onImport={onImport}
+          onUninstall={onUninstall}
           onViewNode={onViewNode}
           onExecSelected={onExecSelected}
+          onBatchInstall={onBatchInstall}
+          onBatchImport={onBatchImport}
+          onBatchUninstall={onBatchUninstall}
           onExecHistory={() => setHistoryOpen(true)}
         />
       </Col>
@@ -459,6 +584,14 @@ export default function NodesPage() {
           testSSH={serverMutations.testSSH}
           save={onSaveServer}
           onOpenChange={setServerFormOpen}
+        />
+
+        <InstallPanelModal
+          open={installOpen}
+          targets={installTargets}
+          fetchVersions={serverMutations.fetchPanelVersions}
+          onConfirm={runInstall}
+          onOpenChange={setInstallOpen}
         />
 
         <ExecCommandModal

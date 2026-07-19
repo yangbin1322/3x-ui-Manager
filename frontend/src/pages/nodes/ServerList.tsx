@@ -22,7 +22,9 @@ import {
   EyeInvisibleOutlined,
   EyeOutlined,
   HistoryOutlined,
+  ImportOutlined,
   LinkOutlined,
+  MinusCircleOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 
@@ -41,8 +43,13 @@ interface ServerListProps {
   onDelete: (server: ManagedServerRecord) => void;
   onToggleEnable: (server: ManagedServerRecord, next: boolean) => void;
   onInstall: (server: ManagedServerRecord) => void;
+  onImport: (server: ManagedServerRecord) => void;
+  onUninstall: (server: ManagedServerRecord) => void;
   onViewNode: (nodeId: number) => void;
   onExecSelected: () => void;
+  onBatchInstall: () => void;
+  onBatchImport: () => void;
+  onBatchUninstall: () => void;
   onExecHistory: () => void;
 }
 
@@ -78,8 +85,13 @@ export default function ServerList({
   onDelete,
   onToggleEnable,
   onInstall,
+  onImport,
+  onUninstall,
   onViewNode,
   onExecSelected,
+  onBatchInstall,
+  onBatchImport,
+  onBatchUninstall,
   onExecHistory,
 }: ServerListProps) {
   const { t } = useTranslation();
@@ -90,18 +102,28 @@ export default function ServerList({
     {
       title: t('pages.nodes.actions'),
       align: 'center',
-      width: 170,
+      width: 200,
       render: (_value, record) => (
         <Space>
-          {!record.nodeId && (
+          {!record.panelInstalled && !record.nodeId && (
             <Tooltip title={t('pages.nodes.install.action')}>
               <Button type="text" size="small" style={{ fontSize: 16 }} icon={<DeploymentUnitOutlined />} aria-label={t('pages.nodes.install.action')} onClick={() => onInstall(record)} />
+            </Tooltip>
+          )}
+          {record.panelInstalled && !record.nodeId && (
+            <Tooltip title={t('pages.servers.importAction')}>
+              <Button type="text" size="small" style={{ fontSize: 16 }} icon={<ImportOutlined />} aria-label={t('pages.servers.importAction')} onClick={() => onImport(record)} />
+            </Tooltip>
+          )}
+          {(record.panelInstalled || !!record.nodeId) && (
+            <Tooltip title={t('pages.servers.uninstallAction')}>
+              <Button type="text" size="small" danger style={{ fontSize: 16 }} icon={<MinusCircleOutlined />} aria-label={t('pages.servers.uninstallAction')} onClick={() => onUninstall(record)} />
             </Tooltip>
           )}
           <Tooltip title={t('edit')}>
             <Button type="text" size="small" style={{ fontSize: 16 }} icon={<EditOutlined />} aria-label={t('edit')} onClick={() => onEdit(record)} />
           </Tooltip>
-          <Tooltip title={t('delete')}>
+          <Tooltip title={t('pages.servers.deleteConfirmTitle', { name: record.name || '' })}>
             <Button type="text" size="small" danger style={{ fontSize: 16 }} icon={<DeleteOutlined />} aria-label={t('delete')} onClick={() => onDelete(record)} />
           </Tooltip>
         </Space>
@@ -160,6 +182,16 @@ export default function ServerList({
         record.osName ? `${record.osName} ${record.osVersion || ''}`.trim() : '-',
     },
     {
+      title: t('pages.servers.versionColumn'),
+      dataIndex: 'panelVersion',
+      align: 'center',
+      render: (_value, record) => record.panelInstalled ? (
+        <Tag color="green" style={{ margin: 0 }}>{record.panelVersion || '3x-ui'}</Tag>
+      ) : (
+        <span style={{ opacity: 0.5 }}>{t('pages.servers.notInstalled')}</span>
+      ),
+    },
+    {
       title: t('pages.nodes.status'),
       dataIndex: 'status',
       align: 'center',
@@ -212,7 +244,20 @@ export default function ServerList({
       width: 120,
       render: (_value, record) => relativeTime(record.lastHeartbeat),
     },
-  ], [t, showAddress, relativeTime, nodeNameById, onToggleEnable, onEdit, onDelete, onInstall, onViewNode]);
+  ], [t, showAddress, relativeTime, nodeNameById, onToggleEnable, onEdit, onDelete, onInstall, onImport, onUninstall, onViewNode]);
+
+  // Batch buttons target the applicable subset of the selection: install a
+  // server with no panel yet, import one that has a panel but no node, uninstall
+  // one that has either. The buttons are always shown and disabled when the
+  // selection has no applicable server (rather than hidden), so the toolbar
+  // layout is stable and the available actions are discoverable.
+  const selectedServers = useMemo(
+    () => servers.filter((s) => selectedIds.includes(s.id)),
+    [servers, selectedIds],
+  );
+  const installableCount = selectedServers.filter((s) => !s.panelInstalled && !s.nodeId).length;
+  const importableCount = selectedServers.filter((s) => s.panelInstalled && !s.nodeId).length;
+  const uninstallableCount = selectedServers.filter((s) => s.panelInstalled || s.nodeId).length;
 
   return (
     <Card size="small" hoverable>
@@ -223,11 +268,18 @@ export default function ServerList({
         <Button icon={<HistoryOutlined />} onClick={onExecHistory}>
           {t('pages.nodes.exec.history.action')}
         </Button>
-        {selectedIds.length > 0 && (
-          <Button icon={<CodeOutlined />} onClick={onExecSelected}>
-            {t('pages.nodes.exec.action')}
-          </Button>
-        )}
+        <Button icon={<CodeOutlined />} disabled={selectedIds.length === 0} onClick={onExecSelected}>
+          {t('pages.nodes.exec.action')}
+        </Button>
+        <Button icon={<DeploymentUnitOutlined />} disabled={installableCount === 0} onClick={onBatchInstall}>
+          {t('pages.servers.batchInstall', { count: installableCount })}
+        </Button>
+        <Button icon={<ImportOutlined />} disabled={importableCount === 0} onClick={onBatchImport}>
+          {t('pages.servers.batchImport', { count: importableCount })}
+        </Button>
+        <Button danger icon={<MinusCircleOutlined />} disabled={uninstallableCount === 0} onClick={onBatchUninstall}>
+          {t('pages.servers.batchUninstall', { count: uninstallableCount })}
+        </Button>
       </div>
 
       <Table<ManagedServerRecord>

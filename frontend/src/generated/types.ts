@@ -242,6 +242,17 @@ export interface BatchExecResult {
   results: ExecResult[];
 }
 
+export interface BatchInstallResponse {
+  results: BatchServerResult[];
+}
+
+export interface BatchServerResult {
+  message?: string;
+  serverId: number;
+  serverName: string;
+  success: boolean;
+}
+
 export interface Client {
   adTag?: string;
   allowedIPs?: string[];
@@ -524,6 +535,8 @@ export interface ManagedServer {
   nodeId: number;
   osName: string;
   osVersion: string;
+  panelInstalled: boolean;
+  panelVersion: string;
   remark: string;
   sshAuthType: string;
   sshHostKeyMode: string;
@@ -640,6 +653,8 @@ export interface SSHTestResult {
   message?: string;
   osName?: string;
   osVersion?: string;
+  panelInstalled: boolean;
+  panelVersion?: string;
   success: boolean;
 }
 
@@ -647,6 +662,12 @@ export interface Setting {
   id: number;
   key: string;
   value: string;
+}
+
+export interface UninstallResult {
+  message?: string;
+  stdout?: string;
+  success: boolean;
 }
 
 export interface User {

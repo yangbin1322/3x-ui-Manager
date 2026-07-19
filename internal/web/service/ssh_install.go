@@ -2,14 +2,19 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
+	"github.com/mhsanaei/3x-ui/v3/internal/logger"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/common"
 
 	"gorm.io/gorm"
@@ -32,6 +37,13 @@ type InstallResult struct {
 	Message   string `json:"message,omitempty"`
 	Stdout    string `json:"stdout,omitempty"`
 	AccessUrl string `json:"accessUrl,omitempty" example:"https://1.2.3.4:2053/abc/"`
+}
+
+// UninstallResult reports the outcome of removing a panel from a managed server.
+type UninstallResult struct {
+	Success bool   `json:"success" example:"true"`
+	Message string `json:"message,omitempty"`
+	Stdout  string `json:"stdout,omitempty"`
 }
 
 // installEnv holds the fields parsed out of the installer's output that the
@@ -252,4 +264,296 @@ func firstNonEmpty(vals ...string) string {
 		}
 	}
 	return ""
+}
+
+// uninstallCommand runs the official uninstaller non-interactively, then reports
+// success by whether the binary is actually gone rather than by the script's own
+// exit code. The global `x-ui` management script prompts once
+// ("Are you sure… [Default n]") via a `read`, so a "y" is piped in. It must be
+// the global x-ui.sh wrapper, NOT /usr/local/x-ui/x-ui: the uninstall deletes
+// that binary, so referencing it afterwards runs a missing file and exits 127
+// (the false failure the operator hit). The uninstall can also exit non-zero
+// from its trailing daemon-reload/menu even on success, so the trailing
+// `test ! -e …` makes the command's exit status mean "the panel binary is gone".
+const uninstallCommand = "printf 'y\\n' | x-ui uninstall; test ! -e /usr/local/x-ui/x-ui"
+
+// showSettingCommand prints the current panel settings (port, webBasePath, …)
+// via the x-ui binary at its install path, the same way install.sh reads an
+// existing install's config.
+const showSettingCommand = "cd /usr/local/x-ui && ./x-ui setting -show true"
+
+// readInstalledPanelCredentials assembles what an api node needs to adopt a
+// panel that is ALREADY installed (the import path), where there is no installer
+// "Access URL" line to parse. Port and base path come from `x-ui setting -show`;
+// the API token from -getApiToken (minted if absent). The scheme defaults to
+// http — a fresh install serves plain HTTP unless the operator set up TLS — and
+// is only https when the settings report a web certificate. The operator can
+// still correct the derived node from the Panel Nodes tab.
+func (s *ManagedServerService) readInstalledPanelCredentials(ctx context.Context, srv *model.ManagedServer) (*installEnv, error) {
+	showRes := s.execOnServer(ctx, srv, showSettingCommand, sshCommandTimeout)
+	if showRes.Status != execStatusSuccess {
+		return nil, fmt.Errorf("could not read the panel settings over SSH")
+	}
+	port, basePath, hasCert := parseShowSetting(showRes.Stdout)
+	if port == 0 {
+		return nil, fmt.Errorf("could not determine the panel port from its settings")
+	}
+	tokenRes := s.execOnServer(ctx, srv, getApiTokenCommand, sshCommandTimeout)
+	if tokenRes.Status != execStatusSuccess {
+		return nil, fmt.Errorf("could not read the API token from the panel")
+	}
+	token := parseApiToken(tokenRes.Stdout)
+	if token == "" {
+		return nil, fmt.Errorf("the panel did not return an API token")
+	}
+	scheme := "http"
+	if hasCert {
+		scheme = "https"
+	}
+	return &installEnv{scheme: scheme, port: port, basePath: basePath, token: token}, nil
+}
+
+// parseShowSetting pulls the port, webBasePath, and whether a web TLS
+// certificate is configured out of `x-ui setting -show`, whose output has
+// "port: <n>", "webBasePath: <path>" and "webCertFile: <path>" lines. ANSI
+// codes are stripped in case the binary colorizes. A missing base path yields
+// "" (root); a non-empty webCertFile means the panel serves https.
+func parseShowSetting(out string) (int, string, bool) {
+	var port int
+	var basePath string
+	var hasCert bool
+	for _, line := range strings.Split(stripANSI(out), "\n") {
+		line = strings.TrimSpace(line)
+		if rest, ok := strings.CutPrefix(line, "port:"); ok {
+			if p, err := strconv.Atoi(strings.TrimSpace(rest)); err == nil {
+				port = p
+			}
+		}
+		if rest, ok := strings.CutPrefix(line, "webCertFile:"); ok {
+			if strings.TrimSpace(rest) != "" {
+				hasCert = true
+			}
+		}
+		if rest, ok := strings.CutPrefix(line, "webBasePath:"); ok {
+			basePath = strings.Trim(strings.TrimSpace(rest), "/")
+		}
+	}
+	return port, basePath, hasCert
+}
+
+// ImportPanel adopts a panel that is already installed on a managed server:
+// it reads the running panel's credentials over SSH and derives a linked Node
+// without reinstalling anything. Used when the SSH heartbeat found a panel the
+// operator never installed through this UI.
+func (s *ManagedServerService) ImportPanel(ctx context.Context, serverId int, username string) (*InstallResult, error) {
+	srv, err := s.GetById(serverId)
+	if err != nil || srv == nil {
+		return nil, common.NewError("server not found")
+	}
+	if srv.NodeId != 0 {
+		return nil, common.NewError("this server already has a linked panel node")
+	}
+
+	runCtx, cancel := context.WithTimeout(ctx, installTimeout)
+	defer cancel()
+
+	env, err := s.readInstalledPanelCredentials(runCtx, srv)
+	if err != nil {
+		return &InstallResult{Message: err.Error()}, nil
+	}
+	nodeId, err := s.deriveNode(srv, env)
+	if err != nil {
+		return &InstallResult{Message: "could not create the panel node: " + err.Error()}, nil
+	}
+	s.writeAudit("", srv, "[import panel]", username, &ExecResult{ServerId: srv.Id, ServerName: srv.Name, Status: execStatusSuccess})
+	return &InstallResult{Success: true, Derived: true, NodeId: nodeId}, nil
+}
+
+// UninstallPanel runs the official uninstaller on a managed server. If the
+// server has a derived node, that node is deleted and the link cleared so the
+// panel and its record disappear together. The SSH access (the ManagedServer
+// row) is kept, so the box can be reinstalled later.
+func (s *ManagedServerService) UninstallPanel(ctx context.Context, serverId int, username string) (*UninstallResult, error) {
+	srv, err := s.GetById(serverId)
+	if err != nil || srv == nil {
+		return nil, common.NewError("server not found")
+	}
+
+	runCtx, cancel := context.WithTimeout(ctx, installTimeout)
+	defer cancel()
+
+	res := s.execOnServer(runCtx, srv, uninstallCommand, installTimeout)
+	s.writeAudit("", srv, "[uninstall 3x-ui]", username, res)
+	out := &UninstallResult{Stdout: res.Stdout}
+	if res.Status != execStatusSuccess {
+		out.Message = firstNonEmpty(res.Error, "uninstall failed")
+		return out, nil
+	}
+	out.Success = true
+
+	// Tear down the derived node and clear the link + panel state. A failure
+	// here is reported but not fatal: the panel is already gone from the box.
+	if srv.NodeId != 0 {
+		if err := (&NodeService{}).Delete(srv.NodeId); err != nil {
+			out.Message = "uninstalled, but removing the linked node failed: " + err.Error()
+		}
+	}
+	if err := database.GetDB().Model(model.ManagedServer{}).Where("id = ?", srv.Id).
+		Updates(map[string]any{"panel_installed": false, "panel_version": ""}).Error; err != nil {
+		out.Message = firstNonEmpty(out.Message, "uninstalled, but clearing the panel state failed: "+err.Error())
+	}
+	return out, nil
+}
+
+// BatchInstallResult / BatchUninstallResult carry one per-server outcome each so
+// the UI can show which servers succeeded and which failed in a bulk action.
+type BatchServerResult struct {
+	ServerId   int    `json:"serverId" example:"3"`
+	ServerName string `json:"serverName" example:"hk-1"`
+	Success    bool   `json:"success" example:"true"`
+	Message    string `json:"message,omitempty"`
+}
+
+type BatchInstallResponse struct {
+	Results []BatchServerResult `json:"results"`
+}
+
+// InstallPanelBatch installs 3x-ui on each server concurrently, bounded by
+// execConcurrency (each install is a heavy, side-effecting action). Results come
+// back in the requested order. A server that is missing or already linked
+// becomes a failed result rather than aborting the batch.
+func (s *ManagedServerService) InstallPanelBatch(ctx context.Context, serverIds []int, version string, username string) *BatchInstallResponse {
+	results := make([]BatchServerResult, len(serverIds))
+	sem := make(chan struct{}, execConcurrency)
+	var wg sync.WaitGroup
+	for i, id := range serverIds {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(i, id int) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			res, err := s.InstallPanel(ctx, id, version, username)
+			results[i] = installOutcome(id, res, err)
+		}(i, id)
+	}
+	wg.Wait()
+	return &BatchInstallResponse{Results: results}
+}
+
+// UninstallPanelBatch is the uninstall counterpart of InstallPanelBatch.
+func (s *ManagedServerService) UninstallPanelBatch(ctx context.Context, serverIds []int, username string) *BatchInstallResponse {
+	results := make([]BatchServerResult, len(serverIds))
+	sem := make(chan struct{}, execConcurrency)
+	var wg sync.WaitGroup
+	for i, id := range serverIds {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(i, id int) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			res, err := s.UninstallPanel(ctx, id, username)
+			results[i] = uninstallOutcome(id, res, err)
+		}(i, id)
+	}
+	wg.Wait()
+	return &BatchInstallResponse{Results: results}
+}
+
+func installOutcome(id int, res *InstallResult, err error) BatchServerResult {
+	out := BatchServerResult{ServerId: id}
+	if err != nil {
+		out.Message = err.Error()
+		return out
+	}
+	out.Success = res.Success && res.Derived
+	out.Message = res.Message
+	return out
+}
+
+func uninstallOutcome(id int, res *UninstallResult, err error) BatchServerResult {
+	out := BatchServerResult{ServerId: id}
+	if err != nil {
+		out.Message = err.Error()
+		return out
+	}
+	out.Success = res.Success
+	out.Message = res.Message
+	return out
+}
+
+// panelReleasesURL lists the 3x-ui releases the install script can install.
+const panelReleasesURL = "https://api.github.com/repos/MHSanaei/3x-ui/releases"
+
+// panelVersionsTTL bounds how often the version picker hits GitHub.
+const panelVersionsTTL = 15 * time.Minute
+
+var (
+	panelVersionsMu     sync.Mutex
+	panelVersionsCache  []string
+	panelVersionsCached time.Time
+)
+
+// PanelVersions returns installable 3x-ui release tags, newest first, cached for
+// panelVersionsTTL. On a fetch failure a non-empty stale cache is served rather
+// than erroring, so the picker keeps working through a transient GitHub blip;
+// only a cold-cache failure propagates. The caller always adds a "latest"
+// default and free-text entry, so an empty list is still usable.
+func (s *ManagedServerService) PanelVersions() ([]string, error) {
+	panelVersionsMu.Lock()
+	cached, at := panelVersionsCache, panelVersionsCached
+	panelVersionsMu.Unlock()
+	if cached != nil && time.Since(at) <= panelVersionsTTL {
+		return cached, nil
+	}
+
+	versions, err := fetchPanelVersions()
+	if err != nil {
+		if cached != nil {
+			logger.Warning("PanelVersions: serving stale list:", err)
+			return cached, nil
+		}
+		return nil, err
+	}
+	panelVersionsMu.Lock()
+	panelVersionsCache, panelVersionsCached = versions, time.Now()
+	panelVersionsMu.Unlock()
+	return versions, nil
+}
+
+func fetchPanelVersions() ([]string, error) {
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, panelReleasesURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := (&SettingService{}).NewProxiedHTTPClient(10 * time.Second).Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var releases []Release
+	if err := json.Unmarshal(body, &releases); err != nil {
+		return nil, err
+	}
+	// The installer refuses anything below v2.3.5, so filter to installable tags
+	// of the vMAJOR.MINOR.PATCH shape and drop pre-releases/dev tags.
+	versions := make([]string, 0, len(releases))
+	for _, r := range releases {
+		tag := strings.TrimPrefix(r.TagName, "v")
+		parts := strings.Split(tag, ".")
+		if len(parts) != 3 {
+			continue
+		}
+		if _, err := strconv.Atoi(parts[0]); err != nil {
+			continue
+		}
+		versions = append(versions, r.TagName)
+	}
+	return versions, nil
 }
