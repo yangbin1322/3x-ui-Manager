@@ -38,6 +38,7 @@ const PromptModal = lazy(() => import('@/components/feedback/PromptModal'));
 
 import { useInbounds } from './useInbounds';
 import { InboundList } from './list';
+import DeployToNodesModal from './DeployToNodesModal';
 import { LazyMount } from '@/components/utility';
 const InboundFormModal = lazy(() => import('./form/InboundFormModal'));
 const InboundInfoModal = lazy(() => import('./info/InboundInfoModal'));
@@ -61,7 +62,8 @@ type RowAction =
   | 'attachExisting'
   | 'detachClients'
   | 'addToGroup'
-  | 'clone';
+  | 'clone'
+  | 'deployToNodes';
 
 type GeneralAction = 'import' | 'export' | 'subs' | 'resetInbounds';
 
@@ -136,6 +138,8 @@ export default function InboundsPage() {
 
   const [attachOpen, setAttachOpen] = useState(false);
   const [attachSource, setAttachSource] = useState<DBInbound | null>(null);
+  const [deployOpen, setDeployOpen] = useState(false);
+  const [deploySource, setDeploySource] = useState<DBInbound | null>(null);
   const [attachExistingOpen, setAttachExistingOpen] = useState(false);
   const [attachExistingTarget, setAttachExistingTarget] = useState<DBInbound | null>(null);
   const [detachOpen, setDetachOpen] = useState(false);
@@ -553,6 +557,10 @@ export default function InboundsPage() {
       case 'clone':
         confirmClone(target);
         break;
+      case 'deployToNodes':
+        setDeploySource(target);
+        setDeployOpen(true);
+        break;
       default:
         messageApi.info(`Action "${key}" — coming in a later 5f subphase`);
     }
@@ -734,6 +742,14 @@ export default function InboundsPage() {
             onConfirm={onPromptConfirm}
           />
         </LazyMount>
+
+        <DeployToNodesModal
+          open={deployOpen}
+          inbound={deploySource ? { id: deploySource.id, tag: deploySource.tag, nodeId: deploySource.nodeId } : null}
+          nodes={nodesList}
+          onOpenChange={setDeployOpen}
+          onDeployed={refresh}
+        />
       </Layout>
     </ConfigProvider>
   );

@@ -1509,6 +1509,50 @@
         ],
         "type": "object"
       },
+      "DeployResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/DeployResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "type": "object"
+      },
+      "DeployResult": {
+        "description": "DeployResult is one node's outcome from copying an inbound to several nodes.",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "nodeId": {
+            "example": 3,
+            "type": "integer"
+          },
+          "nodeName": {
+            "example": "hk-1",
+            "type": "string"
+          },
+          "success": {
+            "example": true,
+            "type": "boolean"
+          },
+          "tag": {
+            "example": "in-443-tcp-hk1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nodeId",
+          "nodeName",
+          "success"
+        ],
+        "type": "object"
+      },
       "ExecHistoryResponse": {
         "description": "ExecHistoryResponse is one page of audit rows, newest first, plus the total\nmatching the filter so the UI can paginate.",
         "properties": {
@@ -3679,6 +3723,69 @@
                       {
                         "id": 3,
                         "reason": "..."
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/inbounds/deployToNodes": {
+      "post": {
+        "tags": [
+          "Inbounds"
+        ],
+        "summary": "Copy one inbound’s configuration onto each of the given nodes: for every node a new independent inbound is created there with tag \"<tag>-<nodeName>\", the same transport/TLS/port config, and an EMPTIED client list (client emails are globally unique and cannot be duplicated across nodes). Each node is independent — one failure does not abort the rest — and the node that already hosts the source inbound is skipped. Reports per-node success/failure.",
+        "operationId": "post_panel_api_inbounds_deployToNodes",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "inboundId": 5,
+                "nodeIds": [
+                  3,
+                  7
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/DeployResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "results": [
+                      {
+                        "message": "",
+                        "nodeId": 3,
+                        "nodeName": "hk-1",
+                        "success": true,
+                        "tag": "in-443-tcp-hk1"
                       }
                     ]
                   }

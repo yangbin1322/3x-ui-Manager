@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -71,6 +72,7 @@ func (a *InboundController) initRouter(g *gin.RouterGroup) {
 	g.POST("/add", a.addInbound)
 	g.POST("/del/:id", a.delInbound)
 	g.POST("/bulkDel", a.bulkDelInbounds)
+	g.POST("/deployToNodes", a.deployToNodes)
 	g.POST("/update/:id", a.updateInbound)
 	g.POST("/setEnable/:id", a.setInboundEnable)
 	g.POST("/:id/resetTraffic", a.resetInboundTraffic)
@@ -219,6 +221,38 @@ func (a *InboundController) bulkDelInbounds(c *gin.Context) {
 	user := session.GetLoginUser(c)
 	a.broadcastInboundsUpdate(user.Id)
 	notifyClientsChanged()
+}
+
+// deployToNodes copies one inbound's configuration onto each of the given nodes,
+// creating an independent inbound on every node (new tag, emptied client list).
+// The response reports per-node success/failure.
+func (a *InboundController) deployToNodes(c *gin.Context) {
+	var req struct {
+		InboundId int   `json:"inboundId"`
+		NodeIds   []int `json:"nodeIds"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+		return
+	}
+	if req.InboundId == 0 {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), fmt.Errorf("an inbound is required"))
+		return
+	}
+	if len(req.NodeIds) == 0 {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), fmt.Errorf("at least one node is required"))
+		return
+	}
+	result, err := a.inboundService.DeployInboundToNodes(req.InboundId, req.NodeIds)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+		return
+	}
+	jsonObj(c, result, nil)
+	a.xrayService.SetToNeedRestart()
+	if user := session.GetLoginUser(c); user != nil {
+		a.broadcastInboundsUpdate(user.Id)
+	}
 }
 
 // updateInbound updates an existing inbound configuration.
