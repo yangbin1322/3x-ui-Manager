@@ -48,6 +48,7 @@ interface ServerListProps {
   onViewNode: (nodeId: number) => void;
   onExecSelected: () => void;
   onBatchInstall: () => void;
+  onBatchImport: () => void;
   onBatchUninstall: () => void;
   onExecHistory: () => void;
 }
@@ -89,6 +90,7 @@ export default function ServerList({
   onViewNode,
   onExecSelected,
   onBatchInstall,
+  onBatchImport,
   onBatchUninstall,
   onExecHistory,
 }: ServerListProps) {
@@ -244,14 +246,17 @@ export default function ServerList({
     },
   ], [t, showAddress, relativeTime, nodeNameById, onToggleEnable, onEdit, onDelete, onInstall, onImport, onUninstall, onViewNode]);
 
-  // A batch install only targets selected servers with no panel yet; a batch
-  // uninstall only targets those that have one. The buttons appear when the
-  // selection contains at least one applicable server.
+  // Batch buttons target the applicable subset of the selection: install a
+  // server with no panel yet, import one that has a panel but no node, uninstall
+  // one that has either. The buttons are always shown and disabled when the
+  // selection has no applicable server (rather than hidden), so the toolbar
+  // layout is stable and the available actions are discoverable.
   const selectedServers = useMemo(
     () => servers.filter((s) => selectedIds.includes(s.id)),
     [servers, selectedIds],
   );
   const installableCount = selectedServers.filter((s) => !s.panelInstalled && !s.nodeId).length;
+  const importableCount = selectedServers.filter((s) => s.panelInstalled && !s.nodeId).length;
   const uninstallableCount = selectedServers.filter((s) => s.panelInstalled || s.nodeId).length;
 
   return (
@@ -263,21 +268,18 @@ export default function ServerList({
         <Button icon={<HistoryOutlined />} onClick={onExecHistory}>
           {t('pages.nodes.exec.history.action')}
         </Button>
-        {selectedIds.length > 0 && (
-          <Button icon={<CodeOutlined />} onClick={onExecSelected}>
-            {t('pages.nodes.exec.action')}
-          </Button>
-        )}
-        {installableCount > 0 && (
-          <Button icon={<DeploymentUnitOutlined />} onClick={onBatchInstall}>
-            {t('pages.servers.batchInstall', { count: installableCount })}
-          </Button>
-        )}
-        {uninstallableCount > 0 && (
-          <Button danger icon={<MinusCircleOutlined />} onClick={onBatchUninstall}>
-            {t('pages.servers.batchUninstall', { count: uninstallableCount })}
-          </Button>
-        )}
+        <Button icon={<CodeOutlined />} disabled={selectedIds.length === 0} onClick={onExecSelected}>
+          {t('pages.nodes.exec.action')}
+        </Button>
+        <Button icon={<DeploymentUnitOutlined />} disabled={installableCount === 0} onClick={onBatchInstall}>
+          {t('pages.servers.batchInstall', { count: installableCount })}
+        </Button>
+        <Button icon={<ImportOutlined />} disabled={importableCount === 0} onClick={onBatchImport}>
+          {t('pages.servers.batchImport', { count: importableCount })}
+        </Button>
+        <Button danger icon={<MinusCircleOutlined />} disabled={uninstallableCount === 0} onClick={onBatchUninstall}>
+          {t('pages.servers.batchUninstall', { count: uninstallableCount })}
+        </Button>
       </div>
 
       <Table<ManagedServerRecord>

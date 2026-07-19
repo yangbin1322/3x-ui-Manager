@@ -1014,6 +1014,8 @@
       "versionCustom": "Phiên bản tùy chỉnh…",
       "versionPlaceholder": "vd. v2.6.0",
       "batchInstall": "Cài ({count})",
+      "batchImport": "Nhập ({count})",
+      "batchImportConfirmTitle": "Nhập {count} máy chủ làm node bảng điều khiển?",
       "batchUninstall": "Gỡ ({count})",
       "batchInstallConfirmTitle": "Cài 3x-ui trên {count} máy chủ?",
       "batchUninstallConfirmTitle": "Gỡ 3x-ui khỏi {count} máy chủ?",

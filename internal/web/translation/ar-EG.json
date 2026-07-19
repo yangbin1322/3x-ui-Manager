@@ -1014,6 +1014,8 @@
       "versionCustom": "إصدار مخصص…",
       "versionPlaceholder": "مثال v2.6.0",
       "batchInstall": "تثبيت ({count})",
+      "batchImport": "استيراد ({count})",
+      "batchImportConfirmTitle": "استيراد {count} خادم(خوادم) كعقد لوحة؟",
       "batchUninstall": "إلغاء ({count})",
       "batchInstallConfirmTitle": "تثبيت 3x-ui على {count} خادم(خوادم)؟",
       "batchUninstallConfirmTitle": "إلغاء تثبيت 3x-ui من {count} خادم(خوادم)؟",

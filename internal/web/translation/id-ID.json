@@ -1014,6 +1014,8 @@
       "versionCustom": "Versi khusus…",
       "versionPlaceholder": "mis. v2.6.0",
       "batchInstall": "Pasang ({count})",
+      "batchImport": "Impor ({count})",
+      "batchImportConfirmTitle": "Impor {count} server sebagai node panel?",
       "batchUninstall": "Hapus ({count})",
       "batchInstallConfirmTitle": "Pasang 3x-ui di {count} server?",
       "batchUninstallConfirmTitle": "Hapus 3x-ui dari {count} server?",

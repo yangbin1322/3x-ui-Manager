@@ -1014,6 +1014,8 @@
       "versionCustom": "Özel sürüm…",
       "versionPlaceholder": "örn. v2.6.0",
       "batchInstall": "Kur ({count})",
+      "batchImport": "İçe aktar ({count})",
+      "batchImportConfirmTitle": "{count} sunucu panel düğümü olarak içe aktarılsın mı?",
       "batchUninstall": "Kaldır ({count})",
       "batchInstallConfirmTitle": "{count} sunucuya 3x-ui kurulsun mu?",
       "batchUninstallConfirmTitle": "{count} sunucudan 3x-ui kaldırılsın mı?",

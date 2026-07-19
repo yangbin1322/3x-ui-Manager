@@ -1014,6 +1014,8 @@
       "versionCustom": "Versão personalizada…",
       "versionPlaceholder": "ex. v2.6.0",
       "batchInstall": "Instalar ({count})",
+      "batchImport": "Importar ({count})",
+      "batchImportConfirmTitle": "Importar {count} servidor(es) como nós do painel?",
       "batchUninstall": "Desinstalar ({count})",
       "batchInstallConfirmTitle": "Instalar 3x-ui em {count} servidor(es)?",
       "batchUninstallConfirmTitle": "Desinstalar 3x-ui de {count} servidor(es)?",

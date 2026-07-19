@@ -1014,6 +1014,8 @@
       "versionCustom": "自定义版本…",
       "versionPlaceholder": "例如 v2.6.0",
       "batchInstall": "安装({count})",
+      "batchImport": "导入({count})",
+      "batchImportConfirmTitle": "将 {count} 台服务器导入为面板节点?",
       "batchUninstall": "卸载({count})",
       "batchInstallConfirmTitle": "在 {count} 台服务器上安装 3x-ui?",
       "batchUninstallConfirmTitle": "从 {count} 台服务器卸载 3x-ui?",

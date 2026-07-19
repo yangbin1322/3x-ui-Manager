@@ -1131,6 +1131,8 @@
       "versionCustom": "Custom version…",
       "versionPlaceholder": "e.g. v2.6.0",
       "batchInstall": "Install ({count})",
+      "batchImport": "Import ({count})",
+      "batchImportConfirmTitle": "Import {count} server(s) as panel nodes?",
       "batchUninstall": "Uninstall ({count})",
       "batchInstallConfirmTitle": "Install 3x-ui on {count} server(s)?",
       "batchUninstallConfirmTitle": "Uninstall 3x-ui from {count} server(s)?",

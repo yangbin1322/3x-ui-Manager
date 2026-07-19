@@ -1014,6 +1014,8 @@
       "versionCustom": "Versión personalizada…",
       "versionPlaceholder": "p. ej. v2.6.0",
       "batchInstall": "Instalar ({count})",
+      "batchImport": "Importar ({count})",
+      "batchImportConfirmTitle": "¿Importar {count} servidor(es) como nodos del panel?",
       "batchUninstall": "Desinstalar ({count})",
       "batchInstallConfirmTitle": "¿Instalar 3x-ui en {count} servidor(es)?",
       "batchUninstallConfirmTitle": "¿Desinstalar 3x-ui de {count} servidor(es)?",

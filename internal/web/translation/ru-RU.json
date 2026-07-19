@@ -1014,6 +1014,8 @@
       "versionCustom": "Своя версия…",
       "versionPlaceholder": "напр. v2.6.0",
       "batchInstall": "Установить ({count})",
+      "batchImport": "Импортировать ({count})",
+      "batchImportConfirmTitle": "Импортировать {count} сервер(ов) как узлы панели?",
       "batchUninstall": "Удалить ({count})",
       "batchInstallConfirmTitle": "Установить 3x-ui на {count} сервер(ов)?",
       "batchUninstallConfirmTitle": "Удалить 3x-ui с {count} сервер(ов)?",

@@ -355,6 +355,32 @@ export default function NodesPage() {
     });
   }, [modal, t, messageApi, serverMutations]);
 
+  const onBatchImport = useCallback(() => {
+    const targets = servers.filter((s) => selectedServerIds.includes(s.id) && s.panelInstalled && !s.nodeId);
+    if (targets.length === 0) return;
+    modal.confirm({
+      title: t('pages.servers.batchImportConfirmTitle', { count: targets.length }),
+      content: t('pages.servers.importConfirmBody'),
+      okText: t('pages.servers.importAction'),
+      cancelText: t('cancel'),
+      onOk: async () => {
+        const hide = messageApi.loading(t('pages.nodes.install.running'), 0);
+        try {
+          // Import is light (no install), so the servers are imported
+          // concurrently client-side rather than through a batch endpoint.
+          const results = await Promise.all(targets.map((s) => serverMutations.importPanel(s.id)));
+          hide();
+          const ok = results.filter((m) => m?.success && m.obj?.success).length;
+          messageApi.open({ type: ok === results.length ? 'success' : 'warning', content: t('pages.servers.batchResult', { ok, failed: results.length - ok }) });
+          setSelectedServerIds([]);
+        } catch {
+          hide();
+          messageApi.error(t('pages.servers.importFailed'));
+        }
+      },
+    });
+  }, [modal, t, messageApi, serverMutations, servers, selectedServerIds]);
+
   const onUninstall = useCallback((server: ManagedServerRecord) => {
     modal.confirm({
       title: t('pages.servers.uninstallConfirmTitle', { name: server.name || `#${server.id}` }),
@@ -499,6 +525,7 @@ export default function NodesPage() {
           onViewNode={onViewNode}
           onExecSelected={onExecSelected}
           onBatchInstall={onBatchInstall}
+          onBatchImport={onBatchImport}
           onBatchUninstall={onBatchUninstall}
           onExecHistory={() => setHistoryOpen(true)}
         />

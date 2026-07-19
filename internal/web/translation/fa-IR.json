@@ -1014,6 +1014,8 @@
       "versionCustom": "نسخهٔ سفارشی…",
       "versionPlaceholder": "مثلاً v2.6.0",
       "batchInstall": "نصب ({count})",
+      "batchImport": "وارد کردن ({count})",
+      "batchImportConfirmTitle": "{count} سرور به‌عنوان نود پنل وارد شود؟",
       "batchUninstall": "حذف ({count})",
       "batchInstallConfirmTitle": "3x-ui روی {count} سرور نصب شود؟",
       "batchUninstallConfirmTitle": "3x-ui از {count} سرور حذف شود؟",

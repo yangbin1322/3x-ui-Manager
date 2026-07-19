@@ -1014,6 +1014,8 @@
       "versionCustom": "カスタムバージョン…",
       "versionPlaceholder": "例: v2.6.0",
       "batchInstall": "インストール({count})",
+      "batchImport": "インポート({count})",
+      "batchImportConfirmTitle": "{count} 台のサーバーをパネルノードとしてインポートしますか?",
       "batchUninstall": "アンインストール({count})",
       "batchInstallConfirmTitle": "{count} 台のサーバーに 3x-ui をインストールしますか?",
       "batchUninstallConfirmTitle": "{count} 台のサーバーから 3x-ui をアンインストールしますか?",
