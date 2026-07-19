@@ -42,6 +42,7 @@ func (a *ManagedServerController) initRouter(g *gin.RouterGroup) {
 	g.POST("/addBatch", a.addBatch)
 	g.POST("/update/:id", a.update)
 	g.POST("/del/:id", a.del)
+	g.POST("/delBatch", a.delBatch)
 	g.POST("/setEnable/:id", a.setEnable)
 
 	g.POST("/test", a.test)
@@ -185,6 +186,24 @@ func (a *ManagedServerController) del(c *gin.Context) {
 	jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.delete"), nil)
 }
 
+// delBatch removes several managed servers at once. Each is deleted
+// independently; the number actually removed is returned.
+func (a *ManagedServerController) delBatch(c *gin.Context) {
+	var req struct {
+		ServerIds []int `json:"serverIds"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.delete"), err)
+		return
+	}
+	if len(req.ServerIds) == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.delete"), fmt.Errorf("at least one server is required"))
+		return
+	}
+	removed := a.serverService.DeleteBatch(req.ServerIds)
+	jsonObj(c, gin.H{"removed": removed}, nil)
+}
+
 func (a *ManagedServerController) setEnable(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -301,6 +320,7 @@ func (a *ManagedServerController) install(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
 		return
 	}
+	a.serverService.ProbeNowForHost(req.ServerId)
 	jsonObj(c, result, nil)
 }
 
@@ -326,6 +346,9 @@ func (a *ManagedServerController) installBatch(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), installRequestBudget)
 	defer cancel()
 	result := a.serverService.InstallPanelBatch(ctx, req.ServerIds, req.Version, username)
+	for _, id := range req.ServerIds {
+		a.serverService.ProbeNowForHost(id)
+	}
 	jsonObj(c, result, nil)
 }
 
@@ -354,6 +377,7 @@ func (a *ManagedServerController) importPanel(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
 		return
 	}
+	a.serverService.ProbeNowForHost(req.ServerId)
 	jsonObj(c, result, nil)
 }
 
@@ -381,6 +405,7 @@ func (a *ManagedServerController) uninstall(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.uninstall"), err)
 		return
 	}
+	a.serverService.ProbeNowForHost(req.ServerId)
 	jsonObj(c, result, nil)
 }
 
@@ -404,6 +429,9 @@ func (a *ManagedServerController) uninstallBatch(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), installRequestBudget)
 	defer cancel()
 	result := a.serverService.UninstallPanelBatch(ctx, req.ServerIds, username)
+	for _, id := range req.ServerIds {
+		a.serverService.ProbeNowForHost(id)
+	}
 	jsonObj(c, result, nil)
 }
 

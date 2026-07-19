@@ -17,6 +17,13 @@ export function useManagedServerMutations() {
   const queryClient = useQueryClient();
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: keys.managedServers.root() });
+    // The backend probes a just-added / just-changed server in the background,
+    // so its reachability and panel state land a moment after the mutation
+    // returns. Re-fetch a few times over the next several seconds to pull that
+    // in without making the user wait for the 15s heartbeat tick.
+    [1500, 3500, 6000].forEach((ms) => {
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: keys.managedServers.list() }), ms);
+    });
   };
 
   const createMut = useMutation({
@@ -42,7 +49,25 @@ export function useManagedServerMutations() {
   const removeMut = useMutation({
     mutationFn: (id: number) =>
       HttpUtil.post(`/panel/api/managedServers/del/${id}`),
-    onSuccess: (msg) => { if (msg?.success) invalidate(); },
+    onSuccess: (msg) => {
+      if (msg?.success) {
+        invalidate();
+        queryClient.invalidateQueries({ queryKey: keys.nodes.root() });
+      }
+    },
+  });
+
+  const removeBatchMut = useMutation({
+    mutationFn: (serverIds: number[]) =>
+      HttpUtil.post<{ removed: number }>('/panel/api/managedServers/delBatch', { serverIds }, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    onSuccess: (msg) => {
+      if (msg?.success) {
+        invalidate();
+        queryClient.invalidateQueries({ queryKey: keys.nodes.root() });
+      }
+    },
   });
 
   const setEnableMut = useMutation({
@@ -106,6 +131,7 @@ export function useManagedServerMutations() {
     createBatch: (servers: Partial<ManagedServerRecord>[], verify: boolean): Promise<Msg<BulkAddResponse>> => createBatchMut.mutateAsync({ servers, verify }),
     update: (id: number, payload: Partial<ManagedServerRecord>) => updateMut.mutateAsync({ id, payload }),
     remove: (id: number) => removeMut.mutateAsync(id),
+    removeBatch: (serverIds: number[]): Promise<Msg<{ removed: number }>> => removeBatchMut.mutateAsync(serverIds),
     setEnable: (id: number, enable: boolean) => setEnableMut.mutateAsync({ id, enable }),
     testSSH: (payload: Partial<ManagedServerRecord>, id?: number): Promise<Msg<SSHTestResult>> =>
       HttpUtil.post<SSHTestResult>(

@@ -107,9 +107,16 @@ export default function NodesPage() {
     return m;
   }, [nodes]);
 
-  const serverNameByNodeId = useMemo(() => {
-    const m = new Map<number, string>();
-    for (const s of servers) if (s.nodeId) m.set(s.nodeId, s.name || `#${s.id}`);
+  // A panel node can be shared by several server rows (same box, different
+  // names), so a node maps to the list of server names that reach it.
+  const serverNamesByNodeId = useMemo(() => {
+    const m = new Map<number, string[]>();
+    for (const s of servers) {
+      if (!s.nodeId) continue;
+      const names = m.get(s.nodeId) ?? [];
+      names.push(s.name || `#${s.id}`);
+      m.set(s.nodeId, names);
+    }
     return m;
   }, [servers]);
 
@@ -431,6 +438,23 @@ export default function NodesPage() {
     });
   }, [modal, t, messageApi, serverMutations, servers, selectedServerIds]);
 
+  const onBatchDelete = useCallback(() => {
+    const targets = servers.filter((s) => selectedServerIds.includes(s.id));
+    if (targets.length === 0) return;
+    modal.confirm({
+      title: t('pages.servers.batchDeleteConfirmTitle', { count: targets.length }),
+      content: t('pages.servers.batchDeleteConfirmBody'),
+      okText: t('delete'),
+      okType: 'danger',
+      cancelText: t('cancel'),
+      onOk: async () => {
+        const msg = await serverMutations.removeBatch(targets.map((s) => s.id));
+        if (msg?.success) messageApi.success(t('pages.nodes.toasts.deleted'));
+        setSelectedServerIds([]);
+      },
+    });
+  }, [modal, t, messageApi, serverMutations, servers, selectedServerIds]);
+
   const onExecSelected = useCallback(() => {
     const targets = servers.filter((s) => selectedServerIds.includes(s.id));
     if (targets.length === 0) return;
@@ -492,7 +516,7 @@ export default function NodesPage() {
           loading={loading}
           isMobile={isMobile}
           latestVersion={latestVersion}
-          serverNameByNodeId={serverNameByNodeId}
+          serverNamesByNodeId={serverNamesByNodeId}
           selectedIds={selectedIds}
           onSelectionChange={setSelectedIds}
           onAdd={onAdd}
@@ -530,6 +554,7 @@ export default function NodesPage() {
           onBatchInstall={onBatchInstall}
           onBatchImport={onBatchImport}
           onBatchUninstall={onBatchUninstall}
+          onBatchDelete={onBatchDelete}
           onExecHistory={() => setHistoryOpen(true)}
         />
       </Col>

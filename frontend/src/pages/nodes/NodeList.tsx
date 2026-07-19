@@ -44,7 +44,7 @@ interface NodeListProps {
   loading?: boolean;
   isMobile?: boolean;
   latestVersion?: string;
-  serverNameByNodeId?: Map<number, string>;
+  serverNamesByNodeId?: Map<number, string[]>;
   selectedIds: number[];
   onSelectionChange: (ids: number[]) => void;
   onAdd: () => void;
@@ -166,7 +166,7 @@ export default function NodeList({
   loading = false,
   isMobile = false,
   latestVersion = '',
-  serverNameByNodeId,
+  serverNamesByNodeId,
   selectedIds,
   onSelectionChange,
   onAdd,
@@ -285,15 +285,17 @@ export default function NodeList({
       dataIndex: 'name',
       ellipsis: true,
       render: (_value, record) => {
-        const fromServer = serverNameByNodeId?.get(record.id);
+        const fromServers = serverNamesByNodeId?.get(record.id) ?? [];
         return (
           <div className="name-cell" style={record.transitive ? { paddingInlineStart: 20 } : undefined}>
             <span className="name">
               {record.transitive && <ApartmentOutlined style={{ marginInlineEnd: 6, opacity: 0.6 }} />}
               {record.name}
-              {fromServer && (
-                <Tooltip title={t('pages.nodes.fromServer', { name: fromServer })}>
-                  <Tag icon={<CloudServerOutlined />} style={{ marginInlineStart: 6 }}>{fromServer}</Tag>
+              {fromServers.length > 0 && (
+                <Tooltip title={t('pages.nodes.fromServer', { name: fromServers.join(', ') })}>
+                  <Tag icon={<CloudServerOutlined />} style={{ marginInlineStart: 6 }}>
+                    {fromServers.length === 1 ? fromServers[0] : `${fromServers[0]} +${fromServers.length - 1}`}
+                  </Tag>
                 </Tooltip>
               )}
             </span>
@@ -439,7 +441,7 @@ export default function NodeList({
       width: 120,
       render: (_value, record) => relativeTime(record.lastHeartbeat),
     },
-  ], [t, showAddress, relativeTime, latestVersion, serverNameByNodeId, onToggleEnable, onProbe, onEdit, onDelete, onUpdateNode, nameByGuid]);
+  ], [t, showAddress, relativeTime, latestVersion, serverNamesByNodeId, onToggleEnable, onProbe, onEdit, onDelete, onUpdateNode, nameByGuid]);
 
   return (
     <Card size="small" hoverable>

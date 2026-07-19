@@ -71,6 +71,149 @@ func TestCreateBatch(t *testing.T) {
 	}
 }
 
+func TestSharedNodeAcrossSameHostRows(t *testing.T) {
+	t.Setenv("XUI_SECRET_KEY", "test-key")
+	setupConflictDB(t)
+	svc := &ManagedServerService{}
+
+	// Two rows for the same box (same address+port+user), different names.
+	a := &model.ManagedServer{Name: "box-a", Address: "203.0.113.9", SshPort: 22, SshUser: "root", SshAuthType: "password", SshPassword: "pw"}
+	b := &model.ManagedServer{Name: "box-b", Address: "203.0.113.9", SshPort: 22, SshUser: "root", SshAuthType: "password", SshPassword: "pw"}
+	if err := svc.Create(a); err != nil {
+		t.Fatalf("create a: %v", err)
+	}
+	if err := svc.Create(b); err != nil {
+		t.Fatalf("create b: %v", err)
+	}
+
+	// Deriving a node for row a must link BOTH rows to that node.
+	env := &installEnv{port: 2096, basePath: "p", scheme: "https", token: "tok"}
+	nodeId, err := svc.deriveNode(a, env)
+	if err != nil {
+		t.Fatalf("deriveNode: %v", err)
+	}
+	ga, _ := svc.GetById(a.Id)
+	gb, _ := svc.GetById(b.Id)
+	if ga.NodeId != nodeId || gb.NodeId != nodeId {
+		t.Fatalf("both rows should share node %d, got a=%d b=%d", nodeId, ga.NodeId, gb.NodeId)
+	}
+
+	// Deleting one row must NOT delete the shared node (the other still uses it).
+	if err := svc.Delete(a.Id); err != nil {
+		t.Fatalf("delete a: %v", err)
+	}
+	if _, err := (&NodeService{}).GetById(nodeId); err != nil {
+		t.Fatalf("shared node was deleted while a sibling still references it: %v", err)
+	}
+
+	// Deleting the last referencing row must delete the node.
+	if err := svc.Delete(b.Id); err != nil {
+		t.Fatalf("delete b: %v", err)
+	}
+	if _, err := (&NodeService{}).GetById(nodeId); err == nil {
+		t.Fatalf("node should be gone after the last referencing server was deleted")
+	}
+}
+
+func TestCreateAutoLinksSameHostNode(t *testing.T) {
+	t.Setenv("XUI_SECRET_KEY", "test-key")
+	setupConflictDB(t)
+	svc := &ManagedServerService{}
+
+	// Row a exists and has a derived node.
+	a := &model.ManagedServer{Name: "auto-a", Address: "203.0.113.13", SshPort: 22, SshUser: "root", SshAuthType: "password", SshPassword: "pw"}
+	if err := svc.Create(a); err != nil {
+		t.Fatalf("create a: %v", err)
+	}
+	env := &installEnv{port: 2096, basePath: "p", scheme: "https", token: "tok"}
+	nodeId, err := svc.deriveNode(a, env)
+	if err != nil {
+		t.Fatalf("deriveNode: %v", err)
+	}
+
+	// Adding a second row for the same box must auto-link it to a's node.
+	b := &model.ManagedServer{Name: "auto-b", Address: "203.0.113.13", SshPort: 22, SshUser: "root", SshAuthType: "password", SshPassword: "pw"}
+	if err := svc.Create(b); err != nil {
+		t.Fatalf("create b: %v", err)
+	}
+	gb, _ := svc.GetById(b.Id)
+	if gb.NodeId != nodeId {
+		t.Fatalf("new same-host row NodeId = %d, want auto-link to %d", gb.NodeId, nodeId)
+	}
+}
+
+func TestAutoLinkSameHost(t *testing.T) {
+	t.Setenv("XUI_SECRET_KEY", "test-key")
+	setupConflictDB(t)
+	svc := &ManagedServerService{}
+
+	// Two unlinked rows for one box; then a derives a node. b is still unlinked
+	// until AutoLinkSameHost (what the heartbeat calls) picks it up.
+	a := &model.ManagedServer{Name: "hb-a", Address: "203.0.113.14", SshPort: 22, SshUser: "root", SshAuthType: "password", SshPassword: "pw"}
+	b := &model.ManagedServer{Name: "hb-b", Address: "203.0.113.14", SshPort: 22, SshUser: "root", SshAuthType: "password", SshPassword: "pw"}
+	if err := svc.Create(a); err != nil {
+		t.Fatalf("create a: %v", err)
+	}
+	if err := svc.Create(b); err != nil {
+		t.Fatalf("create b: %v", err)
+	}
+	// Unlink b to simulate it having been added before the install.
+	database.GetDB().Model(&model.ManagedServer{}).Where("id = ?", b.Id).Update("node_id", 0)
+	env := &installEnv{port: 2096, basePath: "p", scheme: "https", token: "tok"}
+	if _, err := svc.deriveNode(a, env); err != nil {
+		t.Fatalf("deriveNode: %v", err)
+	}
+	// deriveNode links all same-host rows, so unlink b again to isolate AutoLink.
+	database.GetDB().Model(&model.ManagedServer{}).Where("id = ?", b.Id).Update("node_id", 0)
+
+	linked := svc.AutoLinkSameHost(b.Id)
+	if linked == 0 {
+		t.Fatalf("AutoLinkSameHost returned 0, want it to link b to a's node")
+	}
+	gb, _ := svc.GetById(b.Id)
+	if gb.NodeId != linked {
+		t.Fatalf("b NodeId = %d, want %d", gb.NodeId, linked)
+	}
+}
+
+func TestInstallReusesSameHostNode(t *testing.T) {
+	t.Setenv("XUI_SECRET_KEY", "test-key")
+	setupConflictDB(t)
+	svc := &ManagedServerService{}
+
+	a := &model.ManagedServer{Name: "reuse-a", Address: "203.0.113.11", SshPort: 22, SshUser: "root", SshAuthType: "password", SshPassword: "pw"}
+	b := &model.ManagedServer{Name: "reuse-b", Address: "203.0.113.11", SshPort: 22, SshUser: "root", SshAuthType: "password", SshPassword: "pw"}
+	if err := svc.Create(a); err != nil {
+		t.Fatalf("create a: %v", err)
+	}
+	if err := svc.Create(b); err != nil {
+		t.Fatalf("create b: %v", err)
+	}
+	// Row a already has a derived node.
+	env := &installEnv{port: 2096, basePath: "p", scheme: "https", token: "tok"}
+	nodeId, err := svc.deriveNode(a, env)
+	if err != nil {
+		t.Fatalf("deriveNode: %v", err)
+	}
+	// Clear b's link to simulate an unlinked sibling asking to install.
+	if err := database.GetDB().Model(&model.ManagedServer{}).Where("id = ?", b.Id).Update("node_id", 0).Error; err != nil {
+		t.Fatalf("unlink b: %v", err)
+	}
+	// Installing on b must reuse a's node, not create a second one.
+	res, err := svc.InstallPanel(t.Context(), b.Id, "", "admin")
+	if err != nil {
+		t.Fatalf("install b: %v", err)
+	}
+	if res.NodeId != nodeId {
+		t.Fatalf("install on sibling created node %d, want reuse of %d", res.NodeId, nodeId)
+	}
+	var nodeCount int64
+	database.GetDB().Model(&model.Node{}).Count(&nodeCount)
+	if nodeCount != 1 {
+		t.Fatalf("node count = %d, want 1 (reused, not a second node)", nodeCount)
+	}
+}
+
 func TestParsePanelVersion(t *testing.T) {
 	tests := []struct {
 		name string
