@@ -1419,6 +1419,60 @@ _install_xui_service_unit() {
     return 0
 }
 
+# Resolve the systemd EnvironmentFile the unit for this distro loads on start
+# (matches the panel's config.GetEnvFilePaths and the EnvironmentFile= lines in
+# the x-ui.service.* units).
+_xui_env_file() {
+    case "${release}" in
+        arch | manjaro | parch | alpine)
+            echo "/etc/conf.d/x-ui"
+            ;;
+        centos | almalinux | rocky | ol | rhel | fedora | amzn | virtuozzo)
+            echo "/etc/sysconfig/x-ui"
+            ;;
+        *)
+            echo "/etc/default/x-ui"
+            ;;
+    esac
+}
+
+# The panel encrypts stored SSH credentials with XUI_SECRET_KEY (AES-256-GCM);
+# without it the "servers" feature errors with "XUI_SECRET_KEY is not set; it is
+# required to store SSH credentials". A fresh install has no credentials yet, so
+# we can safely generate a random key and persist it into the EnvironmentFile the
+# service loads on start. If a key is already present we leave it untouched --
+# overwriting it would make any already-stored credentials undecryptable.
+ensure_secret_key() {
+    local env_file
+    env_file=$(_xui_env_file)
+
+    if [[ -f "$env_file" ]] && grep -q '^XUI_SECRET_KEY=' "$env_file"; then
+        return 0
+    fi
+
+    local key=""
+    if command -v openssl > /dev/null 2>&1; then
+        key=$(openssl rand -hex 32)
+    fi
+    if [[ -z "$key" && -r /dev/urandom ]]; then
+        key=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
+    fi
+    if [[ -z "$key" ]]; then
+        echo -e "${yellow}Could not generate XUI_SECRET_KEY (no openssl/urandom); the servers feature will be unavailable until it is set manually.${plain}"
+        return 0
+    fi
+
+    local umask_prev
+    umask_prev=$(umask)
+    umask 077
+    touch "$env_file"
+    printf 'XUI_SECRET_KEY=%s\n' "$key" >> "$env_file"
+    chmod 600 "$env_file"
+    umask "$umask_prev"
+    export XUI_SECRET_KEY="$key"
+    echo -e "${green}Generated and persisted XUI_SECRET_KEY to ${env_file} (required for the servers/SSH feature).${plain}"
+}
+
 install_x-ui() {
     cd ${xui_folder%/x-ui}/
 
@@ -1547,6 +1601,7 @@ install_x-ui() {
     chmod +x /usr/bin/x-ui
     mkdir -p /var/log/x-ui
     config_after_install
+    ensure_secret_key
 
     # Etckeeper compatibility
     if [ -d "/etc/.git" ]; then
