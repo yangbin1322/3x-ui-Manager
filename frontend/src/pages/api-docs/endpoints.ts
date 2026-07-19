@@ -209,6 +209,13 @@ export const sections: readonly Section[] = [
       },
       {
         method: 'POST',
+        path: '/panel/api/inbounds/bulkDelAllClients',
+        summary: 'Remove every client from each of the given inbounds while keeping the inbounds themselves. Collects the union of client emails across the listed inbounds and deletes them in one bulk-delete pass. Destructive and cannot be undone.',
+        body: '{\n  "ids": [1, 2, 3]\n}',
+        response: '{\n  "success": true,\n  "obj": {\n    "deleted": 30\n  }\n}',
+      },
+      {
+        method: 'POST',
         path: '/panel/api/inbounds/resetAllTraffics',
         summary: 'Reset upload + download counters on every inbound. Destructive — accounting history is lost.',
       },

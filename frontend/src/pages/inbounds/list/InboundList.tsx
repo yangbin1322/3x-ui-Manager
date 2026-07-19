@@ -24,6 +24,8 @@ import {
   InfoCircleOutlined,
   DeleteOutlined,
   SearchOutlined,
+  UsergroupAddOutlined,
+  UsergroupDeleteOutlined,
 } from '@ant-design/icons';
 
 import { HttpUtil } from '@/utils';
@@ -51,6 +53,9 @@ export default function InboundList({
   onGeneralAction,
   onRowAction,
   onBulkDelete,
+  onBulkAttach,
+  onBulkDetach,
+  onBulkDelClients,
 }: InboundListProps) {
   const { t } = useTranslation();
   const [statsRecord, setStatsRecord] = useState<DBInboundRecord | null>(null);
@@ -204,6 +209,15 @@ export default function InboundList({
               <Tag color="blue" closable onClose={() => setSelectedRowKeys([])} style={{ marginInlineEnd: 0 }}>
                 {t('pages.inbounds.selectedCount', { count: selectedRowKeys.length })}
               </Tag>
+              <Button icon={<UsergroupAddOutlined />} onClick={() => onBulkAttach(selectedRowKeys)} aria-label={t('pages.inbounds.attachExistingClients')}>
+                {!isMobile && t('pages.inbounds.attachExistingClients')}
+              </Button>
+              <Button icon={<UsergroupDeleteOutlined />} onClick={() => onBulkDetach(selectedRowKeys)} aria-label={t('pages.inbounds.detachClients')}>
+                {!isMobile && t('pages.inbounds.detachClients')}
+              </Button>
+              <Button danger icon={<UsergroupDeleteOutlined />} onClick={() => onBulkDelClients(selectedRowKeys)} aria-label={t('pages.inbounds.delAllClients')}>
+                {!isMobile && t('pages.inbounds.delAllClients')}
+              </Button>
               <Button danger icon={<DeleteOutlined />} onClick={handleBulkDelete} aria-label={t('delete')}>
                 {!isMobile && t('delete')}
               </Button>

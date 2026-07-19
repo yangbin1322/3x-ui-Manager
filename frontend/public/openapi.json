@@ -3979,6 +3979,59 @@
         }
       }
     },
+    "/panel/api/inbounds/bulkDelAllClients": {
+      "post": {
+        "tags": [
+          "Inbounds"
+        ],
+        "summary": "Remove every client from each of the given inbounds while keeping the inbounds themselves. Collects the union of client emails across the listed inbounds and deletes them in one bulk-delete pass. Destructive and cannot be undone.",
+        "operationId": "post_panel_api_inbounds_bulkDelAllClients",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "ids": [
+                  1,
+                  2,
+                  3
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "deleted": 30
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/panel/api/inbounds/resetAllTraffics": {
       "post": {
         "tags": [

@@ -81,4 +81,7 @@ export interface InboundListProps {
   onGeneralAction: (key: GeneralAction) => void;
   onRowAction: (action: { key: RowAction; dbInbound: DBInboundRecord }) => void;
   onBulkDelete: (ids: number[]) => Promise<boolean>;
+  onBulkAttach: (ids: number[]) => void;
+  onBulkDetach: (ids: number[]) => void;
+  onBulkDelClients: (ids: number[]) => void;
 }
