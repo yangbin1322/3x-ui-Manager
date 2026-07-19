@@ -267,28 +267,28 @@ export default function ServerList({
   return (
     <Card size="small" hoverable>
       <div className="toolbar">
-        <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
+        <Button type="primary" size="small" icon={<PlusOutlined />} onClick={onAdd}>
           {t('pages.servers.addServer')}
         </Button>
-        <Button icon={<UsergroupAddOutlined />} onClick={onBulkAdd}>
+        <Button size="small" icon={<UsergroupAddOutlined />} onClick={onBulkAdd}>
           {t('pages.servers.bulkAdd')}
         </Button>
-        <Button icon={<HistoryOutlined />} onClick={onExecHistory}>
+        <Button size="small" icon={<HistoryOutlined />} onClick={onExecHistory}>
           {t('pages.nodes.exec.history.action')}
         </Button>
-        <Button icon={<CodeOutlined />} disabled={selectedIds.length === 0} onClick={onExecSelected}>
+        <Button size="small" icon={<CodeOutlined />} disabled={selectedIds.length === 0} onClick={onExecSelected}>
           {t('pages.nodes.exec.action')}
         </Button>
-        <Button icon={<DeploymentUnitOutlined />} disabled={installableCount === 0} onClick={onBatchInstall}>
+        <Button size="small" icon={<DeploymentUnitOutlined />} disabled={installableCount === 0} onClick={onBatchInstall}>
           {t('pages.servers.batchInstall', { count: installableCount })}
         </Button>
-        <Button icon={<ImportOutlined />} disabled={importableCount === 0} onClick={onBatchImport}>
+        <Button size="small" icon={<ImportOutlined />} disabled={importableCount === 0} onClick={onBatchImport}>
           {t('pages.servers.batchImport', { count: importableCount })}
         </Button>
-        <Button danger icon={<MinusCircleOutlined />} disabled={uninstallableCount === 0} onClick={onBatchUninstall}>
+        <Button danger size="small" icon={<MinusCircleOutlined />} disabled={uninstallableCount === 0} onClick={onBatchUninstall}>
           {t('pages.servers.batchUninstall', { count: uninstallableCount })}
         </Button>
-        <Button danger icon={<DeleteOutlined />} disabled={selectedIds.length === 0} onClick={onBatchDelete}>
+        <Button danger size="small" icon={<DeleteOutlined />} disabled={selectedIds.length === 0} onClick={onBatchDelete}>
           {t('pages.servers.batchDelete', { count: selectedIds.length })}
         </Button>
       </div>
