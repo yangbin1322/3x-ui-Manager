@@ -133,7 +133,11 @@ export default function BulkAddServersModal({ open, createBatch, onOpenChange }:
     URL.revokeObjectURL(url);
   }
 
-  const validRows = useMemo(() => rows.filter((r) => !r.error), [rows]);
+  // A row is importable when it has no parse error and has not already been
+  // imported successfully — so re-clicking Import only retries the rows that
+  // failed, never re-inserting an already-created server (which would hit the
+  // unique-name constraint).
+  const validRows = useMemo(() => rows.filter((r) => !r.error && !r.outcome?.success), [rows]);
   const canImport = parsed && validRows.length > 0 && !submitting;
 
   async function submit() {

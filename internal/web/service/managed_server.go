@@ -112,15 +112,23 @@ func (s *ManagedServerService) Create(srv *model.ManagedServer) error {
 	if err := database.GetDB().Create(srv).Error; err != nil {
 		return err
 	}
+	// If a sibling row for the same box already derived a panel node, adopt it
+	// onto this new row automatically, so the shared node shows up without the
+	// operator having to click "import" on every added record.
+	if nodeId := s.linkedNodeForHost(srv); nodeId != 0 {
+		_ = database.GetDB().Model(&model.ManagedServer{}).Where("id = ?", srv.Id).Update("node_id", nodeId).Error
+	}
+	// Probe in the background so a reachable server shows its state within a
+	// second or two (the UI short-polls the list after an add). It is NOT
+	// synchronous: an unreachable server would otherwise block the add for the
+	// whole SSH timeout.
 	s.ProbeNowAsync(srv.Id)
 	return nil
 }
 
-// ProbeNowAsync kicks off a single SSH heartbeat for one server in the
-// background so a just-added / just-installed server shows its reachability and
-// panel state right away instead of waiting for the next heartbeat tick. It is
-// fire-and-forget: failures are recorded by UpdateSSHHeartbeat like any probe,
-// and the caller's response is not blocked on the SSH round-trip.
+// ProbeNowAsync runs one SSH heartbeat for a server in the background so a
+// just-added / just-changed server refreshes its reachability and panel state
+// well before the next heartbeat tick, without blocking the caller's response.
 func (s *ManagedServerService) ProbeNowAsync(id int) {
 	go func() {
 		srv, err := s.GetById(id)
@@ -136,8 +144,9 @@ func (s *ManagedServerService) ProbeNowAsync(id int) {
 	}()
 }
 
-// ProbeNowForHost probes every server row for the same box as the given id, used
-// after an install/uninstall that changes the panel state of a shared machine.
+// ProbeNowForHost probes the given server and every sibling row for the same box
+// in the background. Used after an install/import/uninstall so the shared
+// machine's panel state refreshes promptly.
 func (s *ManagedServerService) ProbeNowForHost(id int) {
 	srv, err := s.GetById(id)
 	if err != nil || srv == nil {
@@ -151,6 +160,27 @@ func (s *ManagedServerService) ProbeNowForHost(id int) {
 	for _, sib := range siblings {
 		s.ProbeNowAsync(sib.Id)
 	}
+}
+
+// AutoLinkSameHost links an unlinked server to a panel node already derived for
+// its box by a sibling row, if one exists. Called from the heartbeat so a server
+// added before a sibling installed a panel picks up the shared node on its own,
+// without the operator importing it manually. Returns the node id it linked to,
+// or 0 if there was nothing to do.
+func (s *ManagedServerService) AutoLinkSameHost(id int) int {
+	srv, err := s.GetById(id)
+	if err != nil || srv == nil || srv.NodeId != 0 {
+		return 0
+	}
+	nodeId := s.linkedNodeForHost(srv)
+	if nodeId == 0 {
+		return 0
+	}
+	if err := database.GetDB().Model(&model.ManagedServer{}).Where("id = ?", id).
+		Update("node_id", nodeId).Error; err != nil {
+		return 0
+	}
+	return nodeId
 }
 
 // BulkAddResult is one row's outcome from a batch add, carrying the row index so

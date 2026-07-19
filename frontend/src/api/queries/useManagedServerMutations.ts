@@ -17,6 +17,13 @@ export function useManagedServerMutations() {
   const queryClient = useQueryClient();
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: keys.managedServers.root() });
+    // The backend probes a just-added / just-changed server in the background,
+    // so its reachability and panel state land a moment after the mutation
+    // returns. Re-fetch a few times over the next several seconds to pull that
+    // in without making the user wait for the 15s heartbeat tick.
+    [1500, 3500, 6000].forEach((ms) => {
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: keys.managedServers.list() }), ms);
+    });
   };
 
   const createMut = useMutation({

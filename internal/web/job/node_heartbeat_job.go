@@ -131,6 +131,11 @@ func (j *NodeHeartbeatJob) probeOneServer(srv *model.ManagedServer) {
 	if err := j.managedServerService.UpdateSSHHeartbeat(srv.Id, patch); err != nil {
 		logger.Warning("node heartbeat: update managed server", srv.Id, "failed:", err)
 	}
+	// Pick up a panel node a sibling row derived for the same box, so a server
+	// added before that install becomes linked on its own.
+	if srv.NodeId == 0 {
+		j.managedServerService.AutoLinkSameHost(srv.Id)
+	}
 }
 
 // publishNodeTransition emits node.down / node.up only on a genuine state change.

@@ -115,6 +115,67 @@ func TestSharedNodeAcrossSameHostRows(t *testing.T) {
 	}
 }
 
+func TestCreateAutoLinksSameHostNode(t *testing.T) {
+	t.Setenv("XUI_SECRET_KEY", "test-key")
+	setupConflictDB(t)
+	svc := &ManagedServerService{}
+
+	// Row a exists and has a derived node.
+	a := &model.ManagedServer{Name: "auto-a", Address: "203.0.113.13", SshPort: 22, SshUser: "root", SshAuthType: "password", SshPassword: "pw"}
+	if err := svc.Create(a); err != nil {
+		t.Fatalf("create a: %v", err)
+	}
+	env := &installEnv{port: 2096, basePath: "p", scheme: "https", token: "tok"}
+	nodeId, err := svc.deriveNode(a, env)
+	if err != nil {
+		t.Fatalf("deriveNode: %v", err)
+	}
+
+	// Adding a second row for the same box must auto-link it to a's node.
+	b := &model.ManagedServer{Name: "auto-b", Address: "203.0.113.13", SshPort: 22, SshUser: "root", SshAuthType: "password", SshPassword: "pw"}
+	if err := svc.Create(b); err != nil {
+		t.Fatalf("create b: %v", err)
+	}
+	gb, _ := svc.GetById(b.Id)
+	if gb.NodeId != nodeId {
+		t.Fatalf("new same-host row NodeId = %d, want auto-link to %d", gb.NodeId, nodeId)
+	}
+}
+
+func TestAutoLinkSameHost(t *testing.T) {
+	t.Setenv("XUI_SECRET_KEY", "test-key")
+	setupConflictDB(t)
+	svc := &ManagedServerService{}
+
+	// Two unlinked rows for one box; then a derives a node. b is still unlinked
+	// until AutoLinkSameHost (what the heartbeat calls) picks it up.
+	a := &model.ManagedServer{Name: "hb-a", Address: "203.0.113.14", SshPort: 22, SshUser: "root", SshAuthType: "password", SshPassword: "pw"}
+	b := &model.ManagedServer{Name: "hb-b", Address: "203.0.113.14", SshPort: 22, SshUser: "root", SshAuthType: "password", SshPassword: "pw"}
+	if err := svc.Create(a); err != nil {
+		t.Fatalf("create a: %v", err)
+	}
+	if err := svc.Create(b); err != nil {
+		t.Fatalf("create b: %v", err)
+	}
+	// Unlink b to simulate it having been added before the install.
+	database.GetDB().Model(&model.ManagedServer{}).Where("id = ?", b.Id).Update("node_id", 0)
+	env := &installEnv{port: 2096, basePath: "p", scheme: "https", token: "tok"}
+	if _, err := svc.deriveNode(a, env); err != nil {
+		t.Fatalf("deriveNode: %v", err)
+	}
+	// deriveNode links all same-host rows, so unlink b again to isolate AutoLink.
+	database.GetDB().Model(&model.ManagedServer{}).Where("id = ?", b.Id).Update("node_id", 0)
+
+	linked := svc.AutoLinkSameHost(b.Id)
+	if linked == 0 {
+		t.Fatalf("AutoLinkSameHost returned 0, want it to link b to a's node")
+	}
+	gb, _ := svc.GetById(b.Id)
+	if gb.NodeId != linked {
+		t.Fatalf("b NodeId = %d, want %d", gb.NodeId, linked)
+	}
+}
+
 func TestInstallReusesSameHostNode(t *testing.T) {
 	t.Setenv("XUI_SECRET_KEY", "test-key")
 	setupConflictDB(t)
