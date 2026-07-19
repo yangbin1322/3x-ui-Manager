@@ -91,12 +91,31 @@ func (a *ManagedServerController) add(c *gin.Context) {
 	jsonMsgObj(c, I18nWeb(c, "pages.nodes.toasts.add"), srv, nil)
 }
 
+// bulkAddRow is the JSON shape of one server in a batch add. It cannot bind
+// straight onto model.ManagedServer: the credential fields there are json:"-"
+// (write-only, so JSON is never deserialized into them), which would silently
+// drop every password/key and fail validation with "ssh password is required".
+// So the credentials are named explicitly here and copied into the model.
+type bulkAddRow struct {
+	Name             string `json:"name"`
+	Remark           string `json:"remark"`
+	Address          string `json:"address"`
+	SshPort          int    `json:"sshPort"`
+	SshUser          string `json:"sshUser"`
+	SshAuthType      string `json:"sshAuthType"`
+	SshPassword      string `json:"sshPassword"`
+	SshPrivateKey    string `json:"sshPrivateKey"`
+	SshKeyPassphrase string `json:"sshKeyPassphrase"`
+	SshHostKeyMode   string `json:"sshHostKeyMode"`
+	SshHostKeySha256 string `json:"sshHostKeySha256"`
+}
+
 // addBatch registers several managed servers in one request. Each row is
 // validated and created independently; the response reports per-row outcomes in
 // the input order so the operator can fix only the rows that failed.
 func (a *ManagedServerController) addBatch(c *gin.Context) {
 	var req struct {
-		Servers []*model.ManagedServer `json:"servers"`
+		Servers []bulkAddRow `json:"servers"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.add"), err)
@@ -106,7 +125,24 @@ func (a *ManagedServerController) addBatch(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.add"), fmt.Errorf("at least one server is required"))
 		return
 	}
-	result := a.serverService.CreateBatch(req.Servers)
+	servers := make([]*model.ManagedServer, len(req.Servers))
+	for i, r := range req.Servers {
+		servers[i] = &model.ManagedServer{
+			Name:             r.Name,
+			Remark:           r.Remark,
+			Address:          r.Address,
+			Enable:           true,
+			SshPort:          r.SshPort,
+			SshUser:          r.SshUser,
+			SshAuthType:      r.SshAuthType,
+			SshPassword:      r.SshPassword,
+			SshPrivateKey:    r.SshPrivateKey,
+			SshKeyPassphrase: r.SshKeyPassphrase,
+			SshHostKeyMode:   r.SshHostKeyMode,
+			SshHostKeySha256: r.SshHostKeySha256,
+		}
+	}
+	result := a.serverService.CreateBatch(servers)
 	jsonObj(c, result, nil)
 }
 

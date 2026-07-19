@@ -101,11 +101,23 @@ export default function BulkAddServersModal({ open, createBatch, onOpenChange }:
   function onUpload(file: File): boolean {
     const reader = new FileReader();
     reader.onload = () => {
-      const content = String(reader.result ?? '');
+      const buffer = reader.result as ArrayBuffer;
+      // Decode as UTF-8 first; if that yields the replacement character U+FFFD,
+      // the file is likely GBK/GB2312 (the default a Chinese Windows Excel
+      // writes), so decode it as GBK instead — otherwise Chinese names arrive as
+      // mojibake ("KIKI TK1锘�").
+      let content = new TextDecoder('utf-8').decode(buffer);
+      if (content.includes('�')) {
+        try {
+          content = new TextDecoder('gbk').decode(buffer);
+        } catch {
+          // TextDecoder may not support gbk in every runtime; keep the UTF-8 text.
+        }
+      }
       setText(content);
       doParse(content);
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
     return false; // prevent antd's default upload
   }
 
