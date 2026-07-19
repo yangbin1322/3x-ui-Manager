@@ -458,17 +458,32 @@ export default function InboundsPage() {
   const onBulkDelClients = useCallback((ids: number[]) => {
     if (ids.length === 0) return;
     modal.confirm({
-      title: t('pages.inbounds.bulkDelAllClientsTitle', { count: ids.length }),
-      content: t('pages.inbounds.bulkDelAllClientsContent'),
-      okText: t('pages.inbounds.delAllClients'),
-      okType: 'danger',
+      title: t('pages.inbounds.detachAllClientsTitle', { count: ids.length }),
+      content: t('pages.inbounds.detachAllClientsContent'),
+      okText: t('pages.inbounds.detachAllClients'),
       cancelText: t('cancel'),
       onOk: async () => {
-        const msg = await HttpUtil.post('/panel/api/inbounds/bulkDelAllClients', { ids }, { headers: { 'Content-Type': 'application/json' } });
+        // Detach (not delete): gather the union of client emails across the
+        // selected inbounds and remove them from those inbounds only. The
+        // clients themselves survive (they may live on other inbounds).
+        const hydrated = await Promise.all(ids.map((id) => hydrateInbound(id)));
+        const emails = new Set<string>();
+        for (const ib of hydrated) {
+          if (!ib) continue;
+          try {
+            const parsed = coerceInboundJsonField(ib.settings) as { clients?: Array<{ email?: string }> };
+            for (const c of parsed?.clients ?? []) {
+              const e = (c?.email || '').trim();
+              if (e) emails.add(e);
+            }
+          } catch { /* skip an inbound whose settings won't parse */ }
+        }
+        if (emails.size === 0) { await refresh(); return; }
+        const msg = await HttpUtil.post('/panel/api/clients/bulkDetach', { emails: [...emails], inboundIds: ids }, { headers: { 'Content-Type': 'application/json' } });
         if (msg?.success) await refresh();
       },
     });
-  }, [modal, t, refresh]);
+  }, [modal, t, refresh, hydrateInbound]);
 
   const confirmClone = useCallback((dbInbound: DBInbound) => {
     modal.confirm({

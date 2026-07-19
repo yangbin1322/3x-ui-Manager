@@ -217,12 +217,12 @@ export default function InboundList({
                 { key: 'attach', icon: <UsergroupAddOutlined />, label: t('pages.inbounds.attachExistingClients') },
                 { key: 'detach', icon: <UsergroupDeleteOutlined />, label: t('pages.inbounds.detachClients') },
                 { type: 'divider' },
-                { key: 'delClients', icon: <UsergroupDeleteOutlined />, danger: true, label: t('pages.inbounds.delAllClients') },
+                { key: 'detachAll', icon: <UsergroupDeleteOutlined />, label: t('pages.inbounds.detachAllClients') },
               ],
               onClick: ({ key }) => {
                 if (key === 'attach') onBulkAttach(selectedRowKeys);
                 else if (key === 'detach') onBulkDetach(selectedRowKeys);
-                else if (key === 'delClients') onBulkDelClients(selectedRowKeys);
+                else if (key === 'detachAll') onBulkDelClients(selectedRowKeys);
               },
             }}
           >

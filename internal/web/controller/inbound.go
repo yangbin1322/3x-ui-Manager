@@ -77,7 +77,6 @@ func (a *InboundController) initRouter(g *gin.RouterGroup) {
 	g.POST("/setEnable/:id", a.setInboundEnable)
 	g.POST("/:id/resetTraffic", a.resetInboundTraffic)
 	g.POST("/:id/delAllClients", a.delAllInboundClients)
-	g.POST("/bulkDelAllClients", a.bulkDelAllInboundClients)
 	g.POST("/resetAllTraffics", a.resetAllTraffics)
 	g.POST("/import", a.importInbound)
 	g.POST("/:id/fallbacks", a.setFallbacks)
@@ -374,56 +373,6 @@ func (a *InboundController) delAllInboundClients(c *gin.Context) {
 	}
 	user := session.GetLoginUser(c)
 	a.broadcastInboundsUpdate(user.Id)
-	notifyClientsChanged()
-}
-
-// bulkDelAllInboundClients removes every client from each of the given inbounds
-// (keeping the inbounds themselves). It collects the union of client emails
-// across the listed inbounds and deletes them in one BulkDelete pass.
-func (a *InboundController) bulkDelAllInboundClients(c *gin.Context) {
-	var req struct {
-		Ids []int `json:"ids"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
-		return
-	}
-	if len(req.Ids) == 0 {
-		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), fmt.Errorf("at least one inbound is required"))
-		return
-	}
-	seen := make(map[string]struct{})
-	var emails []string
-	for _, id := range req.Ids {
-		list, err := a.inboundService.EmailsByInbound(id)
-		if err != nil {
-			jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
-			return
-		}
-		for _, e := range list {
-			if _, ok := seen[e]; ok {
-				continue
-			}
-			seen[e] = struct{}{}
-			emails = append(emails, e)
-		}
-	}
-	if len(emails) == 0 {
-		jsonObj(c, service.BulkDeleteResult{}, nil)
-		return
-	}
-	result, needRestart, err := a.clientService.BulkDelete(&a.inboundService, emails, false)
-	if err != nil {
-		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
-		return
-	}
-	jsonObj(c, result, nil)
-	if needRestart {
-		a.xrayService.SetToNeedRestart()
-	}
-	if user := session.GetLoginUser(c); user != nil {
-		a.broadcastInboundsUpdate(user.Id)
-	}
 	notifyClientsChanged()
 }
 
