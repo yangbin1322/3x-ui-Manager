@@ -1589,6 +1589,12 @@ install_x-ui() {
         # Install systemd service file
         service_installed=false
 
+        # config_after_install (SSL/acme.sh, DB migrate) can leave the shell in a
+        # different working directory, so re-anchor to the extracted x-ui dir
+        # before probing for the bundled unit files -- otherwise the -f checks
+        # miss files that ARE in the tarball and fall back to a network download.
+        cd "${xui_folder%/x-ui}/x-ui" 2>/dev/null || true
+
         if [ -f "x-ui.service" ]; then
             echo -e "${green}Found x-ui.service in extracted files, installing...${plain}"
             if _install_xui_service_unit "x-ui.service" "false"; then
