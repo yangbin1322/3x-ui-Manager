@@ -257,6 +257,22 @@ export const EXAMPLES: Record<string, unknown> = {
     "serverName": "hk-1",
     "success": true
   },
+  "BulkAddResponse": {
+    "results": [
+      {
+        "index": 0,
+        "message": "",
+        "name": "203.0.113.5",
+        "success": true
+      }
+    ]
+  },
+  "BulkAddResult": {
+    "index": 0,
+    "message": "",
+    "name": "203.0.113.5",
+    "success": true
+  },
   "Client": {
     "adTag": "0123456789abcdef0123456789abcdef",
     "allowedIPs": [

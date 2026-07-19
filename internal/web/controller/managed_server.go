@@ -39,6 +39,7 @@ func (a *ManagedServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/get/:id", a.get)
 
 	g.POST("/add", a.add)
+	g.POST("/addBatch", a.addBatch)
 	g.POST("/update/:id", a.update)
 	g.POST("/del/:id", a.del)
 	g.POST("/setEnable/:id", a.setEnable)
@@ -88,6 +89,70 @@ func (a *ManagedServerController) add(c *gin.Context) {
 		return
 	}
 	jsonMsgObj(c, I18nWeb(c, "pages.nodes.toasts.add"), srv, nil)
+}
+
+// bulkAddRow is the JSON shape of one server in a batch add. It cannot bind
+// straight onto model.ManagedServer: the credential fields there are json:"-"
+// (write-only, so JSON is never deserialized into them), which would silently
+// drop every password/key and fail validation with "ssh password is required".
+// So the credentials are named explicitly here and copied into the model.
+type bulkAddRow struct {
+	Name             string `json:"name"`
+	Remark           string `json:"remark"`
+	Address          string `json:"address"`
+	SshPort          int    `json:"sshPort"`
+	SshUser          string `json:"sshUser"`
+	SshAuthType      string `json:"sshAuthType"`
+	SshPassword      string `json:"sshPassword"`
+	SshPrivateKey    string `json:"sshPrivateKey"`
+	SshKeyPassphrase string `json:"sshKeyPassphrase"`
+	SshHostKeyMode   string `json:"sshHostKeyMode"`
+	SshHostKeySha256 string `json:"sshHostKeySha256"`
+}
+
+// addBatch registers several managed servers in one request. Each row is
+// validated and created independently; the response reports per-row outcomes in
+// the input order so the operator can fix only the rows that failed.
+func (a *ManagedServerController) addBatch(c *gin.Context) {
+	var req struct {
+		Servers []bulkAddRow `json:"servers"`
+		// Verify defaults to true (matching the UI default): only rows whose SSH
+		// test connection succeeds are created. Send verify=false to import
+		// without a connection test.
+		Verify *bool `json:"verify"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.add"), err)
+		return
+	}
+	if len(req.Servers) == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.add"), fmt.Errorf("at least one server is required"))
+		return
+	}
+	verify := req.Verify == nil || *req.Verify
+	servers := make([]*model.ManagedServer, len(req.Servers))
+	for i, r := range req.Servers {
+		servers[i] = &model.ManagedServer{
+			Name:             r.Name,
+			Remark:           r.Remark,
+			Address:          r.Address,
+			Enable:           true,
+			SshPort:          r.SshPort,
+			SshUser:          r.SshUser,
+			SshAuthType:      r.SshAuthType,
+			SshPassword:      r.SshPassword,
+			SshPrivateKey:    r.SshPrivateKey,
+			SshKeyPassphrase: r.SshKeyPassphrase,
+			SshHostKeyMode:   r.SshHostKeyMode,
+			SshHostKeySha256: r.SshHostKeySha256,
+		}
+	}
+	// A verified add opens an SSH connection per row (bounded internally), so it
+	// needs a wider budget than a plain DB insert.
+	ctx, cancel := context.WithTimeout(c.Request.Context(), execRequestBudget)
+	defer cancel()
+	result := a.serverService.CreateBatch(ctx, servers, verify)
+	jsonObj(c, result, nil)
 }
 
 func (a *ManagedServerController) update(c *gin.Context) {

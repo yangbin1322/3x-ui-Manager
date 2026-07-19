@@ -27,6 +27,7 @@ function renderList(overrides: Partial<Parameters<typeof ServerList>[0]> = {}) {
       selectedIds={[]}
       onSelectionChange={noop}
       onAdd={noop}
+      onBulkAdd={noop}
       onEdit={noop}
       onDelete={noop}
       onToggleEnable={noop}

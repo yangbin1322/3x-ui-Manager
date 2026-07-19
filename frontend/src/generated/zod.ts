@@ -272,6 +272,19 @@ export const BatchServerResultSchema = z.object({
 });
 export type BatchServerResult = z.infer<typeof BatchServerResultSchema>;
 
+export const BulkAddResponseSchema = z.object({
+  results: z.array(z.lazy(() => BulkAddResultSchema)),
+});
+export type BulkAddResponse = z.infer<typeof BulkAddResponseSchema>;
+
+export const BulkAddResultSchema = z.object({
+  index: z.number().int(),
+  message: z.string().optional(),
+  name: z.string().optional(),
+  success: z.boolean(),
+});
+export type BulkAddResult = z.infer<typeof BulkAddResultSchema>;
+
 export const ClientSchema = z.object({
   adTag: z.string().optional(),
   allowedIPs: z.array(z.string()).optional(),

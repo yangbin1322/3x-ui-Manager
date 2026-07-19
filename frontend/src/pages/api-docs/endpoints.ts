@@ -1049,6 +1049,13 @@ export const sections: readonly Section[] = [
       },
       {
         method: 'POST',
+        path: '/panel/api/managedServers/addBatch',
+        summary: 'Register several managed servers in one request. Each row is validated and created independently, so one bad row does not block the others; the response reports per-row success/failure in the input order (with the row index). A row with an empty name defaults to its address. When "verify" is true (the default), each row is SSH-tested concurrently and only rows that connect are created — a bad password or unreachable host is rejected with its error; send verify=false to import without a connection test.',
+        body: '{\n  "verify": true,\n  "servers": [\n    { "name": "", "address": "203.0.113.5", "sshPort": 22, "sshUser": "root", "sshAuthType": "password", "sshPassword": "secret", "sshHostKeyMode": "trust" },\n    { "name": "hk-2", "address": "203.0.113.6", "sshPort": 22, "sshUser": "root", "sshAuthType": "password", "sshPassword": "secret", "sshHostKeyMode": "trust" }\n  ]\n}',
+        responseSchema: 'BulkAddResponse',
+      },
+      {
+        method: 'POST',
         path: '/panel/api/managedServers/update/:id',
         summary: 'Replace a managed server’s details. Same body shape as /add. A stored SSH password/key/passphrase is carried forward when not re-entered, and a trust-on-first-use fingerprint is preserved unless the mode is pin.',
         params: [

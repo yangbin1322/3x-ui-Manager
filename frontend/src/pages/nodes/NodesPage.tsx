@@ -22,6 +22,7 @@ import NodeList from './NodeList';
 import NodeFormModal from './NodeFormModal';
 import ServerList from './ServerList';
 import ServerFormModal from './ServerFormModal';
+import BulkAddServersModal from './BulkAddServersModal';
 import InstallPanelModal from './InstallPanelModal';
 import ExecCommandModal from './ExecCommandModal';
 import ExecHistoryModal from './ExecHistoryModal';
@@ -87,6 +88,7 @@ export default function NodesPage() {
   const [serverFormMode, setServerFormMode] = useState<'add' | 'edit'>('add');
   const [formServer, setFormServer] = useState<ManagedServerRecord | null>(null);
   const [selectedServerIds, setSelectedServerIds] = useState<number[]>([]);
+  const [bulkAddOpen, setBulkAddOpen] = useState(false);
   const [installOpen, setInstallOpen] = useState(false);
   const [installTargets, setInstallTargets] = useState<ManagedServerRecord[]>([]);
   const [execOpen, setExecOpen] = useState(false);
@@ -516,6 +518,7 @@ export default function NodesPage() {
           selectedIds={selectedServerIds}
           onSelectionChange={setSelectedServerIds}
           onAdd={onAddServer}
+          onBulkAdd={() => setBulkAddOpen(true)}
           onEdit={onEditServer}
           onDelete={onDeleteServer}
           onToggleEnable={onToggleServerEnable}
@@ -584,6 +587,12 @@ export default function NodesPage() {
           testSSH={serverMutations.testSSH}
           save={onSaveServer}
           onOpenChange={setServerFormOpen}
+        />
+
+        <BulkAddServersModal
+          open={bulkAddOpen}
+          createBatch={serverMutations.createBatch}
+          onOpenChange={setBulkAddOpen}
         />
 
         <InstallPanelModal
