@@ -266,10 +266,16 @@ func firstNonEmpty(vals ...string) string {
 	return ""
 }
 
-// uninstallCommand runs the official uninstaller non-interactively. The x-ui.sh
-// management script prompts for confirmation, so pipe a "y" into it; process
-// substitution is a bash feature, matching buildInstallCommand's shell choice.
-const uninstallCommand = "bash -c 'x-ui uninstall <<< y || /usr/local/x-ui/x-ui uninstall <<< y'"
+// uninstallCommand runs the official uninstaller non-interactively, then reports
+// success by whether the binary is actually gone rather than by the script's own
+// exit code. The global `x-ui` management script prompts once
+// ("Are you sure… [Default n]") via a `read`, so a "y" is piped in. It must be
+// the global x-ui.sh wrapper, NOT /usr/local/x-ui/x-ui: the uninstall deletes
+// that binary, so referencing it afterwards runs a missing file and exits 127
+// (the false failure the operator hit). The uninstall can also exit non-zero
+// from its trailing daemon-reload/menu even on success, so the trailing
+// `test ! -e …` makes the command's exit status mean "the panel binary is gone".
+const uninstallCommand = "printf 'y\\n' | x-ui uninstall; test ! -e /usr/local/x-ui/x-ui"
 
 // showSettingCommand prints the current panel settings (port, webBasePath, …)
 // via the x-ui binary at its install path, the same way install.sh reads an
@@ -279,16 +285,16 @@ const showSettingCommand = "cd /usr/local/x-ui && ./x-ui setting -show true"
 // readInstalledPanelCredentials assembles what an api node needs to adopt a
 // panel that is ALREADY installed (the import path), where there is no installer
 // "Access URL" line to parse. Port and base path come from `x-ui setting -show`;
-// the API token from -getApiToken (minted if absent). The scheme cannot be read
-// from settings, so it defaults to https with verification skipped — a freshly
-// installed panel commonly serves a self-signed cert, and the operator can
-// correct the derived node from the Panel Nodes tab.
+// the API token from -getApiToken (minted if absent). The scheme defaults to
+// http — a fresh install serves plain HTTP unless the operator set up TLS — and
+// is only https when the settings report a web certificate. The operator can
+// still correct the derived node from the Panel Nodes tab.
 func (s *ManagedServerService) readInstalledPanelCredentials(ctx context.Context, srv *model.ManagedServer) (*installEnv, error) {
 	showRes := s.execOnServer(ctx, srv, showSettingCommand, sshCommandTimeout)
 	if showRes.Status != execStatusSuccess {
 		return nil, fmt.Errorf("could not read the panel settings over SSH")
 	}
-	port, basePath := parseShowSetting(showRes.Stdout)
+	port, basePath, hasCert := parseShowSetting(showRes.Stdout)
 	if port == 0 {
 		return nil, fmt.Errorf("could not determine the panel port from its settings")
 	}
@@ -300,15 +306,22 @@ func (s *ManagedServerService) readInstalledPanelCredentials(ctx context.Context
 	if token == "" {
 		return nil, fmt.Errorf("the panel did not return an API token")
 	}
-	return &installEnv{scheme: "https", port: port, basePath: basePath, token: token}, nil
+	scheme := "http"
+	if hasCert {
+		scheme = "https"
+	}
+	return &installEnv{scheme: scheme, port: port, basePath: basePath, token: token}, nil
 }
 
-// parseShowSetting pulls the port and webBasePath out of `x-ui setting -show`,
-// whose output has "port: <n>" and "webBasePath: <path>" lines. ANSI codes are
-// stripped in case the binary colorizes. A missing base path yields "" (root).
-func parseShowSetting(out string) (int, string) {
+// parseShowSetting pulls the port, webBasePath, and whether a web TLS
+// certificate is configured out of `x-ui setting -show`, whose output has
+// "port: <n>", "webBasePath: <path>" and "webCertFile: <path>" lines. ANSI
+// codes are stripped in case the binary colorizes. A missing base path yields
+// "" (root); a non-empty webCertFile means the panel serves https.
+func parseShowSetting(out string) (int, string, bool) {
 	var port int
 	var basePath string
+	var hasCert bool
 	for _, line := range strings.Split(stripANSI(out), "\n") {
 		line = strings.TrimSpace(line)
 		if rest, ok := strings.CutPrefix(line, "port:"); ok {
@@ -316,11 +329,16 @@ func parseShowSetting(out string) (int, string) {
 				port = p
 			}
 		}
+		if rest, ok := strings.CutPrefix(line, "webCertFile:"); ok {
+			if strings.TrimSpace(rest) != "" {
+				hasCert = true
+			}
+		}
 		if rest, ok := strings.CutPrefix(line, "webBasePath:"); ok {
 			basePath = strings.Trim(strings.TrimSpace(rest), "/")
 		}
 	}
-	return port, basePath
+	return port, basePath, hasCert
 }
 
 // ImportPanel adopts a panel that is already installed on a managed server:

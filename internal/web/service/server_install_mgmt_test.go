@@ -56,18 +56,28 @@ func TestParsePanelVersion(t *testing.T) {
 }
 
 func TestParseShowSetting(t *testing.T) {
-	out := "current panel settings:\nport: 2053\nwebBasePath: /abcd/\nusername: admin\n"
-	port, basePath := parseShowSetting(out)
+	// A plain HTTP install: cert file empty, so hasCert is false.
+	out := "current panel settings:\nport: 2053\nwebBasePath: /abcd/\nwebCertFile: \nusername: admin\n"
+	port, basePath, hasCert := parseShowSetting(out)
 	if port != 2053 {
 		t.Fatalf("port = %d, want 2053", port)
 	}
 	if basePath != "abcd" {
 		t.Fatalf("basePath = %q, want abcd (slashes trimmed)", basePath)
 	}
+	if hasCert {
+		t.Fatalf("hasCert = true for an empty webCertFile, want false (http)")
+	}
 
-	port2, base2 := parseShowSetting("no settings here\n")
-	if port2 != 0 || base2 != "" {
-		t.Fatalf("absent settings = (%d, %q), want (0, \"\")", port2, base2)
+	// A TLS install: a non-empty cert file means https.
+	_, _, tls := parseShowSetting("port: 2053\nwebCertFile: /root/cert/fullchain.pem\n")
+	if !tls {
+		t.Fatalf("hasCert = false for a configured webCertFile, want true (https)")
+	}
+
+	port2, base2, cert2 := parseShowSetting("no settings here\n")
+	if port2 != 0 || base2 != "" || cert2 {
+		t.Fatalf("absent settings = (%d, %q, %v), want (0, \"\", false)", port2, base2, cert2)
 	}
 }
 
