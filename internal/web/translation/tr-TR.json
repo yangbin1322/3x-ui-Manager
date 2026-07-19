@@ -351,6 +351,7 @@
       "attachClientsStatusDisabled": "Devre Dışı",
       "attachClientsSelectedCount": "{total} içinden {selected} seçildi",
       "attachExistingClients": "Mevcut Kullanıcıları Bağla…",
+      "batchClientOps": "İstemci işlemleri",
       "attachExistingTitle": "«{remark}» gelen bağlantıya mevcut kullanıcıları bağla",
       "attachExistingDesc": "Mevcut kullanıcıları ({count} uygun) bu gelen bağlantıya bağlar — aynı UUID/şifre ve paylaşılan trafik. Halihazırda bu gelen bağlantıya bağlı olan kullanıcılar atlanır.",
       "attachExistingNoClients": "Henüz kullanıcı yok. Önce kullanıcı oluşturun, ardından buraya bağlayın.",

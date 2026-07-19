@@ -351,6 +351,7 @@
       "attachClientsStatusDisabled": "غیرفعال",
       "attachClientsSelectedCount": "{selected} از {total} انتخاب‌شده",
       "attachExistingClients": "الصاق کاربران موجود…",
+      "batchClientOps": "عملیات کلاینت",
       "attachExistingTitle": "الصاق کاربران موجود به «{remark}»",
       "attachExistingDesc": "کاربران موجود ({count} کاربر در دسترس) را به این ورودی الصاق می‌کند — با همان UUID/رمز و ترافیک مشترک. کاربرانی که از قبل روی این ورودی هستند نادیده گرفته می‌شوند.",
       "attachExistingNoClients": "هنوز هیچ کاربری وجود ندارد. ابتدا کاربر بسازید، سپس اینجا الصاق کنید.",

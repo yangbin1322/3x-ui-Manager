@@ -351,6 +351,7 @@
       "attachClientsStatusDisabled": "Disabled",
       "attachClientsSelectedCount": "{selected} of {total} selected",
       "attachExistingClients": "Attach Existing Clients…",
+      "batchClientOps": "Client operations",
       "attachExistingTitle": "Attach existing clients to \"{remark}\"",
       "attachExistingDesc": "Attaches existing clients ({count} available) to this inbound — same UUID/password and shared traffic. Clients already on it are skipped.",
       "attachExistingNoClients": "No clients exist yet. Create clients first, then attach them here.",

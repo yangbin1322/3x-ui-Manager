@@ -351,6 +351,7 @@
       "attachClientsStatusDisabled": "Đã tắt",
       "attachClientsSelectedCount": "Đã chọn {selected}/{total}",
       "attachExistingClients": "Gắn client hiện có…",
+      "batchClientOps": "Thao tác client",
       "attachExistingTitle": "Gắn client hiện có vào «{remark}»",
       "attachExistingDesc": "Gắn các client hiện có ({count} khả dụng) vào inbound này — cùng UUID/mật khẩu và lưu lượng chung. Các client đã có trên inbound sẽ được bỏ qua.",
       "attachExistingNoClients": "Chưa có client nào. Hãy tạo client trước, rồi gắn vào đây.",

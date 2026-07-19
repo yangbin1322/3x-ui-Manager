@@ -351,6 +351,7 @@
       "attachClientsStatusDisabled": "已禁用",
       "attachClientsSelectedCount": "已选 {selected}/{total}",
       "attachExistingClients": "附加现有客户端…",
+      "batchClientOps": "客户端操作",
       "attachExistingTitle": "将现有客户端附加到 “{remark}”",
       "attachExistingDesc": "将现有客户端(可用 {count} 个)附加到此入站 — 相同 UUID/密码和共享流量。已在此入站的客户端将被跳过。",
       "attachExistingNoClients": "尚无客户端。请先创建客户端,然后在此附加。",

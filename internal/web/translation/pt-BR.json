@@ -351,6 +351,7 @@
       "attachClientsStatusDisabled": "Desabilitado",
       "attachClientsSelectedCount": "{selected} de {total} selecionado(s)",
       "attachExistingClients": "Associar clientes existentes…",
+      "batchClientOps": "Operações de clientes",
       "attachExistingTitle": "Associar clientes existentes a «{remark}»",
       "attachExistingDesc": "Associa os clientes existentes ({count} disponíveis) a esta entrada — mesmo UUID/senha e tráfego compartilhado. Clientes que já estão nela são ignorados.",
       "attachExistingNoClients": "Ainda não há clientes. Crie clientes primeiro e depois associe-os aqui.",

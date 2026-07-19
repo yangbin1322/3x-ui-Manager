@@ -351,6 +351,7 @@
       "attachClientsStatusDisabled": "Dinonaktifkan",
       "attachClientsSelectedCount": "{selected} dari {total} dipilih",
       "attachExistingClients": "Lampirkan klien yang ada…",
+      "batchClientOps": "Operasi klien",
       "attachExistingTitle": "Lampirkan klien yang ada ke «{remark}»",
       "attachExistingDesc": "Melampirkan klien yang ada ({count} tersedia) ke inbound ini — UUID/kata sandi sama dan trafik bersama. Klien yang sudah ada di sini dilewati.",
       "attachExistingNoClients": "Belum ada klien. Buat klien dulu, lalu lampirkan di sini.",

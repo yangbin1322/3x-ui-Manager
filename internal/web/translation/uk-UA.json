@@ -351,6 +351,7 @@
       "attachClientsStatusDisabled": "Вимкнено",
       "attachClientsSelectedCount": "Обрано {selected} з {total}",
       "attachExistingClients": "Прив'язати наявних клієнтів…",
+      "batchClientOps": "Операції з клієнтами",
       "attachExistingTitle": "Прив'язати наявних клієнтів до «{remark}»",
       "attachExistingDesc": "Прив'язує наявних клієнтів (доступно {count}) до цього вхідного — той самий UUID/пароль і спільний трафік. Клієнти, уже прив'язані до нього, пропускаються.",
       "attachExistingNoClients": "Клієнтів поки немає. Спершу створіть клієнтів, потім прив'яжіть їх тут.",

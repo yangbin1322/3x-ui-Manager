@@ -351,6 +351,7 @@
       "attachClientsStatusDisabled": "無効",
       "attachClientsSelectedCount": "{total} 中 {selected} 選択中",
       "attachExistingClients": "既存のクライアントをアタッチ…",
+      "batchClientOps": "クライアント操作",
       "attachExistingTitle": "「{remark}」に既存のクライアントをアタッチ",
       "attachExistingDesc": "既存のクライアント({count} 件)をこのインバウンドにアタッチします — 同じ UUID/パスワードと共有トラフィック。すでにアタッチ済みのクライアントはスキップされます。",
       "attachExistingNoClients": "クライアントがまだありません。先にクライアントを作成してから、ここでアタッチしてください。",

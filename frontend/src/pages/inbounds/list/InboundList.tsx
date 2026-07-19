@@ -209,15 +209,26 @@ export default function InboundList({
               <Tag color="blue" closable onClose={() => setSelectedRowKeys([])} style={{ marginInlineEnd: 0 }}>
                 {t('pages.inbounds.selectedCount', { count: selectedRowKeys.length })}
               </Tag>
-              <Button icon={<UsergroupAddOutlined />} onClick={() => onBulkAttach(selectedRowKeys)} aria-label={t('pages.inbounds.attachExistingClients')}>
-                {!isMobile && t('pages.inbounds.attachExistingClients')}
-              </Button>
-              <Button icon={<UsergroupDeleteOutlined />} onClick={() => onBulkDetach(selectedRowKeys)} aria-label={t('pages.inbounds.detachClients')}>
-                {!isMobile && t('pages.inbounds.detachClients')}
-              </Button>
-              <Button danger icon={<UsergroupDeleteOutlined />} onClick={() => onBulkDelClients(selectedRowKeys)} aria-label={t('pages.inbounds.delAllClients')}>
-                {!isMobile && t('pages.inbounds.delAllClients')}
-              </Button>
+              <Dropdown
+                trigger={['click']}
+                menu={{
+                  items: [
+                    { key: 'attach', icon: <UsergroupAddOutlined />, label: t('pages.inbounds.attachExistingClients') },
+                    { key: 'detach', icon: <UsergroupDeleteOutlined />, label: t('pages.inbounds.detachClients') },
+                    { type: 'divider' },
+                    { key: 'delClients', icon: <UsergroupDeleteOutlined />, danger: true, label: t('pages.inbounds.delAllClients') },
+                  ],
+                  onClick: ({ key }) => {
+                    if (key === 'attach') onBulkAttach(selectedRowKeys);
+                    else if (key === 'detach') onBulkDetach(selectedRowKeys);
+                    else if (key === 'delClients') onBulkDelClients(selectedRowKeys);
+                  },
+                }}
+              >
+                <Button icon={<UsergroupAddOutlined />}>
+                  {!isMobile && t('pages.inbounds.batchClientOps')}
+                </Button>
+              </Dropdown>
               <Button danger icon={<DeleteOutlined />} onClick={handleBulkDelete} aria-label={t('delete')}>
                 {!isMobile && t('delete')}
               </Button>

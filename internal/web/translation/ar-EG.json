@@ -351,6 +351,7 @@
       "attachClientsStatusDisabled": "معطل",
       "attachClientsSelectedCount": "{selected} من {total} محدد",
       "attachExistingClients": "إرفاق العملاء الحاليين…",
+      "batchClientOps": "عمليات العملاء",
       "attachExistingTitle": "إرفاق العملاء الحاليين بـ «{remark}»",
       "attachExistingDesc": "يرفق العملاء الحاليين ({count} متاح) بهذا الوارد — بنفس UUID/كلمة المرور وحركة المرور المشتركة. يتم تخطي العملاء الموجودين عليه بالفعل.",
       "attachExistingNoClients": "لا يوجد عملاء بعد. أنشئ عملاء أولاً ثم أرفقهم هنا.",
