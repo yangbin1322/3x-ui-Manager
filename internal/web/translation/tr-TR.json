@@ -1010,7 +1010,7 @@
       "deleteConfirmContent": "Sunucu ve kayıtlı SSH kimlik bilgileri panelden kaldırılır. Bağlı panel düğümü silinmez, makinenin kendisi etkilenmez.",
       "versionColumn": "Panel",
       "notInstalled": "Kurulu değil",
-      "importAction": "Düğüm olarak içe aktar",
+      "importAction": "3X-UI içe aktar",
       "importConfirmTitle": "\"{name}\" panel düğümü olarak içe aktarılsın mı?",
       "importConfirmBody": "Çalışan panelin kimlik bilgilerini SSH üzerinden okur ve yeniden kurmadan bağlı bir düğüm oluşturur. Türetilen düğüm varsayılan olarak TLS doğrulaması atlanmış https kullanır — gerekirse Panel Düğümleri sekmesinden düzenleyin.",
       "importOk": "İçe aktarıldı — bağlı bir panel düğümü oluşturuldu",
@@ -1028,6 +1028,9 @@
       "batchImport": "İçe aktar ({count})",
       "batchImportConfirmTitle": "{count} sunucu panel düğümü olarak içe aktarılsın mı?",
       "batchUninstall": "Kaldır ({count})",
+      "batchDelete": "Sil ({count})",
+      "batchDeleteConfirmTitle": "{count} sunucu silinsin mi?",
+      "batchDeleteConfirmBody": "Seçili sunucuları ve kayıtlı SSH kimlik bilgilerini kaldırır. Paylaşılan bir panel düğümü yalnızca son sunucusu kaldırıldığında silinir.",
       "batchInstallConfirmTitle": "{count} sunucuya 3x-ui kurulsun mu?",
       "batchUninstallConfirmTitle": "{count} sunucudan 3x-ui kaldırılsın mı?",
       "batchResult": "{ok} başarılı, {failed} başarısız"

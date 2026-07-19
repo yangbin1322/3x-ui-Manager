@@ -1066,10 +1066,17 @@ export const sections: readonly Section[] = [
       {
         method: 'POST',
         path: '/panel/api/managedServers/del/:id',
-        summary: 'Delete a managed server. A derived panel node linked to it is NOT deleted — the link is simply gone.',
+        summary: 'Delete a managed server. Several server rows can point at the same box (same address+port+user) and share one derived panel node; deleting a row that has a linked node deletes that node only when it was the LAST row referencing it, otherwise the node stays.',
         params: [
           { name: 'id', in: 'path', type: 'number', desc: 'Managed server ID.' },
         ],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/managedServers/delBatch',
+        summary: 'Delete several managed servers at once. Each is deleted independently (same shared-node last-reference rule as /del). Returns the number of rows removed.',
+        body: '{\n  "serverIds": [3, 5]\n}',
+        response: '{\n  "success": true,\n  "obj": { "removed": 2 }\n}',
       },
       {
         method: 'POST',

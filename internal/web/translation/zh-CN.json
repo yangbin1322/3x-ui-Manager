@@ -1010,7 +1010,7 @@
       "deleteConfirmContent": "从面板中移除该服务器及其保存的 SSH 凭据。关联的面板节点不会被删除,服务器本身不受影响。",
       "versionColumn": "面板",
       "notInstalled": "未安装",
-      "importAction": "导入为节点",
+      "importAction": "导入 3X-UI",
       "importConfirmTitle": "将 \"{name}\" 导入为面板节点?",
       "importConfirmBody": "通过 SSH 读取正在运行的面板凭据,创建一个关联的面板节点,不重新安装。衍生节点默认 https 且跳过 TLS 校验——如有需要可在面板节点 Tab 中调整。",
       "importOk": "导入成功——已创建关联的面板节点",
@@ -1028,6 +1028,9 @@
       "batchImport": "导入({count})",
       "batchImportConfirmTitle": "将 {count} 台服务器导入为面板节点?",
       "batchUninstall": "卸载({count})",
+      "batchDelete": "删除({count})",
+      "batchDeleteConfirmTitle": "删除 {count} 台服务器?",
+      "batchDeleteConfirmBody": "移除所选服务器及其保存的 SSH 凭据。共享的面板节点仅在其最后一台服务器被删除时才删除。",
       "batchInstallConfirmTitle": "在 {count} 台服务器上安装 3x-ui?",
       "batchUninstallConfirmTitle": "从 {count} 台服务器卸载 3x-ui?",
       "batchResult": "成功 {ok} 台,失败 {failed} 台"

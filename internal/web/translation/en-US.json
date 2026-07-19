@@ -1127,7 +1127,7 @@
       "deleteConfirmContent": "This removes the server and its stored SSH credentials from the panel. A linked panel node is not deleted, and the machine itself is unaffected.",
       "versionColumn": "Panel",
       "notInstalled": "Not installed",
-      "importAction": "Import as node",
+      "importAction": "Import 3X-UI",
       "importConfirmTitle": "Import \"{name}\" as a panel node?",
       "importConfirmBody": "This reads the running panel's credentials over SSH and creates a linked panel node without reinstalling. The derived node defaults to https with TLS verification skipped — adjust it from the Panel Nodes tab if needed.",
       "importOk": "Imported — a linked panel node was created",
@@ -1145,6 +1145,9 @@
       "batchImport": "Import ({count})",
       "batchImportConfirmTitle": "Import {count} server(s) as panel nodes?",
       "batchUninstall": "Uninstall ({count})",
+      "batchDelete": "Delete ({count})",
+      "batchDeleteConfirmTitle": "Delete {count} server(s)?",
+      "batchDeleteConfirmBody": "This removes the selected servers and their stored SSH credentials. A shared panel node is deleted only when its last server is removed.",
       "batchInstallConfirmTitle": "Install 3x-ui on {count} server(s)?",
       "batchUninstallConfirmTitle": "Uninstall 3x-ui from {count} server(s)?",
       "batchResult": "{ok} succeeded, {failed} failed"

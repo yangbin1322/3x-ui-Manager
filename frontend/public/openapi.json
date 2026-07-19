@@ -9079,7 +9079,7 @@
         "tags": [
           "Managed Servers"
         ],
-        "summary": "Delete a managed server. A derived panel node linked to it is NOT deleted — the link is simply gone.",
+        "summary": "Delete a managed server. Several server rows can point at the same box (same address+port+user) and share one derived panel node; deleting a row that has a linked node deletes that node only when it was the LAST row referencing it, otherwise the node stays.",
         "operationId": "post_panel_api_managedServers_del_id",
         "parameters": [
           {
@@ -9107,6 +9107,58 @@
                       "type": "string"
                     },
                     "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/delBatch": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Delete several managed servers at once. Each is deleted independently (same shared-node last-reference rule as /del). Returns the number of rows removed.",
+        "operationId": "post_panel_api_managedServers_delBatch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "serverIds": [
+                  3,
+                  5
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "removed": 2
                   }
                 }
               }

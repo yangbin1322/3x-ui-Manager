@@ -1010,7 +1010,7 @@
       "deleteConfirmContent": "Ini menghapus server beserta kredensial SSH tersimpan dari panel. Node panel tertaut tidak dihapus, dan mesin itu sendiri tidak terpengaruh.",
       "versionColumn": "Panel",
       "notInstalled": "Belum terpasang",
-      "importAction": "Impor sebagai node",
+      "importAction": "Impor 3X-UI",
       "importConfirmTitle": "Impor \"{name}\" sebagai node panel?",
       "importConfirmBody": "Membaca kredensial panel yang berjalan via SSH dan membuat node tertaut tanpa memasang ulang. Node turunan default-nya https dengan verifikasi TLS dilewati — sesuaikan dari tab Node Panel bila perlu.",
       "importOk": "Diimpor — node panel tertaut telah dibuat",
@@ -1028,6 +1028,9 @@
       "batchImport": "Impor ({count})",
       "batchImportConfirmTitle": "Impor {count} server sebagai node panel?",
       "batchUninstall": "Hapus ({count})",
+      "batchDelete": "Hapus ({count})",
+      "batchDeleteConfirmTitle": "Hapus {count} server?",
+      "batchDeleteConfirmBody": "Menghapus server terpilih beserta kredensial SSH-nya. Node panel bersama dihapus hanya ketika server terakhirnya dihapus.",
       "batchInstallConfirmTitle": "Pasang 3x-ui di {count} server?",
       "batchUninstallConfirmTitle": "Hapus 3x-ui dari {count} server?",
       "batchResult": "{ok} berhasil, {failed} gagal"

@@ -1010,7 +1010,7 @@
       "deleteConfirmContent": "يزيل هذا الخادم وبيانات اعتماد SSH المخزنة من اللوحة. لا تُحذف عقدة اللوحة المرتبطة، ولا يتأثر الجهاز نفسه.",
       "versionColumn": "اللوحة",
       "notInstalled": "غير مثبَّت",
-      "importAction": "استيراد كعقدة",
+      "importAction": "استيراد 3X-UI",
       "importConfirmTitle": "استيراد \"{name}\" كعقدة لوحة؟",
       "importConfirmBody": "يقرأ بيانات اعتماد اللوحة العاملة عبر SSH وينشئ عقدة مرتبطة دون إعادة التثبيت. تستخدم العقدة المشتقة افتراضيًا https مع تخطي التحقق من TLS — عدّلها من تبويب عقد اللوحة عند الحاجة.",
       "importOk": "تم الاستيراد — أُنشئت عقدة لوحة مرتبطة",
@@ -1028,6 +1028,9 @@
       "batchImport": "استيراد ({count})",
       "batchImportConfirmTitle": "استيراد {count} خادم(خوادم) كعقد لوحة؟",
       "batchUninstall": "إلغاء ({count})",
+      "batchDelete": "حذف ({count})",
+      "batchDeleteConfirmTitle": "حذف {count} خادم(خوادم)؟",
+      "batchDeleteConfirmBody": "يزيل الخوادم المحددة وبيانات اعتماد SSH الخاصة بها. تُحذف عقدة اللوحة المشتركة فقط عند إزالة آخر خادم لها.",
       "batchInstallConfirmTitle": "تثبيت 3x-ui على {count} خادم(خوادم)؟",
       "batchUninstallConfirmTitle": "إلغاء تثبيت 3x-ui من {count} خادم(خوادم)؟",
       "batchResult": "نجح {ok}، فشل {failed}"

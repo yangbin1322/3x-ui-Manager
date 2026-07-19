@@ -52,6 +52,7 @@ interface ServerListProps {
   onBatchInstall: () => void;
   onBatchImport: () => void;
   onBatchUninstall: () => void;
+  onBatchDelete: () => void;
   onExecHistory: () => void;
 }
 
@@ -95,6 +96,7 @@ export default function ServerList({
   onBatchInstall,
   onBatchImport,
   onBatchUninstall,
+  onBatchDelete,
   onExecHistory,
 }: ServerListProps) {
   const { t } = useTranslation();
@@ -285,6 +287,9 @@ export default function ServerList({
         </Button>
         <Button danger icon={<MinusCircleOutlined />} disabled={uninstallableCount === 0} onClick={onBatchUninstall}>
           {t('pages.servers.batchUninstall', { count: uninstallableCount })}
+        </Button>
+        <Button danger icon={<DeleteOutlined />} disabled={selectedIds.length === 0} onClick={onBatchDelete}>
+          {t('pages.servers.batchDelete', { count: selectedIds.length })}
         </Button>
       </div>
 

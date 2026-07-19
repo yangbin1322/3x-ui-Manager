@@ -1010,7 +1010,7 @@
       "deleteConfirmContent": "サーバーと保存済みの SSH 資格情報がパネルから削除されます。紐づくパネルノードは削除されず、マシン自体には影響しません。",
       "versionColumn": "パネル",
       "notInstalled": "未インストール",
-      "importAction": "ノードとしてインポート",
+      "importAction": "3X-UI をインポート",
       "importConfirmTitle": "「{name}」をパネルノードとしてインポートしますか?",
       "importConfirmBody": "稼働中のパネルの認証情報を SSH 経由で読み取り、再インストールせずに紐づくノードを作成します。派生ノードは既定で TLS 検証をスキップした https を使用します。必要ならパネルノードタブで調整してください。",
       "importOk": "インポート完了 — 紐づくパネルノードを作成しました",
@@ -1028,6 +1028,9 @@
       "batchImport": "インポート({count})",
       "batchImportConfirmTitle": "{count} 台のサーバーをパネルノードとしてインポートしますか?",
       "batchUninstall": "アンインストール({count})",
+      "batchDelete": "削除({count})",
+      "batchDeleteConfirmTitle": "{count} 台のサーバーを削除しますか?",
+      "batchDeleteConfirmBody": "選択したサーバーと保存済みの SSH 資格情報を削除します。共有パネルノードは最後のサーバーが削除されたときにのみ削除されます。",
       "batchInstallConfirmTitle": "{count} 台のサーバーに 3x-ui をインストールしますか?",
       "batchUninstallConfirmTitle": "{count} 台のサーバーから 3x-ui をアンインストールしますか?",
       "batchResult": "成功 {ok} 件、失敗 {failed} 件"

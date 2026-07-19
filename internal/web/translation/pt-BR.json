@@ -1010,7 +1010,7 @@
       "deleteConfirmContent": "Isso remove o servidor e suas credenciais SSH armazenadas do painel. Um nó de painel vinculado não é excluído e a máquina em si não é afetada.",
       "versionColumn": "Painel",
       "notInstalled": "Não instalado",
-      "importAction": "Importar como nó",
+      "importAction": "Importar 3X-UI",
       "importConfirmTitle": "Importar \"{name}\" como nó do painel?",
       "importConfirmBody": "Lê as credenciais do painel em execução via SSH e cria um nó vinculado sem reinstalar. O nó derivado usa https com verificação TLS ignorada por padrão — ajuste na aba Nós do painel se necessário.",
       "importOk": "Importado — um nó de painel vinculado foi criado",
@@ -1028,6 +1028,9 @@
       "batchImport": "Importar ({count})",
       "batchImportConfirmTitle": "Importar {count} servidor(es) como nós do painel?",
       "batchUninstall": "Desinstalar ({count})",
+      "batchDelete": "Excluir ({count})",
+      "batchDeleteConfirmTitle": "Excluir {count} servidor(es)?",
+      "batchDeleteConfirmBody": "Remove os servidores selecionados e suas credenciais SSH. Um nó de painel compartilhado é excluído apenas quando seu último servidor é removido.",
       "batchInstallConfirmTitle": "Instalar 3x-ui em {count} servidor(es)?",
       "batchUninstallConfirmTitle": "Desinstalar 3x-ui de {count} servidor(es)?",
       "batchResult": "{ok} com sucesso, {failed} com falha"

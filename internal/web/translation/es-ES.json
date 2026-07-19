@@ -1010,7 +1010,7 @@
       "deleteConfirmContent": "Esto elimina el servidor y sus credenciales SSH guardadas del panel. El nodo de panel vinculado no se elimina y la máquina no se ve afectada.",
       "versionColumn": "Panel",
       "notInstalled": "No instalado",
-      "importAction": "Importar como nodo",
+      "importAction": "Importar 3X-UI",
       "importConfirmTitle": "¿Importar \"{name}\" como nodo del panel?",
       "importConfirmBody": "Lee las credenciales del panel en ejecución por SSH y crea un nodo vinculado sin reinstalar. El nodo derivado usa https con la verificación TLS omitida por defecto: ajústelo desde la pestaña Nodos del panel si es necesario.",
       "importOk": "Importado: se creó un nodo de panel vinculado",
@@ -1028,6 +1028,9 @@
       "batchImport": "Importar ({count})",
       "batchImportConfirmTitle": "¿Importar {count} servidor(es) como nodos del panel?",
       "batchUninstall": "Desinstalar ({count})",
+      "batchDelete": "Eliminar ({count})",
+      "batchDeleteConfirmTitle": "¿Eliminar {count} servidor(es)?",
+      "batchDeleteConfirmBody": "Elimina los servidores seleccionados y sus credenciales SSH. Un nodo de panel compartido se elimina solo cuando se quita su último servidor.",
       "batchInstallConfirmTitle": "¿Instalar 3x-ui en {count} servidor(es)?",
       "batchUninstallConfirmTitle": "¿Desinstalar 3x-ui de {count} servidor(es)?",
       "batchResult": "{ok} correctos, {failed} fallidos"

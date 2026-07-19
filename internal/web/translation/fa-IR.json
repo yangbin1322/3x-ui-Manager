@@ -1010,7 +1010,7 @@
       "deleteConfirmContent": "سرور و اطلاعات ورود SSH ذخیره‌شدهٔ آن از پنل حذف می‌شود. نود پنل مرتبط حذف نمی‌شود و خود دستگاه دست‌نخورده می‌ماند.",
       "versionColumn": "پنل",
       "notInstalled": "نصب‌نشده",
-      "importAction": "وارد کردن به‌عنوان نود",
+      "importAction": "وارد کردن 3X-UI",
       "importConfirmTitle": "«{name}» به‌عنوان نود پنل وارد شود؟",
       "importConfirmBody": "اطلاعات ورود پنلِ در حال اجرا را از طریق SSH می‌خواند و بدون نصب مجدد یک نود مرتبط می‌سازد. نود مشتق‌شده به‌طور پیش‌فرض از https با نادیده‌گرفتن بررسی TLS استفاده می‌کند — در صورت نیاز از زبانهٔ نودهای پنل تنظیمش کنید.",
       "importOk": "وارد شد — یک نود پنل مرتبط ساخته شد",
@@ -1028,6 +1028,9 @@
       "batchImport": "وارد کردن ({count})",
       "batchImportConfirmTitle": "{count} سرور به‌عنوان نود پنل وارد شود؟",
       "batchUninstall": "حذف ({count})",
+      "batchDelete": "حذف ({count})",
+      "batchDeleteConfirmTitle": "{count} سرور حذف شود؟",
+      "batchDeleteConfirmBody": "سرورهای انتخاب‌شده و اطلاعات ورود SSH آن‌ها را حذف می‌کند. نود پنل مشترک فقط زمانی حذف می‌شود که آخرین سرورش برداشته شود.",
       "batchInstallConfirmTitle": "3x-ui روی {count} سرور نصب شود؟",
       "batchUninstallConfirmTitle": "3x-ui از {count} سرور حذف شود؟",
       "batchResult": "{ok} موفق، {failed} ناموفق"

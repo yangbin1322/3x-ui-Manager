@@ -39,6 +39,7 @@ function renderList(overrides: Partial<Parameters<typeof ServerList>[0]> = {}) {
       onBatchInstall={noop}
       onBatchImport={noop}
       onBatchUninstall={noop}
+      onBatchDelete={noop}
       onExecHistory={noop}
       {...overrides}
     />,
@@ -60,7 +61,7 @@ describe('ServerList row actions', () => {
   it('offers Import only for an installed but unlinked box', () => {
     const onImport = vi.fn();
     renderList({ onImport });
-    const buttons = Array.from(document.querySelectorAll('button[aria-label="Import as node"]'));
+    const buttons = Array.from(document.querySelectorAll('button[aria-label="Import 3X-UI"]'));
     expect(buttons.length).toBe(1);
     fireEvent.click(buttons[0]);
     expect(onImport.mock.calls[0][0]).toMatchObject({ id: 2 });

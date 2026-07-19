@@ -93,6 +93,15 @@ func (s *ManagedServerService) InstallPanel(ctx context.Context, serverId int, v
 	if srv.NodeId != 0 {
 		return nil, common.NewError("this server already has a linked panel node")
 	}
+	// Another row for the same box may have already installed a panel. Don't
+	// install again — just adopt the existing node onto this row and its
+	// siblings, so the shared machine keeps one node.
+	if nodeId := s.linkedNodeForHost(srv); nodeId != 0 {
+		if err := s.linkHostToNode(database.GetDB(), srv, nodeId); err != nil {
+			return nil, common.NewError(err.Error())
+		}
+		return &InstallResult{Success: true, Derived: true, NodeId: nodeId}, nil
+	}
 
 	runCtx, cancel := context.WithTimeout(ctx, installTimeout)
 	defer cancel()
@@ -249,7 +258,9 @@ func (s *ManagedServerService) deriveNode(srv *model.ManagedServer, env *install
 		if err := tx.Create(node).Error; err != nil {
 			return err
 		}
-		return tx.Model(model.ManagedServer{}).Where("id = ?", srv.Id).Update("node_id", node.Id).Error
+		// Link this row and every sibling row for the same box, so all the
+		// differently-named records for one machine share the derived node.
+		return s.linkHostToNode(tx, srv, node.Id)
 	})
 	if err != nil {
 		return 0, err
@@ -353,6 +364,14 @@ func (s *ManagedServerService) ImportPanel(ctx context.Context, serverId int, us
 	if srv.NodeId != 0 {
 		return nil, common.NewError("this server already has a linked panel node")
 	}
+	// A sibling row for the same box may already be linked to a node; adopt it
+	// onto this row instead of creating a second node for one machine.
+	if nodeId := s.linkedNodeForHost(srv); nodeId != 0 {
+		if err := s.linkHostToNode(database.GetDB(), srv, nodeId); err != nil {
+			return nil, common.NewError(err.Error())
+		}
+		return &InstallResult{Success: true, Derived: true, NodeId: nodeId}, nil
+	}
 
 	runCtx, cancel := context.WithTimeout(ctx, installTimeout)
 	defer cancel()
@@ -391,16 +410,21 @@ func (s *ManagedServerService) UninstallPanel(ctx context.Context, serverId int,
 	}
 	out.Success = true
 
-	// Tear down the derived node and clear the link + panel state. A failure
-	// here is reported but not fatal: the panel is already gone from the box.
+	// The panel is gone from the box, so tear down the shared node and reset the
+	// panel state on THIS row and every sibling row for the same machine — they
+	// all pointed at the same panel. A failure here is reported but not fatal.
+	db := database.GetDB()
 	if srv.NodeId != 0 {
 		if err := (&NodeService{}).Delete(srv.NodeId); err != nil {
 			out.Message = "uninstalled, but removing the linked node failed: " + err.Error()
 		}
 	}
-	if err := database.GetDB().Model(model.ManagedServer{}).Where("id = ?", srv.Id).
-		Updates(map[string]any{"panel_installed": false, "panel_version": ""}).Error; err != nil {
+	reset := map[string]any{"panel_installed": false, "panel_version": "", "node_id": 0}
+	if err := db.Model(&model.ManagedServer{}).Where("id = ?", srv.Id).Updates(reset).Error; err != nil {
 		out.Message = firstNonEmpty(out.Message, "uninstalled, but clearing the panel state failed: "+err.Error())
+	}
+	if err := sameHostFilter(db, srv).Model(&model.ManagedServer{}).Updates(reset).Error; err != nil {
+		out.Message = firstNonEmpty(out.Message, "uninstalled, but clearing sibling servers failed: "+err.Error())
 	}
 	return out, nil
 }

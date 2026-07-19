@@ -8,9 +8,12 @@ import (
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
+	"github.com/mhsanaei/3x-ui/v3/internal/logger"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/common"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/crypto"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/netsafe"
+
+	"gorm.io/gorm"
 )
 
 // ManagedServerService manages servers reached over SSH. It is the write path
@@ -106,7 +109,48 @@ func (s *ManagedServerService) Create(srv *model.ManagedServer) error {
 	if err := s.normalize(srv); err != nil {
 		return err
 	}
-	return database.GetDB().Create(srv).Error
+	if err := database.GetDB().Create(srv).Error; err != nil {
+		return err
+	}
+	s.ProbeNowAsync(srv.Id)
+	return nil
+}
+
+// ProbeNowAsync kicks off a single SSH heartbeat for one server in the
+// background so a just-added / just-installed server shows its reachability and
+// panel state right away instead of waiting for the next heartbeat tick. It is
+// fire-and-forget: failures are recorded by UpdateSSHHeartbeat like any probe,
+// and the caller's response is not blocked on the SSH round-trip.
+func (s *ManagedServerService) ProbeNowAsync(id int) {
+	go func() {
+		srv, err := s.GetById(id)
+		if err != nil || srv == nil || !srv.Enable {
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), bulkVerifyTimeout)
+		defer cancel()
+		patch := s.ProbeSSH(ctx, srv)
+		if err := s.UpdateSSHHeartbeat(id, patch); err != nil {
+			logger.Warning("managed server immediate probe: update", id, "failed:", err)
+		}
+	}()
+}
+
+// ProbeNowForHost probes every server row for the same box as the given id, used
+// after an install/uninstall that changes the panel state of a shared machine.
+func (s *ManagedServerService) ProbeNowForHost(id int) {
+	srv, err := s.GetById(id)
+	if err != nil || srv == nil {
+		return
+	}
+	s.ProbeNowAsync(id)
+	var siblings []*model.ManagedServer
+	if err := sameHostFilter(database.GetDB(), srv).Find(&siblings).Error; err != nil {
+		return
+	}
+	for _, sib := range siblings {
+		s.ProbeNowAsync(sib.Id)
+	}
 }
 
 // BulkAddResult is one row's outcome from a batch add, carrying the row index so
@@ -234,8 +278,77 @@ func (s *ManagedServerService) Update(id int, in *model.ManagedServer) error {
 	return db.Model(model.ManagedServer{}).Where("id = ?", id).Updates(updates).Error
 }
 
+// Delete removes one managed server. Several server rows can point at the same
+// physical box (same address+port+user, different names), sharing one derived
+// panel Node. So deleting a row that has a linked node only deletes the node
+// when this was the LAST row referencing it — otherwise the node stays, still
+// managed by the remaining sibling rows. (See sameHostFilter for what "same
+// box" means.)
 func (s *ManagedServerService) Delete(id int) error {
-	return database.GetDB().Where("id = ?", id).Delete(&model.ManagedServer{}).Error
+	srv, err := s.GetById(id)
+	if err != nil || srv == nil {
+		return common.NewError("server not found")
+	}
+	db := database.GetDB()
+	if err := db.Where("id = ?", id).Delete(&model.ManagedServer{}).Error; err != nil {
+		return err
+	}
+	if srv.NodeId != 0 {
+		var others int64
+		if err := db.Model(&model.ManagedServer{}).Where("node_id = ?", srv.NodeId).Count(&others).Error; err != nil {
+			return err
+		}
+		if others == 0 {
+			return (&NodeService{}).Delete(srv.NodeId)
+		}
+	}
+	return nil
+}
+
+// DeleteBatch removes several managed servers, each independently (a failure on
+// one does not abort the rest). Node teardown follows the same last-reference
+// rule as Delete. The count of rows actually removed is returned.
+func (s *ManagedServerService) DeleteBatch(ids []int) int {
+	removed := 0
+	for _, id := range ids {
+		if err := s.Delete(id); err == nil {
+			removed++
+		}
+	}
+	return removed
+}
+
+// sameHostFilter scopes a query to every managed server that reaches the same
+// physical box as srv — same address, SSH port and SSH user — which is how a
+// box is identified for sharing one derived panel node across differently-named
+// rows. It excludes srv's own id so callers can target "the siblings".
+func sameHostFilter(tx *gorm.DB, srv *model.ManagedServer) *gorm.DB {
+	return tx.Where("address = ? AND ssh_port = ? AND ssh_user = ? AND id <> ?",
+		srv.Address, srv.SshPort, srv.SshUser, srv.Id)
+}
+
+// linkedNodeForHost returns the panel node id already derived for srv's box by
+// any sibling row, or 0 if none. Used so a second install/import on the same box
+// reuses the existing node instead of installing again.
+func (s *ManagedServerService) linkedNodeForHost(srv *model.ManagedServer) int {
+	var sibling model.ManagedServer
+	err := sameHostFilter(database.GetDB(), srv).
+		Where("node_id <> 0").First(&sibling).Error
+	if err != nil {
+		return 0
+	}
+	return sibling.NodeId
+}
+
+// linkHostToNode points srv and every sibling row for the same box at nodeId, so
+// the shared panel node is reflected on all of them at once.
+func (s *ManagedServerService) linkHostToNode(tx *gorm.DB, srv *model.ManagedServer, nodeId int) error {
+	if err := tx.Model(&model.ManagedServer{}).Where("id = ?", srv.Id).
+		Update("node_id", nodeId).Error; err != nil {
+		return err
+	}
+	return sameHostFilter(tx, srv).Model(&model.ManagedServer{}).
+		Update("node_id", nodeId).Error
 }
 
 func (s *ManagedServerService) SetEnable(id int, enable bool) error {
