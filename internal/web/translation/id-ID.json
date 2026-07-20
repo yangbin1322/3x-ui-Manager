@@ -1246,7 +1246,8 @@
         "destDirHint": "Direktori tujuan di tiap server. Berkas terpilih (dan pohon direktori, jika ada) dibuat ulang di bawahnya.",
         "filesCount": "{count} berkas",
         "uploadingLabel": "Mengunggah ke panel…",
-        "distributingLabel": "Mendistribusikan ke server…"
+        "distributingLabel": "Mendistribusikan ke server…",
+        "distributingHint": "Mendistribusikan ke {count} server, harap tunggu…"
       },
       "copy": {
         "action": "Salin ke server",

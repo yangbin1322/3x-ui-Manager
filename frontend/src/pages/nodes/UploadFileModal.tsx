@@ -196,6 +196,11 @@ export default function UploadFileModal({ open, targets, uploadFile, onOpenChang
             status={phase === 'distributing' ? 'active' : 'normal'}
             size="small"
           />
+          {phase === 'distributing' && (
+            <div className="exec-label" style={{ opacity: 0.65 }}>
+              {t('pages.nodes.upload.distributingHint', { count: targets.length })}
+            </div>
+          )}
         </div>
       )}
 

@@ -1246,7 +1246,8 @@
         "destDirHint": "Directorio de destino en cada servidor. Los archivos seleccionados (y el árbol de directorios, si lo hay) se recrean bajo él.",
         "filesCount": "{count} archivo(s)",
         "uploadingLabel": "Subiendo al panel…",
-        "distributingLabel": "Distribuyendo a los servidores…"
+        "distributingLabel": "Distribuyendo a los servidores…",
+        "distributingHint": "Distribuyendo a {count} servidor(es), espere…"
       },
       "copy": {
         "action": "Copiar a servidores",

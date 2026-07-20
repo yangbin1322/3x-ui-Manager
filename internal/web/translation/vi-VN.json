@@ -1246,7 +1246,8 @@
         "destDirHint": "Thư mục đích trên mỗi máy chủ. Các tệp đã chọn (và cây thư mục, nếu có) được tạo lại bên dưới nó.",
         "filesCount": "{count} tệp",
         "uploadingLabel": "Đang tải lên bảng điều khiển…",
-        "distributingLabel": "Đang phân phối đến máy chủ…"
+        "distributingLabel": "Đang phân phối đến máy chủ…",
+        "distributingHint": "Đang phân phối đến {count} máy chủ, vui lòng đợi…"
       },
       "copy": {
         "action": "Sao chép tới máy chủ",

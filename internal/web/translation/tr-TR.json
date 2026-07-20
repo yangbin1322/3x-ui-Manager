@@ -1246,7 +1246,8 @@
         "destDirHint": "Her sunucudaki hedef dizin. Seçilen dosyalar (varsa dizin ağacı) bunun altında yeniden oluşturulur.",
         "filesCount": "{count} dosya",
         "uploadingLabel": "Panele yükleniyor…",
-        "distributingLabel": "Sunuculara dağıtılıyor…"
+        "distributingLabel": "Sunuculara dağıtılıyor…",
+        "distributingHint": "{count} sunucuya dağıtılıyor, lütfen bekleyin…"
       },
       "copy": {
         "action": "Sunuculara kopyala",

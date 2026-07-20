@@ -1246,7 +1246,8 @@
         "destDirHint": "Diretório de destino em cada servidor. Os arquivos selecionados (e a árvore de diretórios, se houver) são recriados sob ele.",
         "filesCount": "{count} arquivo(s)",
         "uploadingLabel": "Enviando ao painel…",
-        "distributingLabel": "Distribuindo aos servidores…"
+        "distributingLabel": "Distribuindo aos servidores…",
+        "distributingHint": "Distribuindo a {count} servidor(es), aguarde…"
       },
       "copy": {
         "action": "Copiar para servidores",
