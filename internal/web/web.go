@@ -168,11 +168,18 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	// Cap request bodies on state-changing requests so a stolen session/API
 	// token or a buggy client can't force large allocations or long DB
 	// transactions via bulk create/attach/import endpoints. GET/HEAD/OPTIONS
-	// carry no body and are left untouched. Database restore legitimately accepts
-	// large backups and streams them to disk, so only its exact route suffix is
-	// exempt. Follow-up: make the limit a setting.
+	// carry no body and are left untouched. Database restore and the managed-
+	// server file transfers legitimately accept large uploads (a directory or a
+	// multi-file upload, or a staged tree copy) and enforce their own size caps,
+	// so their exact route suffixes are exempt. Follow-up: make the limit a
+	// setting.
 	const maxRequestBodyBytes = 10 << 20 // 10 MiB
-	engine.Use(middleware.MaxBodyBytes(maxRequestBodyBytes, "/panel/api/server/importDB"))
+	engine.Use(middleware.MaxBodyBytes(
+		maxRequestBodyBytes,
+		"/panel/api/server/importDB",
+		"/panel/api/managedServers/upload",
+		"/panel/api/managedServers/copyPath",
+	))
 
 	webDomain, err := s.settingService.GetWebDomain()
 	if err != nil {
