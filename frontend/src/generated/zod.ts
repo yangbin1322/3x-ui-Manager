@@ -253,6 +253,11 @@ export const ApiTokenViewSchema = z.object({
 });
 export type ApiTokenView = z.infer<typeof ApiTokenViewSchema>;
 
+export const BatchCopyResultSchema = z.object({
+  results: z.array(z.lazy(() => CopyResultSchema)),
+});
+export type BatchCopyResult = z.infer<typeof BatchCopyResultSchema>;
+
 export const BatchExecResultSchema = z.object({
   batchId: z.string(),
   results: z.array(z.lazy(() => ExecResultSchema)),
@@ -393,6 +398,18 @@ export const CommandExecutionSchema = z.object({
   username: z.string(),
 });
 export type CommandExecution = z.infer<typeof CommandExecutionSchema>;
+
+export const CopyResultSchema = z.object({
+  bytes: z.number().int(),
+  durationMs: z.number().int(),
+  error: z.string().optional(),
+  files: z.number().int(),
+  path: z.string(),
+  serverId: z.number().int(),
+  serverName: z.string(),
+  status: z.string(),
+});
+export type CopyResult = z.infer<typeof CopyResultSchema>;
 
 export const DeployResponseSchema = z.object({
   results: z.array(z.lazy(() => DeployResultSchema)),

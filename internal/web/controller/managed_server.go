@@ -35,6 +35,11 @@ const uploadRequestBudget = 32 * time.Minute
 // would be a trivial memory-exhaustion vector.
 const uploadMaxFileSize = 256 << 20
 
+// copyRequestBudget bounds the whole server-to-server copy request. It must
+// cover staging the source tree onto the panel host plus the per-target push
+// ceiling (60m), so it sits above both.
+const copyRequestBudget = 65 * time.Minute
+
 type ManagedServerController struct {
 	serverService service.ManagedServerService
 }
@@ -59,6 +64,7 @@ func (a *ManagedServerController) initRouter(g *gin.RouterGroup) {
 	g.POST("/test", a.test)
 	g.POST("/exec", a.exec)
 	g.POST("/upload", a.upload)
+	g.POST("/copyPath", a.copyPath)
 	g.POST("/install", a.install)
 	g.POST("/installBatch", a.installBatch)
 	g.POST("/import", a.importPanel)
@@ -346,6 +352,51 @@ func (a *ManagedServerController) upload(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), uploadRequestBudget)
 	defer cancel()
 	result := a.serverService.UploadFileBatch(ctx, ids, dest, fileHeader.Filename, content, time.Duration(timeoutSec)*time.Second)
+	jsonObj(c, result, nil)
+}
+
+// copyPath copies a file or directory from one managed server to one or more
+// others. The source path is staged onto the panel host once (over SFTP), then
+// pushed to every target, so the source and targets need no connectivity to each
+// other. A trailing "/" on dest follows the same rule as upload for a single
+// file; for a directory source, dest is the destination directory the tree is
+// recreated under.
+func (a *ManagedServerController) copyPath(c *gin.Context) {
+	var req struct {
+		SourceId   int    `json:"sourceId"`
+		SourcePath string `json:"sourcePath"`
+		TargetIds  []int  `json:"targetIds"`
+		Dest       string `json:"dest"`
+		TimeoutSec int    `json:"timeoutSec"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.copy"), err)
+		return
+	}
+	if req.SourceId == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.copy"), fmt.Errorf("a source server is required"))
+		return
+	}
+	if strings.TrimSpace(req.SourcePath) == "" {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.copy"), fmt.Errorf("source path is required"))
+		return
+	}
+	if len(req.TargetIds) == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.copy"), fmt.Errorf("at least one target server is required"))
+		return
+	}
+	if strings.TrimSpace(req.Dest) == "" {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.copy"), fmt.Errorf("destination path is required"))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), copyRequestBudget)
+	defer cancel()
+	result, err := a.serverService.CopyPathBatch(ctx, req.SourceId, strings.TrimSpace(req.SourcePath), req.TargetIds, strings.TrimSpace(req.Dest), time.Duration(req.TimeoutSec)*time.Second)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.copy"), err)
+		return
+	}
 	jsonObj(c, result, nil)
 }
 

@@ -87,6 +87,8 @@ func run(root, outDir string) error {
 				"BatchExecResult",
 				"UploadResult",
 				"BatchUploadResult",
+				"CopyResult",
+				"BatchCopyResult",
 				"ExecHistoryResponse",
 				"InstallResult",
 				"UninstallResult",

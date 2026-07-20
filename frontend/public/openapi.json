@@ -995,6 +995,21 @@
         ],
         "type": "object"
       },
+      "BatchCopyResult": {
+        "description": "BatchCopyResult is the outcome of copying one source path to several targets.",
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/CopyResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "type": "object"
+      },
       "BatchExecResult": {
         "description": "BatchExecResult is the outcome of running one command across several managed\nservers. BatchId ties the per-server audit rows together for the history view.",
         "properties": {
@@ -1521,6 +1536,53 @@
           "status",
           "stdout",
           "username"
+        ],
+        "type": "object"
+      },
+      "CopyResult": {
+        "description": "CopyResult is the outcome of copying the source path to one target server.",
+        "properties": {
+          "bytes": {
+            "example": 1048576,
+            "format": "int64",
+            "type": "integer"
+          },
+          "durationMs": {
+            "example": 3200,
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "files": {
+            "example": 12,
+            "type": "integer"
+          },
+          "path": {
+            "example": "/opt/app",
+            "type": "string"
+          },
+          "serverId": {
+            "example": 5,
+            "type": "integer"
+          },
+          "serverName": {
+            "example": "hk-2",
+            "type": "string"
+          },
+          "status": {
+            "example": "success",
+            "type": "string"
+          }
+        },
+        "required": [
+          "bytes",
+          "durationMs",
+          "files",
+          "path",
+          "serverId",
+          "serverName",
+          "status"
         ],
         "type": "object"
       },
@@ -9572,6 +9634,75 @@
                         "path": "/root/app.conf",
                         "serverId": 3,
                         "serverName": "hk-1",
+                        "status": "success"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/copyPath": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Copy a file or directory from one managed server (sourceId + sourcePath) to one or more targets (targetIds) at dest, over SFTP. The source is staged onto the panel host once and then pushed to every target, so the source and targets need no connectivity to each other. For a single-file source, dest ending in \"/\" drops it into that directory under its original name; otherwise dest is the full file path. For a directory source, dest is the destination directory and the tree is recreated beneath it (parent dirs created as needed). The staged tree is size-capped at 2 GiB. timeoutSec is the per-target push timeout, clamped to [1s, 60m], default 5m. Results come back one per target; a missing target becomes a failed result rather than aborting the batch.",
+        "operationId": "post_panel_api_managedServers_copyPath",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "sourceId": 3,
+                "sourcePath": "/opt/app",
+                "targetIds": [
+                  5,
+                  7
+                ],
+                "dest": "/opt/app",
+                "timeoutSec": 300
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/BatchCopyResult"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "results": [
+                      {
+                        "bytes": 1048576,
+                        "durationMs": 3200,
+                        "error": "",
+                        "files": 12,
+                        "path": "/opt/app",
+                        "serverId": 5,
+                        "serverName": "hk-2",
                         "status": "success"
                       }
                     ]

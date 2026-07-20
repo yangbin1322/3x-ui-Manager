@@ -26,6 +26,7 @@ import BulkAddServersModal from './BulkAddServersModal';
 import InstallPanelModal from './InstallPanelModal';
 import ExecCommandModal from './ExecCommandModal';
 import UploadFileModal from './UploadFileModal';
+import CopyPathModal from './CopyPathModal';
 import ExecHistoryModal from './ExecHistoryModal';
 import { setMessageInstance } from '@/utils/messageBus';
 import { HttpUtil } from '@/utils';
@@ -96,6 +97,8 @@ export default function NodesPage() {
   const [execTargets, setExecTargets] = useState<ManagedServerRecord[]>([]);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadTargets, setUploadTargets] = useState<ManagedServerRecord[]>([]);
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [copyTargets, setCopyTargets] = useState<ManagedServerRecord[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [mtlsOpen, setMtlsOpen] = useState(false);
   const [trustCa, setTrustCa] = useState('');
@@ -472,6 +475,13 @@ export default function NodesPage() {
     setUploadOpen(true);
   }, [servers, selectedServerIds]);
 
+  const onCopySelected = useCallback(() => {
+    const targets = servers.filter((s) => selectedServerIds.includes(s.id));
+    if (targets.length === 0) return;
+    setCopyTargets(targets);
+    setCopyOpen(true);
+  }, [servers, selectedServerIds]);
+
   const onViewNode = useCallback(() => {
     setActiveTab('nodes');
   }, []);
@@ -562,6 +572,7 @@ export default function NodesPage() {
           onViewNode={onViewNode}
           onExecSelected={onExecSelected}
           onUploadSelected={onUploadSelected}
+          onCopySelected={onCopySelected}
           onBatchInstall={onBatchInstall}
           onBatchImport={onBatchImport}
           onBatchUninstall={onBatchUninstall}
@@ -651,6 +662,14 @@ export default function NodesPage() {
           targets={uploadTargets}
           uploadFile={serverMutations.uploadFile}
           onOpenChange={setUploadOpen}
+        />
+
+        <CopyPathModal
+          open={copyOpen}
+          targets={copyTargets}
+          allServers={servers}
+          copyPath={serverMutations.copyPath}
+          onOpenChange={setCopyOpen}
         />
 
         <ExecHistoryModal

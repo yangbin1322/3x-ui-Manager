@@ -1120,6 +1120,13 @@ export const sections: readonly Section[] = [
       },
       {
         method: 'POST',
+        path: '/panel/api/managedServers/copyPath',
+        summary: 'Copy a file or directory from one managed server (sourceId + sourcePath) to one or more targets (targetIds) at dest, over SFTP. The source is staged onto the panel host once and then pushed to every target, so the source and targets need no connectivity to each other. For a single-file source, dest ending in "/" drops it into that directory under its original name; otherwise dest is the full file path. For a directory source, dest is the destination directory and the tree is recreated beneath it (parent dirs created as needed). The staged tree is size-capped at 2 GiB. timeoutSec is the per-target push timeout, clamped to [1s, 60m], default 5m. Results come back one per target; a missing target becomes a failed result rather than aborting the batch.',
+        body: '{\n  "sourceId": 3,\n  "sourcePath": "/opt/app",\n  "targetIds": [5, 7],\n  "dest": "/opt/app",\n  "timeoutSec": 300\n}',
+        responseSchema: 'BatchCopyResult',
+      },
+      {
+        method: 'POST',
         path: '/panel/api/managedServers/install',
         summary: 'Install 3x-ui on a managed server over SSH and, on success, derive a NEW panel node from the installer’s credentials (Access URL + minted API token), linked back via the server’s nodeId. The server keeps its SSH access; a server that already has a linked node is rejected. Long-running and synchronous (up to ~10 minutes). Runs the official install.sh non-interactively; version is optional (defaults to latest stable).',
         body: '{\n  "serverId": 3,\n  "version": ""\n}',
