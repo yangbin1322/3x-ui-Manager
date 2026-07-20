@@ -1244,7 +1244,9 @@
         "pickDirectory": "انتخاب پوشه",
         "selectedSummary": "{count} فایل",
         "destDirHint": "پوشه مقصد در هر سرور. فایل‌های انتخاب‌شده (و درخت پوشه، در صورت وجود) زیر آن بازسازی می‌شوند.",
-        "filesCount": "{count} فایل"
+        "filesCount": "{count} فایل",
+        "uploadingLabel": "در حال بارگذاری در پنل…",
+        "distributingLabel": "در حال توزیع به سرورها…"
       },
       "copy": {
         "action": "کپی به سرورها",

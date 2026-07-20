@@ -1244,7 +1244,9 @@
         "pickDirectory": "Dizin seç",
         "selectedSummary": "{count} dosya",
         "destDirHint": "Her sunucudaki hedef dizin. Seçilen dosyalar (varsa dizin ağacı) bunun altında yeniden oluşturulur.",
-        "filesCount": "{count} dosya"
+        "filesCount": "{count} dosya",
+        "uploadingLabel": "Panele yükleniyor…",
+        "distributingLabel": "Sunuculara dağıtılıyor…"
       },
       "copy": {
         "action": "Sunuculara kopyala",

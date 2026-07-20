@@ -1361,7 +1361,9 @@
         "pickDirectory": "Choose directory",
         "selectedSummary": "{count} file(s)",
         "destDirHint": "Destination directory on each server. The selected files (and the directory tree, if any) are recreated under it.",
-        "filesCount": "{count} file(s)"
+        "filesCount": "{count} file(s)",
+        "uploadingLabel": "Uploading to panel…",
+        "distributingLabel": "Distributing to servers…"
       },
       "copy": {
         "action": "Copy to servers",

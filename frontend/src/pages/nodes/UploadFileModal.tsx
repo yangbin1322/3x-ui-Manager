@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Input, InputNumber, Modal, Segmented, Tag, Tooltip, Upload } from 'antd';
+import { Alert, Button, Input, InputNumber, Modal, Progress, Segmented, Tag, Tooltip, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
 import type { ManagedServerRecord } from '@/schemas/managedServer';
@@ -11,7 +11,7 @@ import './ExecCommandModal.css';
 interface UploadFileModalProps {
   open: boolean;
   targets: ManagedServerRecord[];
-  uploadFile: (serverIds: number[], files: File[], dest: string, timeoutSec: number) => Promise<Msg<BatchUploadResult>>;
+  uploadFile: (serverIds: number[], files: File[], dest: string, timeoutSec: number, onProgress?: (fraction: number) => void) => Promise<Msg<BatchUploadResult>>;
   onOpenChange: (open: boolean) => void;
 }
 
@@ -42,6 +42,11 @@ export default function UploadFileModal({ open, targets, uploadFile, onOpenChang
   const [running, setRunning] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [results, setResults] = useState<UploadResult[] | null>(null);
+  // phase drives the progress UI: 'uploading' shows the byte-progress bar for
+  // the browser->panel transfer; once that hits 100% the panel is still fanning
+  // the files out over SFTP, so we switch to 'distributing' (indeterminate).
+  const [phase, setPhase] = useState<'idle' | 'uploading' | 'distributing'>('idle');
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (open) {
@@ -52,6 +57,8 @@ export default function UploadFileModal({ open, targets, uploadFile, onOpenChang
       setResults(null);
       setConfirming(false);
       setRunning(false);
+      setPhase('idle');
+      setProgress(0);
     }
   }, [open]);
 
@@ -67,12 +74,18 @@ export default function UploadFileModal({ open, targets, uploadFile, onOpenChang
     if (files.length === 0) return;
     setRunning(true);
     setResults(null);
+    setPhase('uploading');
+    setProgress(0);
     try {
-      const msg = await uploadFile(serverIds, files, dest.trim(), timeoutSec);
+      const msg = await uploadFile(serverIds, files, dest.trim(), timeoutSec, (fraction) => {
+        setProgress(Math.round(fraction * 100));
+        if (fraction >= 1) setPhase('distributing');
+      });
       setResults(msg?.success && msg.obj ? (msg.obj.results ?? []) : []);
     } finally {
       setRunning(false);
       setConfirming(false);
+      setPhase('idle');
     }
   }
 
@@ -163,7 +176,7 @@ export default function UploadFileModal({ open, targets, uploadFile, onOpenChang
         </Tooltip>
       </div>
 
-      {confirming && !results && (
+      {confirming && !results && phase === 'idle' && (
         <Alert
           type="warning"
           showIcon
@@ -171,6 +184,19 @@ export default function UploadFileModal({ open, targets, uploadFile, onOpenChang
           message={t('pages.nodes.upload.confirmTitle', { count: targets.length })}
           description={t('pages.nodes.upload.confirmBody')}
         />
+      )}
+
+      {running && phase !== 'idle' && (
+        <div style={{ marginTop: 12 }}>
+          <span className="exec-label">
+            {phase === 'uploading' ? t('pages.nodes.upload.uploadingLabel') : t('pages.nodes.upload.distributingLabel')}
+          </span>
+          <Progress
+            percent={phase === 'uploading' ? progress : 100}
+            status={phase === 'distributing' ? 'active' : 'normal'}
+            size="small"
+          />
+        </div>
       )}
 
       {results && (

@@ -1244,7 +1244,9 @@
         "pickDirectory": "Вибрати каталог",
         "selectedSummary": "Файлів: {count}",
         "destDirHint": "Каталог призначення на кожному сервері. Вибрані файли (та дерево каталогів, якщо є) відтворюються під ним.",
-        "filesCount": "файлів: {count}"
+        "filesCount": "файлів: {count}",
+        "uploadingLabel": "Завантаження на панель…",
+        "distributingLabel": "Роздача на сервери…"
       },
       "copy": {
         "action": "Копіювати на сервери",

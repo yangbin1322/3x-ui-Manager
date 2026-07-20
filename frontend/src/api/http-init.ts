@@ -172,6 +172,64 @@ export async function httpRequest(
   return { ok: true, status: res.status, statusText: res.statusText, data: parsed };
 }
 
+// uploadWithProgress POSTs a FormData body with real upload-progress events,
+// which fetch() cannot report (its request body has no progress stream). It uses
+// XMLHttpRequest, mirroring performFetch's base-path prefix, CSRF header, and
+// same-origin credentials, and resolves with the parsed JSON envelope. onProgress
+// receives the fraction uploaded (0..1); once the browser finishes sending, the
+// server still fans the upload out over SFTP, so callers show a separate
+// "processing" state until this resolves. A 403 triggers one CSRF refresh + retry,
+// matching httpRequest.
+export async function uploadWithProgress(
+  url: string,
+  form: FormData,
+  onProgress?: (fraction: number) => void,
+): Promise<unknown> {
+  const token = await ensureCsrfToken();
+  try {
+    return await sendXhrUpload(url, form, token, onProgress);
+  } catch (err) {
+    if (err instanceof HttpError && err.status === 403) {
+      csrfToken = null;
+      const fresh = await fetchCsrfToken();
+      if (fresh) {
+        csrfToken = fresh;
+        return sendXhrUpload(url, form, fresh, onProgress);
+      }
+    }
+    throw err;
+  }
+}
+
+function sendXhrUpload(
+  url: string,
+  form: FormData,
+  token: string | null,
+  onProgress?: (fraction: number) => void,
+): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', basePathPrefix + url, true);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    if (token) xhr.setRequestHeader('X-CSRF-Token', token);
+    if (onProgress && xhr.upload) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total);
+      };
+    }
+    xhr.onload = () => {
+      let parsed: unknown;
+      try { parsed = xhr.responseText ? JSON.parse(xhr.responseText) : null; } catch { parsed = xhr.responseText; }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(parsed);
+      else reject(new HttpError(xhr.status, xhr.statusText, parsed));
+    };
+    xhr.onerror = () => reject(new HttpError(0, 'network error', null));
+    xhr.ontimeout = () => reject(new HttpError(0, 'timeout', null));
+    xhr.send(form);
+  });
+}
+
 export function setupHttp(): void {
   let basePath: string | null | undefined = window.X_UI_BASE_PATH;
   if (!basePath) {

@@ -1244,7 +1244,9 @@
         "pickDirectory": "Elegir directorio",
         "selectedSummary": "{count} archivo(s)",
         "destDirHint": "Directorio de destino en cada servidor. Los archivos seleccionados (y el árbol de directorios, si lo hay) se recrean bajo él.",
-        "filesCount": "{count} archivo(s)"
+        "filesCount": "{count} archivo(s)",
+        "uploadingLabel": "Subiendo al panel…",
+        "distributingLabel": "Distribuyendo a los servidores…"
       },
       "copy": {
         "action": "Copiar a servidores",

@@ -1244,7 +1244,9 @@
         "pickDirectory": "اختيار مجلد",
         "selectedSummary": "{count} ملف",
         "destDirHint": "مجلد الوجهة على كل خادم. تُعاد بناء الملفات المختارة (وشجرة المجلد إن وُجدت) تحته.",
-        "filesCount": "{count} ملف"
+        "filesCount": "{count} ملف",
+        "uploadingLabel": "جارٍ الرفع إلى اللوحة…",
+        "distributingLabel": "جارٍ التوزيع إلى الخوادم…"
       },
       "copy": {
         "action": "نسخ إلى الخوادم",
