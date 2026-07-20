@@ -1246,7 +1246,8 @@
         "destDirHint": "各サーバーの宛先ディレクトリ。選択したファイル（ある場合はディレクトリツリー）がその下に再作成されます。",
         "filesCount": "{count} ファイル",
         "uploadingLabel": "パネルにアップロード中…",
-        "distributingLabel": "サーバーに配布中…"
+        "distributingLabel": "サーバーに配布中…",
+        "distributingHint": "{count} 台のサーバーに配布中です。しばらくお待ちください…"
       },
       "copy": {
         "action": "サーバーにコピー",

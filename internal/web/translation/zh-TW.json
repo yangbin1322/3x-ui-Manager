@@ -1246,7 +1246,8 @@
         "destDirHint": "每台伺服器上的目標目錄。所選檔案（及其目錄結構，如有）將在該目錄下重建。",
         "filesCount": "{count} 個檔案",
         "uploadingLabel": "正在上傳到面板…",
-        "distributingLabel": "正在分發到伺服器…"
+        "distributingLabel": "正在分發到伺服器…",
+        "distributingHint": "正在分發到 {count} 台伺服器，請稍候…"
       },
       "copy": {
         "action": "複製到伺服器",

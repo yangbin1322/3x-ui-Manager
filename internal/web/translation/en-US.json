@@ -1363,7 +1363,8 @@
         "destDirHint": "Destination directory on each server. The selected files (and the directory tree, if any) are recreated under it.",
         "filesCount": "{count} file(s)",
         "uploadingLabel": "Uploading to panel…",
-        "distributingLabel": "Distributing to servers…"
+        "distributingLabel": "Distributing to servers…",
+        "distributingHint": "Distributing to {count} server(s), please wait…"
       },
       "copy": {
         "action": "Copy to servers",
