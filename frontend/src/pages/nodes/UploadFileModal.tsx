@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Input, InputNumber, Modal, Tag, Tooltip, Upload } from 'antd';
+import { Alert, Button, Input, InputNumber, Modal, Segmented, Tag, Tooltip, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
 import type { ManagedServerRecord } from '@/schemas/managedServer';
@@ -11,9 +11,11 @@ import './ExecCommandModal.css';
 interface UploadFileModalProps {
   open: boolean;
   targets: ManagedServerRecord[];
-  uploadFile: (serverIds: number[], file: File, dest: string, timeoutSec: number) => Promise<Msg<BatchUploadResult>>;
+  uploadFile: (serverIds: number[], files: File[], dest: string, timeoutSec: number) => Promise<Msg<BatchUploadResult>>;
   onOpenChange: (open: boolean) => void;
 }
+
+type Mode = 'files' | 'directory';
 
 function statusColor(status: string): string {
   switch (status) {
@@ -33,6 +35,7 @@ function formatBytes(n: number): string {
 
 export default function UploadFileModal({ open, targets, uploadFile, onOpenChange }: UploadFileModalProps) {
   const { t } = useTranslation();
+  const [mode, setMode] = useState<Mode>('files');
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [dest, setDest] = useState('');
   const [timeoutSec, setTimeoutSec] = useState(120);
@@ -42,6 +45,7 @@ export default function UploadFileModal({ open, targets, uploadFile, onOpenChang
 
   useEffect(() => {
     if (open) {
+      setMode('files');
       setFileList([]);
       setDest('');
       setTimeoutSec(120);
@@ -52,15 +56,19 @@ export default function UploadFileModal({ open, targets, uploadFile, onOpenChang
   }, [open]);
 
   const serverIds = useMemo(() => targets.map((s) => s.id), [targets]);
-  const file = fileList[0]?.originFileObj as File | undefined;
-  const canRun = !!file && dest.trim().length > 0 && serverIds.length > 0 && !running;
+  const files = useMemo(
+    () => fileList.map((f) => f.originFileObj as File | undefined).filter((f): f is File => !!f),
+    [fileList],
+  );
+  const totalBytes = useMemo(() => files.reduce((sum, f) => sum + (f.size || 0), 0), [files]);
+  const canRun = files.length > 0 && dest.trim().length > 0 && serverIds.length > 0 && !running;
 
   async function doRun() {
-    if (!file) return;
+    if (files.length === 0) return;
     setRunning(true);
     setResults(null);
     try {
-      const msg = await uploadFile(serverIds, file, dest.trim(), timeoutSec);
+      const msg = await uploadFile(serverIds, files, dest.trim(), timeoutSec);
       setResults(msg?.success && msg.obj ? (msg.obj.results ?? []) : []);
     } finally {
       setRunning(false);
@@ -100,18 +108,37 @@ export default function UploadFileModal({ open, targets, uploadFile, onOpenChang
       </div>
 
       <span className="exec-label">{t('pages.nodes.upload.file')}</span>
+      <Segmented<Mode>
+        value={mode}
+        onChange={(v) => { setMode(v); setFileList([]); setConfirming(false); }}
+        options={[
+          { value: 'files', label: t('pages.nodes.upload.modeFiles') },
+          { value: 'directory', label: t('pages.nodes.upload.modeDirectory') },
+        ]}
+        disabled={running}
+        style={{ marginBottom: 8 }}
+      />
       <Upload
+        key={mode}
         fileList={fileList}
         beforeUpload={() => false}
-        maxCount={1}
-        onChange={({ fileList: fl }) => { setFileList(fl.slice(-1)); setConfirming(false); }}
+        multiple={mode === 'files'}
+        directory={mode === 'directory'}
+        onChange={({ fileList: fl }) => { setFileList(fl); setConfirming(false); }}
         disabled={running}
       >
-        <Button icon={<UploadOutlined />} disabled={running}>{t('pages.nodes.upload.pickFile')}</Button>
+        <Button icon={<UploadOutlined />} disabled={running}>
+          {mode === 'directory' ? t('pages.nodes.upload.pickDirectory') : t('pages.nodes.upload.pickFile')}
+        </Button>
       </Upload>
+      {files.length > 0 && (
+        <div className="exec-label" style={{ marginTop: 4 }}>
+          {t('pages.nodes.upload.selectedSummary', { count: files.length })} · {formatBytes(totalBytes)}
+        </div>
+      )}
 
       <label className="exec-label" htmlFor="upload-dest" style={{ marginTop: 12 }}>{t('pages.nodes.upload.dest')}</label>
-      <Tooltip title={t('pages.nodes.upload.destHint')}>
+      <Tooltip title={mode === 'files' && files.length <= 1 ? t('pages.nodes.upload.destHint') : t('pages.nodes.upload.destDirHint')}>
         <Input
           id="upload-dest"
           value={dest}
@@ -159,7 +186,9 @@ export default function UploadFileModal({ open, targets, uploadFile, onOpenChang
               <div className="exec-result-head">
                 <span className="exec-result-node">{r.serverName || `#${r.serverId}`}</span>
                 <Tag color={statusColor(r.status)}>{t(`pages.nodes.upload.status.${r.status}`)}</Tag>
-                {r.status === 'success' && <span className="exec-result-dur">{formatBytes(r.bytes)} → {r.path}</span>}
+                {r.status === 'success' && (
+                  <span className="exec-result-dur">{t('pages.nodes.upload.filesCount', { count: r.files })} · {formatBytes(r.bytes)} → {r.path}</span>
+                )}
                 <span className="exec-result-dur">{r.durationMs} ms</span>
               </div>
               {r.error && <pre className="exec-result-out">{r.error}</pre>}

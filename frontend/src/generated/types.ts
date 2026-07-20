@@ -716,6 +716,7 @@ export interface UploadResult {
   bytes: number;
   durationMs: number;
   error?: string;
+  files: number;
   path: string;
   serverId: number;
   serverName: string;

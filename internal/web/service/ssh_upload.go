@@ -12,6 +12,7 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 
 	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 )
 
 const (
@@ -28,12 +29,14 @@ const (
 	uploadConcurrency = 8
 )
 
-// UploadResult is the outcome of writing one file to one managed server.
+// UploadResult is the outcome of writing the upload (one or more files) to one
+// managed server.
 type UploadResult struct {
 	ServerId   int    `json:"serverId" example:"3"`
 	ServerName string `json:"serverName" example:"hk-1"`
 	Status     string `json:"status" example:"success"`
 	Path       string `json:"path" example:"/root/app.conf"`
+	Files      int    `json:"files" example:"1"`
 	Bytes      int64  `json:"bytes" example:"20480"`
 	Error      string `json:"error,omitempty"`
 	DurationMs int    `json:"durationMs" example:"842"`
@@ -81,21 +84,26 @@ func resolveRemotePath(dest, fileName string) (string, error) {
 	return dest, nil
 }
 
-// uploadToServer opens one SFTP session, ensures the parent directory exists,
-// and streams content to the resolved path. It never returns an error: a
-// failure becomes a recorded result so a batch keeps going.
-func (s *ManagedServerService) uploadToServer(ctx context.Context, srv *model.ManagedServer, dest, fileName string, content io.Reader, timeout time.Duration) *UploadResult {
+// UploadEntry is one file to write. Name is the base file name; Rel is its path
+// relative to the chosen upload root (set only when a directory was uploaded),
+// used to recreate the tree under dest. Content is the whole file, buffered so
+// it can be fanned out to every target.
+type UploadEntry struct {
+	Name    string
+	Rel     string
+	Content []byte
+}
+
+// uploadToServer opens one SFTP session and writes every entry. With a single
+// entry that has no Rel it keeps the original single-file semantics (dest ending
+// in "/" is a directory drop, otherwise the full file path). With multiple
+// entries or any Rel, dest is treated as a destination directory and each entry
+// is written at dest/<rel-or-name>, recreating the uploaded tree. It never
+// returns an error: a failure becomes a recorded result so a batch keeps going.
+func (s *ManagedServerService) uploadToServer(ctx context.Context, srv *model.ManagedServer, dest string, entries []UploadEntry, timeout time.Duration) *UploadResult {
 	out := &UploadResult{ServerId: srv.Id, ServerName: srv.Name}
 	started := time.Now()
 	defer func() { out.DurationMs = int(time.Since(started).Milliseconds()) }()
-
-	remotePath, err := resolveRemotePath(dest, fileName)
-	if err != nil {
-		out.Status = uploadStatusFailed
-		out.Error = err.Error()
-		return out
-	}
-	out.Path = remotePath
 
 	runCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -109,34 +117,8 @@ func (s *ManagedServerService) uploadToServer(ctx context.Context, srv *model.Ma
 	}
 	defer dial.Client.Close()
 
-	type result struct {
-		bytes int64
-		err   error
-	}
-	done := make(chan result, 1)
-	go func() {
-		client, cErr := sftp.NewClient(dial.Client)
-		if cErr != nil {
-			done <- result{err: cErr}
-			return
-		}
-		defer client.Close()
-
-		if dir := path.Dir(remotePath); dir != "" && dir != "." && dir != "/" {
-			_ = client.MkdirAll(dir)
-		}
-		f, cErr := client.Create(remotePath)
-		if cErr != nil {
-			done <- result{err: cErr}
-			return
-		}
-		n, cErr := io.Copy(f, content)
-		closeErr := f.Close()
-		if cErr == nil {
-			cErr = closeErr
-		}
-		done <- result{bytes: n, err: cErr}
-	}()
+	done := make(chan error, 1)
+	go func() { done <- writeUploadEntries(dial.Client, dest, entries, out) }()
 
 	select {
 	case <-runCtx.Done():
@@ -148,29 +130,110 @@ func (s *ManagedServerService) uploadToServer(ctx context.Context, srv *model.Ma
 			out.Error = runCtx.Err().Error()
 		}
 		return out
-	case r := <-done:
-		if r.err != nil {
+	case err := <-done:
+		if err != nil {
 			out.Status = uploadStatusFailed
-			out.Error = r.err.Error()
+			out.Error = err.Error()
 			return out
 		}
 		out.Status = uploadStatusSuccess
-		out.Bytes = r.bytes
 		return out
 	}
 }
 
-// BatchUploadResult is the outcome of writing one file across several servers.
+// treeUpload reports whether entries should be written as a tree under dest (as
+// opposed to the single-file drop): more than one file, or any file carrying a
+// relative path from a directory upload.
+func treeUpload(entries []UploadEntry) bool {
+	if len(entries) > 1 {
+		return true
+	}
+	return len(entries) == 1 && strings.TrimSpace(entries[0].Rel) != ""
+}
+
+// safeRel cleans a relative path from the browser so it cannot escape dest. It
+// forward-slashes, strips any leading "/" or drive, and drops ".." segments.
+func safeRel(rel, name string) string {
+	rel = strings.ReplaceAll(rel, "\\", "/")
+	cleaned := path.Clean("/" + rel)
+	cleaned = strings.TrimPrefix(cleaned, "/")
+	if cleaned == "" || cleaned == "." {
+		cleaned = path.Base(path.Clean("/" + strings.ReplaceAll(name, "\\", "/")))
+	}
+	return cleaned
+}
+
+func writeUploadEntries(sshClient *ssh.Client, dest string, entries []UploadEntry, out *UploadResult) error {
+	client, err := sftp.NewClient(sshClient)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	if !treeUpload(entries) {
+		remotePath, err := resolveRemotePath(dest, entries[0].Name)
+		if err != nil {
+			return err
+		}
+		n, err := sftpWriteFile(client, remotePath, entries[0].Content)
+		if err != nil {
+			return err
+		}
+		out.Path = remotePath
+		out.Files = 1
+		out.Bytes = n
+		return nil
+	}
+
+	root := path.Clean(dest)
+	out.Path = root
+	if err := client.MkdirAll(root); err != nil {
+		return err
+	}
+	for _, e := range entries {
+		rel := safeRel(e.Rel, e.Name)
+		target := path.Join(root, rel)
+		if dir := path.Dir(target); dir != "" && dir != "." && dir != "/" {
+			_ = client.MkdirAll(dir)
+		}
+		n, err := sftpWriteFile(client, target, e.Content)
+		if err != nil {
+			return err
+		}
+		out.Files++
+		out.Bytes += n
+	}
+	return nil
+}
+
+// sftpWriteFile creates remotePath (making its parent dir) and writes content,
+// returning the byte count.
+func sftpWriteFile(client *sftp.Client, remotePath string, content []byte) (int64, error) {
+	if dir := path.Dir(remotePath); dir != "" && dir != "." && dir != "/" {
+		_ = client.MkdirAll(dir)
+	}
+	f, err := client.Create(remotePath)
+	if err != nil {
+		return 0, err
+	}
+	n, err := io.Copy(f, strings.NewReader(string(content)))
+	closeErr := f.Close()
+	if err == nil {
+		err = closeErr
+	}
+	return n, err
+}
+
+// BatchUploadResult is the outcome of writing the upload across several servers.
 type BatchUploadResult struct {
 	Results []UploadResult `json:"results"`
 }
 
-// UploadFileBatch writes the same file to dest on each of serverIds, bounded by
-// uploadConcurrency. Because the content is a single reader that cannot be read
-// concurrently, it is buffered once by the caller and each goroutine gets its
-// own reader over that buffer. Results come back in input order. A missing
-// server becomes a failed result rather than aborting the batch.
-func (s *ManagedServerService) UploadFileBatch(ctx context.Context, serverIds []int, dest, fileName string, content []byte, timeout time.Duration) *BatchUploadResult {
+// UploadFilesBatch writes every entry to dest on each of serverIds, bounded by
+// uploadConcurrency. Content is already buffered, so each target goroutine reads
+// its own copy. Results come back in input order. A missing server becomes a
+// failed result rather than aborting the batch.
+func (s *ManagedServerService) UploadFilesBatch(ctx context.Context, serverIds []int, dest string, entries []UploadEntry, timeout time.Duration) *BatchUploadResult {
 	clamped := clampUploadTimeout(timeout)
 	results := make([]UploadResult, len(serverIds))
 
@@ -187,7 +250,7 @@ func (s *ManagedServerService) UploadFileBatch(ctx context.Context, serverIds []
 		go func(i int, srv *model.ManagedServer) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			results[i] = *s.uploadToServer(ctx, srv, dest, fileName, strings.NewReader(string(content)), clamped)
+			results[i] = *s.uploadToServer(ctx, srv, dest, entries, clamped)
 		}(i, srv)
 	}
 	wg.Wait()

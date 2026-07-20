@@ -1355,7 +1355,13 @@
           "failed": "Failed",
           "unreachable": "Unreachable",
           "timeout": "Timeout"
-        }
+        },
+        "modeFiles": "Files",
+        "modeDirectory": "Directory",
+        "pickDirectory": "Choose directory",
+        "selectedSummary": "{count} file(s)",
+        "destDirHint": "Destination directory on each server. The selected files (and the directory tree, if any) are recreated under it.",
+        "filesCount": "{count} file(s)"
       },
       "copy": {
         "action": "Copy to servers",

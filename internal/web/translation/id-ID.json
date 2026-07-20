@@ -1238,7 +1238,13 @@
           "failed": "Gagal",
           "unreachable": "Tidak terjangkau",
           "timeout": "Batas waktu"
-        }
+        },
+        "modeFiles": "Berkas",
+        "modeDirectory": "Direktori",
+        "pickDirectory": "Pilih direktori",
+        "selectedSummary": "{count} berkas",
+        "destDirHint": "Direktori tujuan di tiap server. Berkas terpilih (dan pohon direktori, jika ada) dibuat ulang di bawahnya.",
+        "filesCount": "{count} berkas"
       },
       "copy": {
         "action": "Salin ke server",

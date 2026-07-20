@@ -1045,7 +1045,7 @@ export const SCHEMAS: Record<string, unknown> = {
     "type": "object"
   },
   "BatchUploadResult": {
-    "description": "BatchUploadResult is the outcome of writing one file across several servers.",
+    "description": "BatchUploadResult is the outcome of writing the upload across several servers.",
     "properties": {
       "results": {
         "items": {
@@ -3047,7 +3047,7 @@ export const SCHEMAS: Record<string, unknown> = {
     "type": "object"
   },
   "UploadResult": {
-    "description": "UploadResult is the outcome of writing one file to one managed server.",
+    "description": "UploadResult is the outcome of writing the upload (one or more files) to one\nmanaged server.",
     "properties": {
       "bytes": {
         "example": 20480,
@@ -3060,6 +3060,10 @@ export const SCHEMAS: Record<string, unknown> = {
       },
       "error": {
         "type": "string"
+      },
+      "files": {
+        "example": 1,
+        "type": "integer"
       },
       "path": {
         "example": "/root/app.conf",
@@ -3081,6 +3085,7 @@ export const SCHEMAS: Record<string, unknown> = {
     "required": [
       "bytes",
       "durationMs",
+      "files",
       "path",
       "serverId",
       "serverName",

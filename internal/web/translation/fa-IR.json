@@ -1238,7 +1238,13 @@
           "failed": "ناموفق",
           "unreachable": "در دسترس نیست",
           "timeout": "مهلت"
-        }
+        },
+        "modeFiles": "فایل‌ها",
+        "modeDirectory": "پوشه",
+        "pickDirectory": "انتخاب پوشه",
+        "selectedSummary": "{count} فایل",
+        "destDirHint": "پوشه مقصد در هر سرور. فایل‌های انتخاب‌شده (و درخت پوشه، در صورت وجود) زیر آن بازسازی می‌شوند.",
+        "filesCount": "{count} فایل"
       },
       "copy": {
         "action": "کپی به سرورها",
