@@ -1137,6 +1137,7 @@
         "updateNoneEligible": "Chọn ít nhất một node trực tuyến và đang bật",
         "saveMtls": "Lưu mTLS nút",
         "exec": "Thực thi lệnh",
+        "upload": "Tải tệp lên",
         "install": "Cài đặt 3x-ui",
         "uninstall": "Gỡ 3x-ui"
       },
@@ -1210,6 +1211,32 @@
           "time": "Thời gian",
           "user": "Người dùng",
           "status": "Trạng thái"
+        }
+      },
+      "upload": {
+        "action": "Tải tệp lên",
+        "title": "Tải tệp lên các máy chủ",
+        "targets": "Máy chủ đích ({count})",
+        "file": "Tệp",
+        "pickFile": "Chọn tệp",
+        "dest": "Đường dẫn đích",
+        "destHint": "Đường dẫn tuyệt đối. Kết thúc bằng \"/\" để đặt tệp vào thư mục đó với tên gốc; nếu không thì đây là đường dẫn tệp đầy đủ.",
+        "destPlaceholder": "/root/  hoặc  /etc/app/config.yaml",
+        "timeout": "Hết giờ",
+        "timeoutHint": "Thời gian chờ mỗi máy chủ tính bằng giây (tối đa 1800).",
+        "upload": "Tải lên",
+        "confirmUpload": "Xác nhận và tải lên",
+        "confirmTitle": "Tải lên {count} máy chủ?",
+        "confirmBody": "Thao tác này ghi tệp vào mọi máy chủ trong danh sách, ghi đè tệp hiện có ở đường dẫn đó. Hãy xem lại các đích trước khi xác nhận.",
+        "okCount": "{count} thành công",
+        "failedCount": "{count} thất bại",
+        "fileRequired": "Hãy chọn tệp trước",
+        "destRequired": "Cần đường dẫn đích",
+        "status": {
+          "success": "Thành công",
+          "failed": "Thất bại",
+          "unreachable": "Không kết nối được",
+          "timeout": "Hết giờ"
         }
       },
       "install": {

@@ -1137,6 +1137,7 @@
         "updateNoneEligible": "Pilih minimal satu node online dan aktif",
         "saveMtls": "Simpan mTLS node",
         "exec": "Jalankan perintah",
+        "upload": "Unggah berkas",
         "install": "Instal 3x-ui",
         "uninstall": "Hapus 3x-ui"
       },
@@ -1210,6 +1211,32 @@
           "time": "Waktu",
           "user": "Pengguna",
           "status": "Status"
+        }
+      },
+      "upload": {
+        "action": "Unggah berkas",
+        "title": "Unggah berkas ke server",
+        "targets": "Server tujuan ({count})",
+        "file": "Berkas",
+        "pickFile": "Pilih berkas",
+        "dest": "Jalur tujuan",
+        "destHint": "Jalur absolut. Akhiri dengan \"/\" untuk menaruh berkas di direktori itu dengan nama aslinya; jika tidak, ini jalur berkas lengkap.",
+        "destPlaceholder": "/root/  atau  /etc/app/config.yaml",
+        "timeout": "Batas waktu",
+        "timeoutHint": "Batas waktu per server dalam detik (maks. 1800).",
+        "upload": "Unggah",
+        "confirmUpload": "Konfirmasi dan unggah",
+        "confirmTitle": "Unggah ke {count} server?",
+        "confirmBody": "Ini menulis berkas ke setiap server yang tercantum, menimpa berkas yang ada di jalur tersebut. Tinjau tujuan sebelum mengonfirmasi.",
+        "okCount": "{count} berhasil",
+        "failedCount": "{count} gagal",
+        "fileRequired": "Pilih berkas dulu",
+        "destRequired": "Jalur tujuan wajib diisi",
+        "status": {
+          "success": "Berhasil",
+          "failed": "Gagal",
+          "unreachable": "Tidak terjangkau",
+          "timeout": "Batas waktu"
         }
       },
       "install": {

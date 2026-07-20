@@ -25,6 +25,7 @@ import ServerFormModal from './ServerFormModal';
 import BulkAddServersModal from './BulkAddServersModal';
 import InstallPanelModal from './InstallPanelModal';
 import ExecCommandModal from './ExecCommandModal';
+import UploadFileModal from './UploadFileModal';
 import ExecHistoryModal from './ExecHistoryModal';
 import { setMessageInstance } from '@/utils/messageBus';
 import { HttpUtil } from '@/utils';
@@ -93,6 +94,8 @@ export default function NodesPage() {
   const [installTargets, setInstallTargets] = useState<ManagedServerRecord[]>([]);
   const [execOpen, setExecOpen] = useState(false);
   const [execTargets, setExecTargets] = useState<ManagedServerRecord[]>([]);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadTargets, setUploadTargets] = useState<ManagedServerRecord[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [mtlsOpen, setMtlsOpen] = useState(false);
   const [trustCa, setTrustCa] = useState('');
@@ -462,6 +465,13 @@ export default function NodesPage() {
     setExecOpen(true);
   }, [servers, selectedServerIds]);
 
+  const onUploadSelected = useCallback(() => {
+    const targets = servers.filter((s) => selectedServerIds.includes(s.id));
+    if (targets.length === 0) return;
+    setUploadTargets(targets);
+    setUploadOpen(true);
+  }, [servers, selectedServerIds]);
+
   const onViewNode = useCallback(() => {
     setActiveTab('nodes');
   }, []);
@@ -551,6 +561,7 @@ export default function NodesPage() {
           onUninstall={onUninstall}
           onViewNode={onViewNode}
           onExecSelected={onExecSelected}
+          onUploadSelected={onUploadSelected}
           onBatchInstall={onBatchInstall}
           onBatchImport={onBatchImport}
           onBatchUninstall={onBatchUninstall}
@@ -633,6 +644,13 @@ export default function NodesPage() {
           targets={execTargets}
           execCommand={serverMutations.execCommand}
           onOpenChange={setExecOpen}
+        />
+
+        <UploadFileModal
+          open={uploadOpen}
+          targets={uploadTargets}
+          uploadFile={serverMutations.uploadFile}
+          onOpenChange={setUploadOpen}
         />
 
         <ExecHistoryModal

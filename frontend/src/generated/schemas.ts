@@ -1029,6 +1029,21 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "BatchUploadResult": {
+    "description": "BatchUploadResult is the outcome of writing one file across several servers.",
+    "properties": {
+      "results": {
+        "items": {
+          "$ref": "#/components/schemas/UploadResult"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "results"
+    ],
+    "type": "object"
+  },
   "BulkAddResponse": {
     "properties": {
       "results": {
@@ -2966,6 +2981,48 @@ export const SCHEMAS: Record<string, unknown> = {
     },
     "required": [
       "success"
+    ],
+    "type": "object"
+  },
+  "UploadResult": {
+    "description": "UploadResult is the outcome of writing one file to one managed server.",
+    "properties": {
+      "bytes": {
+        "example": 20480,
+        "format": "int64",
+        "type": "integer"
+      },
+      "durationMs": {
+        "example": 842,
+        "type": "integer"
+      },
+      "error": {
+        "type": "string"
+      },
+      "path": {
+        "example": "/root/app.conf",
+        "type": "string"
+      },
+      "serverId": {
+        "example": 3,
+        "type": "integer"
+      },
+      "serverName": {
+        "example": "hk-1",
+        "type": "string"
+      },
+      "status": {
+        "example": "success",
+        "type": "string"
+      }
+    },
+    "required": [
+      "bytes",
+      "durationMs",
+      "path",
+      "serverId",
+      "serverName",
+      "status"
     ],
     "type": "object"
   },

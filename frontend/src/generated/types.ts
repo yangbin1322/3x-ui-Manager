@@ -253,6 +253,10 @@ export interface BatchServerResult {
   success: boolean;
 }
 
+export interface BatchUploadResult {
+  results: UploadResult[];
+}
+
 export interface BulkAddResponse {
   results: BulkAddResult[];
 }
@@ -691,6 +695,16 @@ export interface UninstallResult {
   message?: string;
   stdout?: string;
   success: boolean;
+}
+
+export interface UploadResult {
+  bytes: number;
+  durationMs: number;
+  error?: string;
+  path: string;
+  serverId: number;
+  serverName: string;
+  status: string;
 }
 
 export interface User {

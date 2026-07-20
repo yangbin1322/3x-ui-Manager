@@ -36,6 +36,7 @@ function renderList(overrides: Partial<Parameters<typeof ServerList>[0]> = {}) {
       onUninstall={noop}
       onViewNode={noop}
       onExecSelected={noop}
+      onUploadSelected={noop}
       onBatchInstall={noop}
       onBatchImport={noop}
       onBatchUninstall={noop}

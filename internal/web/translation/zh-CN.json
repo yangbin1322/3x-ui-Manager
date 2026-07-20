@@ -1137,6 +1137,7 @@
         "updateNoneEligible": "请至少选择一个在线且已启用的节点",
         "saveMtls": "保存节点 mTLS",
         "exec": "执行命令",
+        "upload": "上传文件",
         "install": "安装 3x-ui",
         "uninstall": "卸载 3x-ui"
       },
@@ -1210,6 +1211,32 @@
           "time": "时间",
           "user": "用户",
           "status": "状态"
+        }
+      },
+      "upload": {
+        "action": "上传文件",
+        "title": "上传文件到服务器",
+        "targets": "目标服务器（{count}）",
+        "file": "文件",
+        "pickFile": "选择文件",
+        "dest": "目标路径",
+        "destHint": "绝对路径。以 “/” 结尾表示放入该目录并保留原文件名；否则为完整目标文件路径。",
+        "destPlaceholder": "/root/  或  /etc/app/config.yaml",
+        "timeout": "超时",
+        "timeoutHint": "每台服务器的超时秒数（最大 1800）。",
+        "upload": "上传",
+        "confirmUpload": "确认并上传",
+        "confirmTitle": "上传到 {count} 台服务器？",
+        "confirmBody": "这会将文件写入每台所列服务器，并覆盖该路径已有的文件。确认前请核对目标。",
+        "okCount": "成功 {count}",
+        "failedCount": "失败 {count}",
+        "fileRequired": "请先选择文件",
+        "destRequired": "必须填写目标路径",
+        "status": {
+          "success": "成功",
+          "failed": "失败",
+          "unreachable": "无法连接",
+          "timeout": "超时"
         }
       },
       "install": {

@@ -1137,6 +1137,7 @@
         "updateNoneEligible": "オンラインで有効なノードを少なくとも1つ選択してください",
         "saveMtls": "ノード mTLS を保存",
         "exec": "コマンドを実行",
+        "upload": "ファイルをアップロード",
         "install": "3x-ui をインストール",
         "uninstall": "3x-ui をアンインストール"
       },
@@ -1210,6 +1211,32 @@
           "time": "時刻",
           "user": "ユーザー",
           "status": "状態"
+        }
+      },
+      "upload": {
+        "action": "ファイルをアップロード",
+        "title": "サーバーにファイルをアップロード",
+        "targets": "対象サーバー（{count}）",
+        "file": "ファイル",
+        "pickFile": "ファイルを選択",
+        "dest": "宛先パス",
+        "destHint": "絶対パス。「/」で終えるとそのディレクトリに元の名前で置きます。そうでなければ完全なファイルパスです。",
+        "destPlaceholder": "/root/  または  /etc/app/config.yaml",
+        "timeout": "タイムアウト",
+        "timeoutHint": "サーバーごとのタイムアウト秒数（最大1800）。",
+        "upload": "アップロード",
+        "confirmUpload": "確認してアップロード",
+        "confirmTitle": "{count} 台のサーバーにアップロードしますか？",
+        "confirmBody": "一覧の各サーバーにファイルを書き込み、そのパスの既存ファイルを上書きします。確認前に対象をご確認ください。",
+        "okCount": "成功 {count}",
+        "failedCount": "失敗 {count}",
+        "fileRequired": "先にファイルを選択してください",
+        "destRequired": "宛先パスは必須です",
+        "status": {
+          "success": "成功",
+          "failed": "失敗",
+          "unreachable": "到達不可",
+          "timeout": "タイムアウト"
         }
       },
       "install": {

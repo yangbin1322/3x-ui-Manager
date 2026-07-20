@@ -1254,6 +1254,7 @@
         "updateNoneEligible": "Select at least one online, enabled node",
         "saveMtls": "Save node mTLS",
         "exec": "Execute command",
+        "upload": "Upload file",
         "install": "Install 3x-ui",
         "uninstall": "Uninstall 3x-ui"
       },
@@ -1327,6 +1328,32 @@
           "time": "Time",
           "user": "User",
           "status": "Status"
+        }
+      },
+      "upload": {
+        "action": "Upload file",
+        "title": "Upload file to servers",
+        "targets": "Target servers ({count})",
+        "file": "File",
+        "pickFile": "Choose file",
+        "dest": "Destination path",
+        "destHint": "Absolute path. End with \"/\" to drop the file into that directory under its original name; otherwise it is the full target file path.",
+        "destPlaceholder": "/root/  or  /etc/app/config.yaml",
+        "timeout": "Timeout",
+        "timeoutHint": "Per-server timeout in seconds (max 1800).",
+        "upload": "Upload",
+        "confirmUpload": "Confirm and upload",
+        "confirmTitle": "Upload to {count} server(s)?",
+        "confirmBody": "This writes the file to every listed server, overwriting any existing file at the path. Review the targets before confirming.",
+        "okCount": "{count} succeeded",
+        "failedCount": "{count} failed",
+        "fileRequired": "Choose a file first",
+        "destRequired": "Destination path is required",
+        "status": {
+          "success": "Success",
+          "failed": "Failed",
+          "unreachable": "Unreachable",
+          "timeout": "Timeout"
         }
       },
       "install": {

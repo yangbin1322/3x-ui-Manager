@@ -1137,6 +1137,7 @@
         "updateNoneEligible": "En az bir çevrimiçi ve etkin düğüm seçin",
         "saveMtls": "Düğüm mTLS kaydet",
         "exec": "Komut çalıştır",
+        "upload": "Dosya yükle",
         "install": "3x-ui yükle",
         "uninstall": "3x-ui'yi kaldır"
       },
@@ -1210,6 +1211,32 @@
           "time": "Zaman",
           "user": "Kullanıcı",
           "status": "Durum"
+        }
+      },
+      "upload": {
+        "action": "Dosya yükle",
+        "title": "Sunuculara dosya yükle",
+        "targets": "Hedef sunucular ({count})",
+        "file": "Dosya",
+        "pickFile": "Dosya seç",
+        "dest": "Hedef yol",
+        "destHint": "Mutlak yol. Dosyayı özgün adıyla o dizine bırakmak için \"/\" ile bitirin; aksi halde tam dosya yoludur.",
+        "destPlaceholder": "/root/  veya  /etc/app/config.yaml",
+        "timeout": "Zaman aşımı",
+        "timeoutHint": "Sunucu başına saniye cinsinden zaman aşımı (en fazla 1800).",
+        "upload": "Yükle",
+        "confirmUpload": "Onayla ve yükle",
+        "confirmTitle": "{count} sunucuya yüklensin mi?",
+        "confirmBody": "Bu, dosyayı listelenen her sunucuya yazar ve yoldaki mevcut dosyanın üzerine yazar. Onaylamadan önce hedefleri gözden geçirin.",
+        "okCount": "{count} başarılı",
+        "failedCount": "{count} başarısız",
+        "fileRequired": "Önce bir dosya seçin",
+        "destRequired": "Hedef yol gerekli",
+        "status": {
+          "success": "Başarılı",
+          "failed": "Başarısız",
+          "unreachable": "Ulaşılamıyor",
+          "timeout": "Zaman aşımı"
         }
       },
       "install": {

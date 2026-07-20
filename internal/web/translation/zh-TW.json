@@ -1137,6 +1137,7 @@
         "updateNoneEligible": "請至少選擇一個在線且已啟用的節點",
         "saveMtls": "儲存節點 mTLS",
         "exec": "執行命令",
+        "upload": "上傳檔案",
         "install": "安裝 3x-ui",
         "uninstall": "解除安裝 3x-ui"
       },
@@ -1210,6 +1211,32 @@
           "time": "時間",
           "user": "使用者",
           "status": "狀態"
+        }
+      },
+      "upload": {
+        "action": "上傳檔案",
+        "title": "上傳檔案到伺服器",
+        "targets": "目標伺服器（{count}）",
+        "file": "檔案",
+        "pickFile": "選擇檔案",
+        "dest": "目標路徑",
+        "destHint": "絕對路徑。以 “/” 結尾表示放入該目錄並保留原檔名；否則為完整目標檔案路徑。",
+        "destPlaceholder": "/root/  或  /etc/app/config.yaml",
+        "timeout": "逾時",
+        "timeoutHint": "每台伺服器的逾時秒數（最大 1800）。",
+        "upload": "上傳",
+        "confirmUpload": "確認並上傳",
+        "confirmTitle": "上傳到 {count} 台伺服器？",
+        "confirmBody": "這會將檔案寫入每台所列伺服器，並覆蓋該路徑既有的檔案。確認前請核對目標。",
+        "okCount": "成功 {count}",
+        "failedCount": "失敗 {count}",
+        "fileRequired": "請先選擇檔案",
+        "destRequired": "必須填寫目標路徑",
+        "status": {
+          "success": "成功",
+          "failed": "失敗",
+          "unreachable": "無法連線",
+          "timeout": "逾時"
         }
       },
       "install": {
