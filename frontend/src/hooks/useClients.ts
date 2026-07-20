@@ -275,7 +275,13 @@ export function useClients() {
     const serverSummary = listQuery.data?.summary ?? DEFAULT_SUMMARY;
     if (allClientStats.length === 0) return serverSummary;
     const live = computeClientsSummary(allClientStats, new Set(onlines), expireDiff, trafficDiff);
-    return { ...live, total: serverSummary.total ?? live.total };
+    // The server total is authoritative for the set of clients that exist. If
+    // the live stats disagree on the count, allClientStats is stale (a client
+    // was added/removed but the WS snapshot hasn't caught up), so every live
+    // bucket is suspect -- fall back to the server summary wholesale rather than
+    // show a stale enabled/disabled count.
+    if (serverSummary.total !== live.total) return serverSummary;
+    return { ...live, total: serverSummary.total };
   }, [allClientStats, onlines, expireDiff, trafficDiff, listQuery.data?.summary]);
 
   const invalidateAll = useCallback(
