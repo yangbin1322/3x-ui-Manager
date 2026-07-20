@@ -59,4 +59,14 @@ describe('computeClientsSummary', () => {
     expect(s.expiring).toEqual([]);
     expect(s.depleted).toEqual([]);
   });
+
+  it('no stats yields an all-zero summary', () => {
+    const s = computeClientsSummary([], new Set(), 3 * DAY, 1 * GB);
+    expect(s.total).toBe(0);
+    expect(s.active).toBe(0);
+    expect(s.online).toEqual([]);
+    expect(s.depleted).toEqual([]);
+    expect(s.expiring).toEqual([]);
+    expect(s.deactive).toEqual([]);
+  });
 });

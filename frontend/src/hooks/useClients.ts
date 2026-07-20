@@ -275,7 +275,7 @@ export function useClients() {
     const serverSummary = listQuery.data?.summary ?? DEFAULT_SUMMARY;
     if (allClientStats.length === 0) return serverSummary;
     const live = computeClientsSummary(allClientStats, new Set(onlines), expireDiff, trafficDiff);
-    return { ...live, total: serverSummary.total || live.total };
+    return { ...live, total: serverSummary.total ?? live.total };
   }, [allClientStats, onlines, expireDiff, trafficDiff, listQuery.data?.summary]);
 
   const invalidateAll = useCallback(
@@ -573,8 +573,16 @@ export function useClients() {
   const applyClientStatsEvent = useCallback((payload: unknown) => {
     if (!payload || typeof payload !== 'object') return;
     const p = payload as { clients?: ClientStatRow[]; snapshot?: boolean };
-    if (!Array.isArray(p.clients) || p.clients.length === 0) return;
-    if (p.snapshot !== false) setAllClientStats(p.clients);
+    if (!Array.isArray(p.clients)) return;
+    const isSnapshot = p.snapshot !== false;
+    // An empty snapshot means every client is gone; it must clear the cached
+    // stats, otherwise the live summary keeps counting a deleted client. Only an
+    // empty incremental update is a no-op.
+    if (p.clients.length === 0) {
+      if (isSnapshot) setAllClientStats([]);
+      return;
+    }
+    if (isSnapshot) setAllClientStats(p.clients);
     const byEmail = new Map<string, ClientTraffic>();
     for (const row of p.clients) {
       if (row && row.email) byEmail.set(row.email, row);
