@@ -1237,7 +1237,13 @@
           "failed": "Error",
           "unreachable": "Inaccesible",
           "timeout": "Tiempo agotado"
-        }
+        },
+        "modeFiles": "Archivos",
+        "modeDirectory": "Directorio",
+        "pickDirectory": "Elegir directorio",
+        "selectedSummary": "{count} archivo(s)",
+        "destDirHint": "Directorio de destino en cada servidor. Los archivos seleccionados (y el árbol de directorios, si lo hay) se recrean bajo él.",
+        "filesCount": "{count} archivo(s)"
       },
       "install": {
         "action": "Instalar 3x-ui",

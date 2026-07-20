@@ -1237,7 +1237,13 @@
           "failed": "失敗",
           "unreachable": "到達不可",
           "timeout": "タイムアウト"
-        }
+        },
+        "modeFiles": "ファイル",
+        "modeDirectory": "ディレクトリ",
+        "pickDirectory": "ディレクトリを選択",
+        "selectedSummary": "{count} ファイル",
+        "destDirHint": "各サーバーの宛先ディレクトリ。選択したファイル（ある場合はディレクトリツリー）がその下に再作成されます。",
+        "filesCount": "{count} ファイル"
       },
       "install": {
         "action": "3x-ui をインストール",

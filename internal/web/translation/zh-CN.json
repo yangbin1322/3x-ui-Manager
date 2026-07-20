@@ -1237,7 +1237,13 @@
           "failed": "失败",
           "unreachable": "无法连接",
           "timeout": "超时"
-        }
+        },
+        "modeFiles": "文件",
+        "modeDirectory": "目录",
+        "pickDirectory": "选择目录",
+        "selectedSummary": "{count} 个文件",
+        "destDirHint": "每台服务器上的目标目录。所选文件（及其目录结构，如有）将在该目录下重建。",
+        "filesCount": "{count} 个文件"
       },
       "install": {
         "action": "安装 3x-ui",

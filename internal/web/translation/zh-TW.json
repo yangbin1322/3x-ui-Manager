@@ -1237,7 +1237,13 @@
           "failed": "失敗",
           "unreachable": "無法連線",
           "timeout": "逾時"
-        }
+        },
+        "modeFiles": "檔案",
+        "modeDirectory": "目錄",
+        "pickDirectory": "選擇目錄",
+        "selectedSummary": "{count} 個檔案",
+        "destDirHint": "每台伺服器上的目標目錄。所選檔案（及其目錄結構，如有）將在該目錄下重建。",
+        "filesCount": "{count} 個檔案"
       },
       "install": {
         "action": "安裝 3x-ui",

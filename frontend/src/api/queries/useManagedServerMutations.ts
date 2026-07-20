@@ -142,9 +142,13 @@ export function useManagedServerMutations() {
       HttpUtil.post<BatchExecResult>('/panel/api/managedServers/exec', { serverIds, command, timeoutSec }, {
         headers: { 'Content-Type': 'application/json' },
       }),
-    uploadFile: (serverIds: number[], file: File, dest: string, timeoutSec: number): Promise<Msg<BatchUploadResult>> => {
+    uploadFile: (serverIds: number[], files: File[], dest: string, timeoutSec: number): Promise<Msg<BatchUploadResult>> => {
       const form = new FormData();
-      form.append('file', file);
+      for (const file of files) {
+        form.append('file', file);
+        const rel = (file as File & { webkitRelativePath?: string }).webkitRelativePath || '';
+        form.append('path', rel);
+      }
       form.append('serverIds', serverIds.join(','));
       form.append('dest', dest);
       form.append('timeoutSec', String(timeoutSec));

@@ -30,10 +30,10 @@ const installRequestBudget = 12 * time.Minute
 // cuts a still-running transfer short.
 const uploadRequestBudget = 32 * time.Minute
 
-// uploadMaxFileSize caps a single uploaded file at 256 MiB. The file is buffered
-// in memory to be fanned out to every target server, so an unbounded upload
-// would be a trivial memory-exhaustion vector.
-const uploadMaxFileSize = 256 << 20
+// uploadMaxFileSize caps the total size of one upload (across all files) at 1
+// GiB. Files are buffered in memory to be fanned out to every target server, so
+// an unbounded upload would be a trivial memory-exhaustion vector.
+const uploadMaxFileSize = 1 << 30
 
 type ManagedServerController struct {
 	serverService service.ManagedServerService
@@ -305,18 +305,23 @@ func (a *ManagedServerController) exec(c *gin.Context) {
 	jsonObj(c, result, nil)
 }
 
-// upload writes one file (multipart form field "file") to a destination path on
-// every server in "serverIds" (comma-separated). "dest" ending in "/" drops the
-// file into that directory under its original name; otherwise it is the full
-// target path. The file is buffered once and fanned out concurrently.
+// upload writes one or more files (multipart form field "file", repeated) to a
+// destination path on every server in "serverIds" (comma-separated). Optional
+// repeated "path" fields carry each file's relative path from a directory
+// upload, in the same order as the files. With a single file and no relative
+// path, "dest" ending in "/" drops it into that directory under its original
+// name, otherwise it is the full target path; with multiple files or any
+// relative path, "dest" is a destination directory the tree is recreated under.
+// Every file is buffered once and fanned out concurrently.
 func (a *ManagedServerController) upload(c *gin.Context) {
-	fileHeader, err := c.FormFile("file")
+	form, err := c.MultipartForm()
 	if err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), fmt.Errorf("a file is required"))
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), err)
 		return
 	}
-	if fileHeader.Size > uploadMaxFileSize {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), fmt.Errorf("file exceeds the %d MiB limit", uploadMaxFileSize>>20))
+	files := form.File["file"]
+	if len(files) == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), fmt.Errorf("a file is required"))
 		return
 	}
 	ids := parseIntCSV(c.PostForm("serverIds"))
@@ -330,22 +335,39 @@ func (a *ManagedServerController) upload(c *gin.Context) {
 		return
 	}
 	timeoutSec, _ := strconv.Atoi(c.PostForm("timeoutSec"))
+	// Relative paths are sent in the same order as the files; an entry may be
+	// blank for a plainly-picked file, so index alignment is what matters.
+	rels := form.Value["path"]
 
-	f, err := fileHeader.Open()
-	if err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), err)
-		return
-	}
-	defer f.Close()
-	content, err := io.ReadAll(io.LimitReader(f, uploadMaxFileSize))
-	if err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), err)
-		return
+	var total int64
+	entries := make([]service.UploadEntry, 0, len(files))
+	for i, fh := range files {
+		total += fh.Size
+		if total > uploadMaxFileSize {
+			jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), fmt.Errorf("upload exceeds the %d MiB limit", uploadMaxFileSize>>20))
+			return
+		}
+		f, err := fh.Open()
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), err)
+			return
+		}
+		content, err := io.ReadAll(io.LimitReader(f, uploadMaxFileSize))
+		_ = f.Close()
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), err)
+			return
+		}
+		rel := ""
+		if i < len(rels) {
+			rel = rels[i]
+		}
+		entries = append(entries, service.UploadEntry{Name: fh.Filename, Rel: rel, Content: content})
 	}
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), uploadRequestBudget)
 	defer cancel()
-	result := a.serverService.UploadFileBatch(ctx, ids, dest, fileHeader.Filename, content, time.Duration(timeoutSec)*time.Second)
+	result := a.serverService.UploadFilesBatch(ctx, ids, dest, entries, time.Duration(timeoutSec)*time.Second)
 	jsonObj(c, result, nil)
 }
 

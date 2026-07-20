@@ -1237,7 +1237,13 @@
           "failed": "Başarısız",
           "unreachable": "Ulaşılamıyor",
           "timeout": "Zaman aşımı"
-        }
+        },
+        "modeFiles": "Dosyalar",
+        "modeDirectory": "Dizin",
+        "pickDirectory": "Dizin seç",
+        "selectedSummary": "{count} dosya",
+        "destDirHint": "Her sunucudaki hedef dizin. Seçilen dosyalar (varsa dizin ağacı) bunun altında yeniden oluşturulur.",
+        "filesCount": "{count} dosya"
       },
       "install": {
         "action": "3x-ui yükle",

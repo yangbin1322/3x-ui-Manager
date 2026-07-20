@@ -42,6 +42,43 @@ func TestResolveRemotePath(t *testing.T) {
 	}
 }
 
+func TestSafeRel(t *testing.T) {
+	tests := []struct {
+		name string
+		rel  string
+		fn   string
+		want string
+	}{
+		{name: "simple relative path kept", rel: "mydir/a.txt", fn: "a.txt", want: "mydir/a.txt"},
+		{name: "nested relative path kept", rel: "d/sub/x.conf", fn: "x.conf", want: "d/sub/x.conf"},
+		{name: "leading slash stripped", rel: "/etc/passwd", fn: "passwd", want: "etc/passwd"},
+		{name: "traversal segments dropped", rel: "../../etc/passwd", fn: "passwd", want: "etc/passwd"},
+		{name: "backslashes normalized", rel: `dir\sub\a.txt`, fn: "a.txt", want: "dir/sub/a.txt"},
+		{name: "empty rel falls back to filename", rel: "", fn: "a.txt", want: "a.txt"},
+		{name: "empty rel base-cleans filename", rel: "", fn: "../../a.txt", want: "a.txt"},
+		{name: "dot rel falls back to filename", rel: ".", fn: "a.txt", want: "a.txt"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := safeRel(tt.rel, tt.fn); got != tt.want {
+				t.Fatalf("safeRel(%q, %q) = %q, want %q", tt.rel, tt.fn, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTreeUpload(t *testing.T) {
+	if treeUpload([]UploadEntry{{Name: "a"}}) {
+		t.Fatal("single file with no rel should not be a tree upload")
+	}
+	if !treeUpload([]UploadEntry{{Name: "a"}, {Name: "b"}}) {
+		t.Fatal("multiple files should be a tree upload")
+	}
+	if !treeUpload([]UploadEntry{{Name: "a", Rel: "d/a"}}) {
+		t.Fatal("single file with a rel should be a tree upload")
+	}
+}
+
 func TestClampUploadTimeout(t *testing.T) {
 	if got := clampUploadTimeout(0); got != uploadDefaultTimeout {
 		t.Fatalf("zero timeout = %v, want default %v", got, uploadDefaultTimeout)

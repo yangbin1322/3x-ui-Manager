@@ -1237,7 +1237,13 @@
           "failed": "Ошибка",
           "unreachable": "Недоступен",
           "timeout": "Тайм-аут"
-        }
+        },
+        "modeFiles": "Файлы",
+        "modeDirectory": "Каталог",
+        "pickDirectory": "Выбрать каталог",
+        "selectedSummary": "Файлов: {count}",
+        "destDirHint": "Каталог назначения на каждом сервере. Выбранные файлы (и дерево каталогов, если есть) воссоздаются под ним.",
+        "filesCount": "файлов: {count}"
       },
       "install": {
         "action": "Установить 3x-ui",

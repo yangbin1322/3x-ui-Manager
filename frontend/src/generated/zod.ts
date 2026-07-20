@@ -752,6 +752,7 @@ export const UploadResultSchema = z.object({
   bytes: z.number().int(),
   durationMs: z.number().int(),
   error: z.string().optional(),
+  files: z.number().int(),
   path: z.string(),
   serverId: z.number().int(),
   serverName: z.string(),

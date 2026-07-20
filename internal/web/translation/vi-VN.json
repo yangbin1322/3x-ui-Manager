@@ -1237,7 +1237,13 @@
           "failed": "Thất bại",
           "unreachable": "Không kết nối được",
           "timeout": "Hết giờ"
-        }
+        },
+        "modeFiles": "Tệp",
+        "modeDirectory": "Thư mục",
+        "pickDirectory": "Chọn thư mục",
+        "selectedSummary": "{count} tệp",
+        "destDirHint": "Thư mục đích trên mỗi máy chủ. Các tệp đã chọn (và cây thư mục, nếu có) được tạo lại bên dưới nó.",
+        "filesCount": "{count} tệp"
       },
       "install": {
         "action": "Cài đặt 3x-ui",

@@ -1237,7 +1237,13 @@
           "failed": "فشل",
           "unreachable": "غير قابل للوصول",
           "timeout": "مهلة"
-        }
+        },
+        "modeFiles": "ملفات",
+        "modeDirectory": "مجلد",
+        "pickDirectory": "اختيار مجلد",
+        "selectedSummary": "{count} ملف",
+        "destDirHint": "مجلد الوجهة على كل خادم. تُعاد بناء الملفات المختارة (وشجرة المجلد إن وُجدت) تحته.",
+        "filesCount": "{count} ملف"
       },
       "install": {
         "action": "تثبيت 3x-ui",
