@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { HttpUtil, Msg } from '@/utils';
+import { uploadWithProgress } from '@/api/http-init';
 import { keys } from '@/api/queryKeys';
 import type { ManagedServerRecord } from '@/schemas/managedServer';
 import type { SSHTestResult, BatchExecResult, BatchUploadResult, BatchCopyResult, ExecHistoryResponse, InstallResult, UninstallResult, BatchInstallResponse, BulkAddResponse } from '@/generated/types';
@@ -142,7 +143,13 @@ export function useManagedServerMutations() {
       HttpUtil.post<BatchExecResult>('/panel/api/managedServers/exec', { serverIds, command, timeoutSec }, {
         headers: { 'Content-Type': 'application/json' },
       }),
-    uploadFile: (serverIds: number[], files: File[], dest: string, timeoutSec: number): Promise<Msg<BatchUploadResult>> => {
+    uploadFile: async (
+      serverIds: number[],
+      files: File[],
+      dest: string,
+      timeoutSec: number,
+      onProgress?: (fraction: number) => void,
+    ): Promise<Msg<BatchUploadResult>> => {
       const form = new FormData();
       for (const file of files) {
         form.append('file', file);
@@ -152,7 +159,9 @@ export function useManagedServerMutations() {
       form.append('serverIds', serverIds.join(','));
       form.append('dest', dest);
       form.append('timeoutSec', String(timeoutSec));
-      return HttpUtil.post<BatchUploadResult>('/panel/api/managedServers/upload', form);
+      const raw = await uploadWithProgress('/panel/api/managedServers/upload', form, onProgress);
+      const env = (raw ?? {}) as { success?: boolean; msg?: string; obj?: BatchUploadResult };
+      return new Msg<BatchUploadResult>(Boolean(env.success), typeof env.msg === 'string' ? env.msg : '', env.obj ?? null);
     },
     copyPath: (sourceId: number, sourcePath: string, targetIds: number[], dest: string, timeoutSec: number): Promise<Msg<BatchCopyResult>> =>
       HttpUtil.post<BatchCopyResult>('/panel/api/managedServers/copyPath', { sourceId, sourcePath, targetIds, dest, timeoutSec }, {

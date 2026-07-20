@@ -1244,7 +1244,9 @@
         "pickDirectory": "Pilih direktori",
         "selectedSummary": "{count} berkas",
         "destDirHint": "Direktori tujuan di tiap server. Berkas terpilih (dan pohon direktori, jika ada) dibuat ulang di bawahnya.",
-        "filesCount": "{count} berkas"
+        "filesCount": "{count} berkas",
+        "uploadingLabel": "Mengunggah ke panel…",
+        "distributingLabel": "Mendistribusikan ke server…"
       },
       "copy": {
         "action": "Salin ke server",

@@ -1244,7 +1244,9 @@
         "pickDirectory": "Chọn thư mục",
         "selectedSummary": "{count} tệp",
         "destDirHint": "Thư mục đích trên mỗi máy chủ. Các tệp đã chọn (và cây thư mục, nếu có) được tạo lại bên dưới nó.",
-        "filesCount": "{count} tệp"
+        "filesCount": "{count} tệp",
+        "uploadingLabel": "Đang tải lên bảng điều khiển…",
+        "distributingLabel": "Đang phân phối đến máy chủ…"
       },
       "copy": {
         "action": "Sao chép tới máy chủ",
