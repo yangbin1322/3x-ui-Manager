@@ -1137,6 +1137,7 @@
         "updateNoneEligible": "Selecione pelo menos um nó online e ativo",
         "saveMtls": "Salvar mTLS do nó",
         "exec": "Executar comando",
+        "upload": "Enviar arquivo",
         "install": "Instalar 3x-ui",
         "uninstall": "Desinstalar 3x-ui"
       },
@@ -1210,6 +1211,32 @@
           "time": "Hora",
           "user": "Usuário",
           "status": "Status"
+        }
+      },
+      "upload": {
+        "action": "Enviar arquivo",
+        "title": "Enviar arquivo aos servidores",
+        "targets": "Servidores de destino ({count})",
+        "file": "Arquivo",
+        "pickFile": "Escolher arquivo",
+        "dest": "Caminho de destino",
+        "destHint": "Caminho absoluto. Termine com \"/\" para colocar o arquivo nesse diretório com o nome original; caso contrário, é o caminho completo do arquivo.",
+        "destPlaceholder": "/root/  ou  /etc/app/config.yaml",
+        "timeout": "Tempo limite",
+        "timeoutHint": "Tempo por servidor em segundos (máx. 1800).",
+        "upload": "Enviar",
+        "confirmUpload": "Confirmar e enviar",
+        "confirmTitle": "Enviar para {count} servidor(es)?",
+        "confirmBody": "Isto grava o arquivo em cada servidor listado, sobrescrevendo qualquer arquivo existente no caminho. Revise os destinos antes de confirmar.",
+        "okCount": "{count} com sucesso",
+        "failedCount": "{count} com falha",
+        "fileRequired": "Escolha um arquivo primeiro",
+        "destRequired": "O caminho de destino é obrigatório",
+        "status": {
+          "success": "Sucesso",
+          "failed": "Falha",
+          "unreachable": "Inacessível",
+          "timeout": "Tempo esgotado"
         }
       },
       "install": {

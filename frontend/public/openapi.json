@@ -1055,6 +1055,21 @@
         ],
         "type": "object"
       },
+      "BatchUploadResult": {
+        "description": "BatchUploadResult is the outcome of writing one file across several servers.",
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/UploadResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "type": "object"
+      },
       "BulkAddResponse": {
         "properties": {
           "results": {
@@ -2992,6 +3007,48 @@
         },
         "required": [
           "success"
+        ],
+        "type": "object"
+      },
+      "UploadResult": {
+        "description": "UploadResult is the outcome of writing one file to one managed server.",
+        "properties": {
+          "bytes": {
+            "example": 20480,
+            "format": "int64",
+            "type": "integer"
+          },
+          "durationMs": {
+            "example": 842,
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "path": {
+            "example": "/root/app.conf",
+            "type": "string"
+          },
+          "serverId": {
+            "example": 3,
+            "type": "integer"
+          },
+          "serverName": {
+            "example": "hk-1",
+            "type": "string"
+          },
+          "status": {
+            "example": "success",
+            "type": "string"
+          }
+        },
+        "required": [
+          "bytes",
+          "durationMs",
+          "path",
+          "serverId",
+          "serverName",
+          "status"
         ],
         "type": "object"
       },
@@ -9458,6 +9515,64 @@
                         "serverName": "hk-1",
                         "status": "success",
                         "stdout": ""
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/managedServers/upload": {
+      "post": {
+        "tags": [
+          "Managed Servers"
+        ],
+        "summary": "Upload one file (multipart form field \"file\") to a destination path on one or more managed servers over SFTP. Multipart fields: file (the payload), serverIds (comma-separated ids), dest (target path — ending in \"/\" drops the file into that directory under its original name, otherwise it is the full file path), timeoutSec (optional, clamped to [1s, 30m], default 2m). The file is buffered once (max 256 MiB) and fanned out concurrently, bounded internally; the parent directory is created if missing. Results come back one per server. A missing server becomes a failed result rather than aborting the batch.",
+        "operationId": "post_panel_api_managedServers_upload",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/BatchUploadResult"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "results": [
+                      {
+                        "bytes": 20480,
+                        "durationMs": 842,
+                        "error": "",
+                        "path": "/root/app.conf",
+                        "serverId": 3,
+                        "serverName": "hk-1",
+                        "status": "success"
                       }
                     ]
                   }

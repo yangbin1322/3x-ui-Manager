@@ -1113,6 +1113,13 @@ export const sections: readonly Section[] = [
       },
       {
         method: 'POST',
+        path: '/panel/api/managedServers/upload',
+        summary: 'Upload one file (multipart form field "file") to a destination path on one or more managed servers over SFTP. Multipart fields: file (the payload), serverIds (comma-separated ids), dest (target path — ending in "/" drops the file into that directory under its original name, otherwise it is the full file path), timeoutSec (optional, clamped to [1s, 30m], default 2m). The file is buffered once (max 256 MiB) and fanned out concurrently, bounded internally; the parent directory is created if missing. Results come back one per server. A missing server becomes a failed result rather than aborting the batch.',
+        body: 'multipart/form-data: file=<binary>, serverIds="3,5", dest="/root/", timeoutSec="120"',
+        responseSchema: 'BatchUploadResult',
+      },
+      {
+        method: 'POST',
         path: '/panel/api/managedServers/install',
         summary: 'Install 3x-ui on a managed server over SSH and, on success, derive a NEW panel node from the installer’s credentials (Access URL + minted API token), linked back via the server’s nodeId. The server keeps its SSH access; a server that already has a linked node is rejected. Long-running and synchronous (up to ~10 minutes). Runs the official install.sh non-interactively; version is optional (defaults to latest stable).',
         body: '{\n  "serverId": 3,\n  "version": ""\n}',

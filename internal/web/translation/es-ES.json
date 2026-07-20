@@ -1137,6 +1137,7 @@
         "updateNoneEligible": "Selecciona al menos un nodo en línea y habilitado",
         "saveMtls": "Guardar mTLS del nodo",
         "exec": "Ejecutar comando",
+        "upload": "Subir archivo",
         "install": "Instalar 3x-ui",
         "uninstall": "Desinstalar 3x-ui"
       },
@@ -1210,6 +1211,32 @@
           "time": "Hora",
           "user": "Usuario",
           "status": "Estado"
+        }
+      },
+      "upload": {
+        "action": "Subir archivo",
+        "title": "Subir archivo a los servidores",
+        "targets": "Servidores de destino ({count})",
+        "file": "Archivo",
+        "pickFile": "Elegir archivo",
+        "dest": "Ruta de destino",
+        "destHint": "Ruta absoluta. Termine con \"/\" para colocar el archivo en ese directorio con su nombre original; de lo contrario es la ruta completa del archivo.",
+        "destPlaceholder": "/root/  o  /etc/app/config.yaml",
+        "timeout": "Tiempo de espera",
+        "timeoutHint": "Tiempo por servidor en segundos (máx. 1800).",
+        "upload": "Subir",
+        "confirmUpload": "Confirmar y subir",
+        "confirmTitle": "¿Subir a {count} servidor(es)?",
+        "confirmBody": "Esto escribe el archivo en cada servidor listado, sobrescribiendo cualquier archivo existente en la ruta. Revise los destinos antes de confirmar.",
+        "okCount": "{count} con éxito",
+        "failedCount": "{count} con error",
+        "fileRequired": "Elija un archivo primero",
+        "destRequired": "La ruta de destino es obligatoria",
+        "status": {
+          "success": "Éxito",
+          "failed": "Error",
+          "unreachable": "Inaccesible",
+          "timeout": "Tiempo agotado"
         }
       },
       "install": {

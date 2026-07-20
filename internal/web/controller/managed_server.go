@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +24,16 @@ const execRequestBudget = 6 * time.Minute
 // installRequestBudget sits above the service's 10m install timeout to leave
 // room for reading the install result and deriving the panel node afterward.
 const installRequestBudget = 12 * time.Minute
+
+// uploadRequestBudget bounds the whole upload HTTP request; it sits above the
+// per-server upload timeout ceiling (30m) so the request context isn't what
+// cuts a still-running transfer short.
+const uploadRequestBudget = 32 * time.Minute
+
+// uploadMaxFileSize caps a single uploaded file at 256 MiB. The file is buffered
+// in memory to be fanned out to every target server, so an unbounded upload
+// would be a trivial memory-exhaustion vector.
+const uploadMaxFileSize = 256 << 20
 
 type ManagedServerController struct {
 	serverService service.ManagedServerService
@@ -47,6 +58,7 @@ func (a *ManagedServerController) initRouter(g *gin.RouterGroup) {
 
 	g.POST("/test", a.test)
 	g.POST("/exec", a.exec)
+	g.POST("/upload", a.upload)
 	g.POST("/install", a.install)
 	g.POST("/installBatch", a.installBatch)
 	g.POST("/import", a.importPanel)
@@ -291,6 +303,66 @@ func (a *ManagedServerController) exec(c *gin.Context) {
 	defer cancel()
 	result := a.serverService.ExecCommandBatch(ctx, ids, req.Command, time.Duration(req.TimeoutSec)*time.Second, username)
 	jsonObj(c, result, nil)
+}
+
+// upload writes one file (multipart form field "file") to a destination path on
+// every server in "serverIds" (comma-separated). "dest" ending in "/" drops the
+// file into that directory under its original name; otherwise it is the full
+// target path. The file is buffered once and fanned out concurrently.
+func (a *ManagedServerController) upload(c *gin.Context) {
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), fmt.Errorf("a file is required"))
+		return
+	}
+	if fileHeader.Size > uploadMaxFileSize {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), fmt.Errorf("file exceeds the %d MiB limit", uploadMaxFileSize>>20))
+		return
+	}
+	ids := parseIntCSV(c.PostForm("serverIds"))
+	if len(ids) == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), fmt.Errorf("at least one server is required"))
+		return
+	}
+	dest := strings.TrimSpace(c.PostForm("dest"))
+	if dest == "" {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), fmt.Errorf("destination path is required"))
+		return
+	}
+	timeoutSec, _ := strconv.Atoi(c.PostForm("timeoutSec"))
+
+	f, err := fileHeader.Open()
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), err)
+		return
+	}
+	defer f.Close()
+	content, err := io.ReadAll(io.LimitReader(f, uploadMaxFileSize))
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.upload"), err)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), uploadRequestBudget)
+	defer cancel()
+	result := a.serverService.UploadFileBatch(ctx, ids, dest, fileHeader.Filename, content, time.Duration(timeoutSec)*time.Second)
+	jsonObj(c, result, nil)
+}
+
+// parseIntCSV parses a comma-separated list of ints, skipping blanks and
+// non-numeric tokens. Used for form fields that carry a server-id list.
+func parseIntCSV(s string) []int {
+	out := make([]int, 0)
+	for _, tok := range strings.Split(s, ",") {
+		tok = strings.TrimSpace(tok)
+		if tok == "" {
+			continue
+		}
+		if n, err := strconv.Atoi(tok); err == nil {
+			out = append(out, n)
+		}
+	}
+	return out
 }
 
 // install installs 3x-ui on a managed server and, on success, derives a new

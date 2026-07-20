@@ -1137,6 +1137,7 @@
         "updateNoneEligible": "اختر عقدة واحدة على الأقل متصلة ومفعّلة",
         "saveMtls": "حفظ mTLS النود",
         "exec": "تنفيذ الأمر",
+        "upload": "رفع ملف",
         "install": "تثبيت 3x-ui",
         "uninstall": "إلغاء تثبيت 3x-ui"
       },
@@ -1210,6 +1211,32 @@
           "time": "الوقت",
           "user": "المستخدم",
           "status": "الحالة"
+        }
+      },
+      "upload": {
+        "action": "رفع ملف",
+        "title": "رفع ملف إلى الخوادم",
+        "targets": "الخوادم المستهدفة ({count})",
+        "file": "ملف",
+        "pickFile": "اختيار ملف",
+        "dest": "مسار الوجهة",
+        "destHint": "مسار مطلق. أنهِ بـ «/» لوضع الملف داخل هذا المجلد باسمه الأصلي؛ وإلا فهو المسار الكامل للملف.",
+        "destPlaceholder": "/root/  أو  /etc/app/config.yaml",
+        "timeout": "المهلة",
+        "timeoutHint": "المهلة لكل خادم بالثواني (بحد أقصى 1800).",
+        "upload": "رفع",
+        "confirmUpload": "تأكيد ورفع",
+        "confirmTitle": "رفع إلى {count} خادم؟",
+        "confirmBody": "سيكتب هذا الملف على كل خادم مدرج، مع الكتابة فوق أي ملف موجود في المسار. راجع الأهداف قبل التأكيد.",
+        "okCount": "{count} نجحت",
+        "failedCount": "{count} فشلت",
+        "fileRequired": "اختر ملفًا أولًا",
+        "destRequired": "مسار الوجهة مطلوب",
+        "status": {
+          "success": "نجاح",
+          "failed": "فشل",
+          "unreachable": "غير قابل للوصول",
+          "timeout": "مهلة"
         }
       },
       "install": {

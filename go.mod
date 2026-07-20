@@ -16,6 +16,7 @@ require (
 	github.com/mymmrac/telego v1.10.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
+	github.com/pkg/sftp v1.13.11
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/shirou/gopsutil/v4 v4.26.6
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
@@ -33,6 +34,8 @@ require (
 	gorm.io/gorm v1.31.2
 	pgregory.net/rapid v1.3.0
 )
+
+require github.com/kr/fs v0.1.0 // indirect
 
 require (
 	github.com/Azure/go-ntlmssp v0.1.1 // indirect

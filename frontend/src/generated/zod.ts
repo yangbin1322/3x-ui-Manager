@@ -272,6 +272,11 @@ export const BatchServerResultSchema = z.object({
 });
 export type BatchServerResult = z.infer<typeof BatchServerResultSchema>;
 
+export const BatchUploadResultSchema = z.object({
+  results: z.array(z.lazy(() => UploadResultSchema)),
+});
+export type BatchUploadResult = z.infer<typeof BatchUploadResultSchema>;
+
 export const BulkAddResponseSchema = z.object({
   results: z.array(z.lazy(() => BulkAddResultSchema)),
 });
@@ -742,6 +747,17 @@ export const UninstallResultSchema = z.object({
   success: z.boolean(),
 });
 export type UninstallResult = z.infer<typeof UninstallResultSchema>;
+
+export const UploadResultSchema = z.object({
+  bytes: z.number().int(),
+  durationMs: z.number().int(),
+  error: z.string().optional(),
+  path: z.string(),
+  serverId: z.number().int(),
+  serverName: z.string(),
+  status: z.string(),
+});
+export type UploadResult = z.infer<typeof UploadResultSchema>;
 
 export const UserSchema = z.object({
   id: z.number().int(),

@@ -257,6 +257,19 @@ export const EXAMPLES: Record<string, unknown> = {
     "serverName": "hk-1",
     "success": true
   },
+  "BatchUploadResult": {
+    "results": [
+      {
+        "bytes": 20480,
+        "durationMs": 842,
+        "error": "",
+        "path": "/root/app.conf",
+        "serverId": 3,
+        "serverName": "hk-1",
+        "status": "success"
+      }
+    ]
+  },
   "BulkAddResponse": {
     "results": [
       {
@@ -740,6 +753,15 @@ export const EXAMPLES: Record<string, unknown> = {
     "message": "",
     "stdout": "",
     "success": true
+  },
+  "UploadResult": {
+    "bytes": 20480,
+    "durationMs": 842,
+    "error": "",
+    "path": "/root/app.conf",
+    "serverId": 3,
+    "serverName": "hk-1",
+    "status": "success"
   },
   "User": {
     "id": 0,

@@ -15,6 +15,7 @@ import type { ColumnsType } from 'antd/es/table';
 import {
   ClusterOutlined,
   CodeOutlined,
+  UploadOutlined,
   DeleteOutlined,
   DeploymentUnitOutlined,
   EditOutlined,
@@ -49,6 +50,7 @@ interface ServerListProps {
   onUninstall: (server: ManagedServerRecord) => void;
   onViewNode: (nodeId: number) => void;
   onExecSelected: () => void;
+  onUploadSelected: () => void;
   onBatchInstall: () => void;
   onBatchImport: () => void;
   onBatchUninstall: () => void;
@@ -93,6 +95,7 @@ export default function ServerList({
   onUninstall,
   onViewNode,
   onExecSelected,
+  onUploadSelected,
   onBatchInstall,
   onBatchImport,
   onBatchUninstall,
@@ -278,6 +281,9 @@ export default function ServerList({
         </Button>
         <Button size="small" icon={<CodeOutlined />} disabled={selectedIds.length === 0} onClick={onExecSelected}>
           {t('pages.nodes.exec.action')}
+        </Button>
+        <Button size="small" icon={<UploadOutlined />} disabled={selectedIds.length === 0} onClick={onUploadSelected}>
+          {t('pages.nodes.upload.action')}
         </Button>
         <Button size="small" icon={<DeploymentUnitOutlined />} disabled={installableCount === 0} onClick={onBatchInstall}>
           {t('pages.servers.batchInstall', { count: installableCount })}
