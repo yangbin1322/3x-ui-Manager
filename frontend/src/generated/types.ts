@@ -237,6 +237,10 @@ export interface ApiTokenView {
   token?: string;
 }
 
+export interface BatchCopyResult {
+  results: CopyResult[];
+}
+
 export interface BatchExecResult {
   batchId: string;
   results: ExecResult[];
@@ -364,6 +368,17 @@ export interface CommandExecution {
   status: string;
   stdout: string;
   username: string;
+}
+
+export interface CopyResult {
+  bytes: number;
+  durationMs: number;
+  error?: string;
+  files: number;
+  path: string;
+  serverId: number;
+  serverName: string;
+  status: string;
 }
 
 export interface DeployResponse {

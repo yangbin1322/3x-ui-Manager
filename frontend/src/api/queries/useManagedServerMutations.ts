@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { HttpUtil, Msg } from '@/utils';
 import { keys } from '@/api/queryKeys';
 import type { ManagedServerRecord } from '@/schemas/managedServer';
-import type { SSHTestResult, BatchExecResult, BatchUploadResult, ExecHistoryResponse, InstallResult, UninstallResult, BatchInstallResponse, BulkAddResponse } from '@/generated/types';
+import type { SSHTestResult, BatchExecResult, BatchUploadResult, BatchCopyResult, ExecHistoryResponse, InstallResult, UninstallResult, BatchInstallResponse, BulkAddResponse } from '@/generated/types';
 
 export interface ExecHistoryFilter {
   page?: number;
@@ -150,6 +150,10 @@ export function useManagedServerMutations() {
       form.append('timeoutSec', String(timeoutSec));
       return HttpUtil.post<BatchUploadResult>('/panel/api/managedServers/upload', form);
     },
+    copyPath: (sourceId: number, sourcePath: string, targetIds: number[], dest: string, timeoutSec: number): Promise<Msg<BatchCopyResult>> =>
+      HttpUtil.post<BatchCopyResult>('/panel/api/managedServers/copyPath', { sourceId, sourcePath, targetIds, dest, timeoutSec }, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
     installPanel: (serverId: number, version: string): Promise<Msg<InstallResult>> =>
       installMut.mutateAsync({ serverId, version }),
     importPanel: (serverId: number): Promise<Msg<InstallResult>> => importMut.mutateAsync(serverId),

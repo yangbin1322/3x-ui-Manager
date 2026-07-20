@@ -16,6 +16,7 @@ import {
   ClusterOutlined,
   CodeOutlined,
   UploadOutlined,
+  CopyOutlined,
   DeleteOutlined,
   DeploymentUnitOutlined,
   EditOutlined,
@@ -51,6 +52,7 @@ interface ServerListProps {
   onViewNode: (nodeId: number) => void;
   onExecSelected: () => void;
   onUploadSelected: () => void;
+  onCopySelected: () => void;
   onBatchInstall: () => void;
   onBatchImport: () => void;
   onBatchUninstall: () => void;
@@ -96,6 +98,7 @@ export default function ServerList({
   onViewNode,
   onExecSelected,
   onUploadSelected,
+  onCopySelected,
   onBatchInstall,
   onBatchImport,
   onBatchUninstall,
@@ -284,6 +287,9 @@ export default function ServerList({
         </Button>
         <Button size="small" icon={<UploadOutlined />} disabled={selectedIds.length === 0} onClick={onUploadSelected}>
           {t('pages.nodes.upload.action')}
+        </Button>
+        <Button size="small" icon={<CopyOutlined />} disabled={selectedIds.length === 0} onClick={onCopySelected}>
+          {t('pages.nodes.copy.action')}
         </Button>
         <Button size="small" icon={<DeploymentUnitOutlined />} disabled={installableCount === 0} onClick={onBatchInstall}>
           {t('pages.servers.batchInstall', { count: installableCount })}

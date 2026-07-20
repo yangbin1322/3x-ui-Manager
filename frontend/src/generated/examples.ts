@@ -227,6 +227,20 @@ export const EXAMPLES: Record<string, unknown> = {
     "name": "central-panel-a",
     "token": "new-token-string"
   },
+  "BatchCopyResult": {
+    "results": [
+      {
+        "bytes": 1048576,
+        "durationMs": 3200,
+        "error": "",
+        "files": 12,
+        "path": "/opt/app",
+        "serverId": 5,
+        "serverName": "hk-2",
+        "status": "success"
+      }
+    ]
+  },
   "BatchExecResult": {
     "batchId": "a1b2c3d4",
     "results": [
@@ -379,6 +393,16 @@ export const EXAMPLES: Record<string, unknown> = {
     "status": "success",
     "stdout": "",
     "username": "admin"
+  },
+  "CopyResult": {
+    "bytes": 1048576,
+    "durationMs": 3200,
+    "error": "",
+    "files": 12,
+    "path": "/opt/app",
+    "serverId": 5,
+    "serverName": "hk-2",
+    "status": "success"
   },
   "DeployResponse": {
     "results": [

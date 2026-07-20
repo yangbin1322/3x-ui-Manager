@@ -969,6 +969,21 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "BatchCopyResult": {
+    "description": "BatchCopyResult is the outcome of copying one source path to several targets.",
+    "properties": {
+      "results": {
+        "items": {
+          "$ref": "#/components/schemas/CopyResult"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "results"
+    ],
+    "type": "object"
+  },
   "BatchExecResult": {
     "description": "BatchExecResult is the outcome of running one command across several managed\nservers. BatchId ties the per-server audit rows together for the history view.",
     "properties": {
@@ -1495,6 +1510,53 @@ export const SCHEMAS: Record<string, unknown> = {
       "status",
       "stdout",
       "username"
+    ],
+    "type": "object"
+  },
+  "CopyResult": {
+    "description": "CopyResult is the outcome of copying the source path to one target server.",
+    "properties": {
+      "bytes": {
+        "example": 1048576,
+        "format": "int64",
+        "type": "integer"
+      },
+      "durationMs": {
+        "example": 3200,
+        "type": "integer"
+      },
+      "error": {
+        "type": "string"
+      },
+      "files": {
+        "example": 12,
+        "type": "integer"
+      },
+      "path": {
+        "example": "/opt/app",
+        "type": "string"
+      },
+      "serverId": {
+        "example": 5,
+        "type": "integer"
+      },
+      "serverName": {
+        "example": "hk-2",
+        "type": "string"
+      },
+      "status": {
+        "example": "success",
+        "type": "string"
+      }
+    },
+    "required": [
+      "bytes",
+      "durationMs",
+      "files",
+      "path",
+      "serverId",
+      "serverName",
+      "status"
     ],
     "type": "object"
   },
