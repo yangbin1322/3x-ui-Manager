@@ -588,11 +588,17 @@ func (s *Server) start(restartXray bool, startTgBot bool) (err error) {
 	}
 	s.listener = listener
 
+	// ReadTimeout/WriteTimeout are deliberately not set: they are whole-request
+	// deadlines that start when the request arrives, so a large managed-server
+	// file upload or copy (which streams a big body in and then fans it out over
+	// SFTP before responding) would trip WriteTimeout and drop the TLS connection
+	// mid-response even though the transfer succeeded — the client sees
+	// ERR_SSL_PROTOCOL_ERROR. ReadHeaderTimeout still bounds slow-header attacks
+	// and IdleTimeout still reaps idle keep-alives; each handler enforces its own
+	// context deadline (exec/install/upload/copy request budgets) for duration.
 	s.httpServer = &http.Server{
 		Handler:           engine,
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       120 * time.Second,
 	}
 
