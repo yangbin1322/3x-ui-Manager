@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Card, Divider, Input, InputNumber, Modal, Segmented, Select, Tag } from 'antd';
 import type { ManagedServerRecord } from '@/schemas/managedServer';
@@ -38,6 +38,11 @@ export default function InstallPanelModal({ open, targets, fetchVersions, onConf
   const [sslMode, setSslMode] = useState<SslMode>('none');
   const [domain, setDomain] = useState('');
 
+  // fetchVersions changes identity on every parent re-render (heartbeat refresh);
+  // hold it in a ref so the open-effect can call it without depending on it.
+  const fetchVersionsRef = useRef(fetchVersions);
+  fetchVersionsRef.current = fetchVersions;
+
   useEffect(() => {
     if (!open) return;
     setChoice(LATEST);
@@ -52,11 +57,15 @@ export default function InstallPanelModal({ open, targets, fetchVersions, onConf
     setDomain('');
     let cancelled = false;
     void (async () => {
-      const msg = await fetchVersions();
+      const msg = await fetchVersionsRef.current();
       if (!cancelled && msg?.success && Array.isArray(msg.obj)) setVersions(msg.obj);
     })();
     return () => { cancelled = true; };
-  }, [open, fetchVersions]);
+    // Reset only when the modal opens. fetchVersions is intentionally excluded:
+    // it changes identity on every parent re-render (e.g. the heartbeat refresh),
+    // and depending on it would re-run this effect and wipe the form the operator
+    // is filling in. It is read through a ref instead.
+  }, [open]);
 
   const options = useMemo(() => [
     { value: LATEST, label: t('pages.servers.versionLatest') },
