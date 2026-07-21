@@ -872,6 +872,9 @@ prompt_and_setup_ssl() {
                 fi
             else
                 echo -e "${red}SSL certificate setup failed for domain mode.${plain}"
+                # Cert failed: the panel serves plain HTTP, so the Access URL and
+                # any derived node must be http, not https.
+                SSL_SCHEME="http"
                 SSL_HOST="${server_ip}"
             fi
             ;;
@@ -915,6 +918,10 @@ prompt_and_setup_ssl() {
                 echo -e "${green}✓ Let's Encrypt IP certificate configured successfully${plain}"
             else
                 echo -e "${red}✗ IP certificate setup failed. Please check port 80 is open.${plain}"
+                # The panel keeps running over plain HTTP when the cert fails, so
+                # the Access URL (and any node derived from it) must say http, not
+                # https — otherwise the panel node is left with a broken scheme.
+                SSL_SCHEME="http"
                 SSL_HOST="${server_ip}"
             fi
             ;;
