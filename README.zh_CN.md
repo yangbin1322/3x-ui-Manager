@@ -23,6 +23,24 @@
 > [!IMPORTANT]
 > 本项目仅供个人使用。请勿将其用于非法目的，也请勿在生产环境中使用。
 
+## 关于本 fork（`3x-ui-Manager`）
+
+`yangbin1322/3x-ui-Manager` 把上游 3X-UI 从「管理已有的 3x-ui 节点」扩展为「通过 SSH 托管一整批服务器」。在下方所有功能之上，本 fork 还增加了：
+
+- **SSH 托管服务器** —— 用 SSH（密码或密钥）接入一台 Linux 主机，支持连接测试、AES-256-GCM 加密凭据、主机指纹校验和可达性心跳。节点页拆分为 **Servers（服务器）** 和 **Panel Nodes（面板节点）** 两个 Tab。
+- **远程安装 / 导入 / 卸载** —— 在服务器上安装 3x-ui（带分步配置卡片：账号、端口、路径、数据库类型、SSL 模式含 IP 或 Let's Encrypt 证书）并自动派生关联的面板节点，导入已有面板，或卸载 —— 支持单台与批量。
+- **批量操作** —— 从粘贴/上传的表格批量添加服务器、跨多台服务器执行命令并留审计日志、把一个入站的配置部署到多个节点、跨入站批量附加/分离客户端。
+- **文件分发** —— 通过 SFTP 上传文件/目录到指定路径，或在服务器之间复制路径，带总体进度条。
+- **自建构建/发布/安装链路** —— 打 tag 自动出 GitHub Release（二进制 + 内嵌 UI），`install.sh` / `update.sh` / `x-ui.sh` 全部从本 fork 下载，全新安装时自动生成并持久化 `XUI_SECRET_KEY`。
+
+完整说明与 PR 历史见 **[docs/FORK_FEATURES.md](docs/FORK_FEATURES.md)**。
+
+从本 fork 安装：
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/yangbin1322/3x-ui-Manager/main/install.sh)
+```
+
 ## 功能特性
 
 - **多协议入站** — VLESS、VMess、Trojan、Shadowsocks、WireGuard、Hysteria2、HTTP、SOCKS (Mixed)、Dokodemo-door / Tunnel 和 TUN。
