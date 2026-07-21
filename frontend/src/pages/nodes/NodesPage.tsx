@@ -17,6 +17,7 @@ import { useNodeMutations } from '@/api/queries/useNodeMutations';
 import { useManagedServersQuery } from '@/api/queries/useManagedServersQuery';
 import type { ManagedServerRecord } from '@/api/queries/useManagedServersQuery';
 import { useManagedServerMutations } from '@/api/queries/useManagedServerMutations';
+import type { InstallConfig } from '@/generated/types';
 import AppSidebar from '@/layouts/AppSidebar';
 import NodeList from './NodeList';
 import NodeFormModal from './NodeFormModal';
@@ -315,12 +316,12 @@ export default function NodesPage() {
 
   // runInstall executes the actual install once the version is chosen. One
   // server shows a detailed derived/not-derived toast; a batch shows a summary.
-  const runInstall = useCallback(async (version: string) => {
+  const runInstall = useCallback(async (version: string, config?: InstallConfig) => {
     if (installTargets.length === 1) {
       const server = installTargets[0];
       const hide = messageApi.loading(t('pages.nodes.install.running'), 0);
       try {
-        const msg = await serverMutations.installPanel(server.id, version);
+        const msg = await serverMutations.installPanel(server.id, version, config);
         hide();
         if (msg?.success && msg.obj?.success) {
           if (msg.obj.derived) messageApi.success(t('pages.nodes.install.derivedOk'));
@@ -337,7 +338,7 @@ export default function NodesPage() {
     const ids = installTargets.map((s) => s.id);
     const hide = messageApi.loading(t('pages.nodes.install.running'), 0);
     try {
-      const msg = await serverMutations.installPanelBatch(ids, version);
+      const msg = await serverMutations.installPanelBatch(ids, version, config);
       hide();
       const results = msg?.obj?.results ?? [];
       const ok = results.filter((r) => r.success).length;

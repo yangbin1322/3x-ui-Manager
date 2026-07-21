@@ -2346,6 +2346,42 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "InstallConfig": {
+    "description": "InstallConfig carries optional install-time settings entered in the panel. A\nblank field is omitted from the command so install.sh applies its own default\n(random credentials/port/path, sqlite, no TLS). DbType is \"sqlite\" or\n\"postgres\"; SslMode is \"none\", \"ip\", or \"domain\" (domain requires Domain).",
+    "properties": {
+      "dbType": {
+        "type": "string"
+      },
+      "domain": {
+        "type": "string"
+      },
+      "panelPort": {
+        "type": "string"
+      },
+      "password": {
+        "type": "string"
+      },
+      "sslMode": {
+        "type": "string"
+      },
+      "username": {
+        "type": "string"
+      },
+      "webBasePath": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "dbType",
+      "domain",
+      "panelPort",
+      "password",
+      "sslMode",
+      "username",
+      "webBasePath"
+    ],
+    "type": "object"
+  },
   "InstallResult": {
     "description": "InstallResult reports the outcome of an auto-install to the panel. Derived\nreports that a panel Node was created from the server and linked to it;\nNodeId is that node's id.",
     "properties": {

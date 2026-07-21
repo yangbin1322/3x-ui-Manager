@@ -1128,15 +1128,15 @@ export const sections: readonly Section[] = [
       {
         method: 'POST',
         path: '/panel/api/managedServers/install',
-        summary: 'Install 3x-ui on a managed server over SSH and, on success, derive a NEW panel node from the installer’s credentials (Access URL + minted API token), linked back via the server’s nodeId. The server keeps its SSH access; a server that already has a linked node is rejected. Long-running and synchronous (up to ~10 minutes). Runs the official install.sh non-interactively; version is optional (defaults to latest stable).',
-        body: '{\n  "serverId": 3,\n  "version": ""\n}',
+        summary: 'Install 3x-ui on a managed server over SSH and, on success, derive a NEW panel node from the installer’s credentials (Access URL + minted API token), linked back via the server’s nodeId. The server keeps its SSH access; a server that already has a linked node is rejected. Long-running and synchronous (up to ~10 minutes). Runs the fork install.sh non-interactively; version is optional (defaults to latest stable). Optional config sets the panel account/port/path, database, and SSL mode as install-time env vars — any blank field falls back to install.sh’s own default (random credentials, sqlite, no TLS).',
+        body: '{\n  "serverId": 3,\n  "version": "",\n  "config": {\n    "username": "",\n    "password": "",\n    "panelPort": "",\n    "webBasePath": "",\n    "dbType": "sqlite",\n    "sslMode": "none",\n    "domain": ""\n  }\n}',
         responseSchema: 'InstallResult',
       },
       {
         method: 'POST',
         path: '/panel/api/managedServers/installBatch',
-        summary: 'Install 3x-ui on several managed servers at once, applying the same version to each. Servers run concurrently (bounded internally); the response carries one per-server outcome. A missing or already-linked server becomes a failed result rather than aborting the batch.',
-        body: '{\n  "serverIds": [3, 5],\n  "version": ""\n}',
+        summary: 'Install 3x-ui on several managed servers at once, applying the same version and optional config to each. Servers run concurrently (bounded internally); the response carries one per-server outcome. A missing or already-linked server becomes a failed result rather than aborting the batch. The config (panel account/port/path, database, SSL mode) is applied to every server; blank fields fall back to install.sh defaults.',
+        body: '{\n  "serverIds": [3, 5],\n  "version": "",\n  "config": {\n    "dbType": "sqlite",\n    "sslMode": "none"\n  }\n}',
         responseSchema: 'BatchInstallResponse',
       },
       {

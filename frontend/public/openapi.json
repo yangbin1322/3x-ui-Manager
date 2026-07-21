@@ -2372,6 +2372,42 @@
         ],
         "type": "object"
       },
+      "InstallConfig": {
+        "description": "InstallConfig carries optional install-time settings entered in the panel. A\nblank field is omitted from the command so install.sh applies its own default\n(random credentials/port/path, sqlite, no TLS). DbType is \"sqlite\" or\n\"postgres\"; SslMode is \"none\", \"ip\", or \"domain\" (domain requires Domain).",
+        "properties": {
+          "dbType": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "panelPort": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "sslMode": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "webBasePath": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dbType",
+          "domain",
+          "panelPort",
+          "password",
+          "sslMode",
+          "username",
+          "webBasePath"
+        ],
+        "type": "object"
+      },
       "InstallResult": {
         "description": "InstallResult reports the outcome of an auto-install to the panel. Derived\nreports that a panel Node was created from the server and linked to it;\nNodeId is that node's id.",
         "properties": {
@@ -9725,7 +9761,7 @@
         "tags": [
           "Managed Servers"
         ],
-        "summary": "Install 3x-ui on a managed server over SSH and, on success, derive a NEW panel node from the installer’s credentials (Access URL + minted API token), linked back via the server’s nodeId. The server keeps its SSH access; a server that already has a linked node is rejected. Long-running and synchronous (up to ~10 minutes). Runs the official install.sh non-interactively; version is optional (defaults to latest stable).",
+        "summary": "Install 3x-ui on a managed server over SSH and, on success, derive a NEW panel node from the installer’s credentials (Access URL + minted API token), linked back via the server’s nodeId. The server keeps its SSH access; a server that already has a linked node is rejected. Long-running and synchronous (up to ~10 minutes). Runs the fork install.sh non-interactively; version is optional (defaults to latest stable). Optional config sets the panel account/port/path, database, and SSL mode as install-time env vars — any blank field falls back to install.sh’s own default (random credentials, sqlite, no TLS).",
         "operationId": "post_panel_api_managedServers_install",
         "requestBody": {
           "required": true,
@@ -9736,7 +9772,16 @@
               },
               "example": {
                 "serverId": 3,
-                "version": ""
+                "version": "",
+                "config": {
+                  "username": "",
+                  "password": "",
+                  "panelPort": "",
+                  "webBasePath": "",
+                  "dbType": "sqlite",
+                  "sslMode": "none",
+                  "domain": ""
+                }
               }
             }
           }
@@ -9782,7 +9827,7 @@
         "tags": [
           "Managed Servers"
         ],
-        "summary": "Install 3x-ui on several managed servers at once, applying the same version to each. Servers run concurrently (bounded internally); the response carries one per-server outcome. A missing or already-linked server becomes a failed result rather than aborting the batch.",
+        "summary": "Install 3x-ui on several managed servers at once, applying the same version and optional config to each. Servers run concurrently (bounded internally); the response carries one per-server outcome. A missing or already-linked server becomes a failed result rather than aborting the batch. The config (panel account/port/path, database, SSL mode) is applied to every server; blank fields fall back to install.sh defaults.",
         "operationId": "post_panel_api_managedServers_installBatch",
         "requestBody": {
           "required": true,
@@ -9796,7 +9841,11 @@
                   3,
                   5
                 ],
-                "version": ""
+                "version": "",
+                "config": {
+                  "dbType": "sqlite",
+                  "sslMode": "none"
+                }
               }
             }
           }

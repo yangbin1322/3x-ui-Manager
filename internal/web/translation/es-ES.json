@@ -1286,7 +1286,25 @@
         "running": "Instalando 3x-ui… puede tardar unos minutos",
         "derivedOk": "Instalado: se creó un nodo de panel vinculado",
         "installedNotDerived": "Instalado, pero falló la creación del nodo de panel: añada el nodo manualmente",
-        "failed": "Error de instalación"
+        "failed": "Error de instalación",
+        "config": {
+          "title": "Configuración de instalación (opcional)",
+          "hint": "Deje cualquier campo en blanco para que el instalador elija un valor predeterminado seguro (credenciales/puerto/ruta aleatorios, SQLite, sin TLS).",
+          "panelSection": "Panel",
+          "username": "Usuario (vacío = aleatorio)",
+          "password": "Contraseña (vacío = aleatoria)",
+          "panelPort": "Puerto (vacío = aleatorio)",
+          "webBasePath": "Ruta base (vacío = aleatoria)",
+          "dbSection": "Base de datos",
+          "dbSqlite": "SQLite",
+          "dbPostgres": "PostgreSQL",
+          "sslSection": "Certificado SSL",
+          "sslNone": "Ninguno (HTTP)",
+          "sslIp": "Certificado para IP",
+          "sslDomain": "Certificado de dominio",
+          "domainPlaceholder": "example.com",
+          "sslHint": "Los certificados de IP/dominio requieren el puerto 80 abierto en el servidor; el de dominio requiere un dominio que apunte a él."
+        }
       }
     },
     "settings": {

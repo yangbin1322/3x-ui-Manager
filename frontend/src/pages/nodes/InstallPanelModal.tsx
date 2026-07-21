@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Input, Modal, Select, Tag } from 'antd';
+import { Alert, Card, Divider, Input, InputNumber, Modal, Segmented, Select, Tag } from 'antd';
 import type { ManagedServerRecord } from '@/schemas/managedServer';
+import type { InstallConfig } from '@/generated/types';
 import type { Msg } from '@/utils';
 
 interface InstallPanelModalProps {
   open: boolean;
   targets: ManagedServerRecord[];
   fetchVersions: () => Promise<Msg<string[]>>;
-  onConfirm: (version: string) => Promise<void> | void;
+  onConfirm: (version: string, config: InstallConfig) => Promise<void> | void;
   onOpenChange: (open: boolean) => void;
 }
 
@@ -17,6 +18,9 @@ interface InstallPanelModalProps {
 const LATEST = '__latest__';
 const CUSTOM = '__custom__';
 
+type DbType = 'sqlite' | 'postgres';
+type SslMode = 'none' | 'ip' | 'domain';
+
 export default function InstallPanelModal({ open, targets, fetchVersions, onConfirm, onOpenChange }: InstallPanelModalProps) {
   const { t } = useTranslation();
   const [choice, setChoice] = useState<string>(LATEST);
@@ -24,11 +28,28 @@ export default function InstallPanelModal({ open, targets, fetchVersions, onConf
   const [versions, setVersions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Install config. Blank text fields mean "let install.sh pick" (random
+  // credentials/port/path). dbType/sslMode always have an explicit default.
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [panelPort, setPanelPort] = useState<number | null>(null);
+  const [webBasePath, setWebBasePath] = useState('');
+  const [dbType, setDbType] = useState<DbType>('sqlite');
+  const [sslMode, setSslMode] = useState<SslMode>('none');
+  const [domain, setDomain] = useState('');
+
   useEffect(() => {
     if (!open) return;
     setChoice(LATEST);
     setCustomVersion('');
     setSubmitting(false);
+    setUsername('');
+    setPassword('');
+    setPanelPort(null);
+    setWebBasePath('');
+    setDbType('sqlite');
+    setSslMode('none');
+    setDomain('');
     let cancelled = false;
     void (async () => {
       const msg = await fetchVersions();
@@ -44,12 +65,22 @@ export default function InstallPanelModal({ open, targets, fetchVersions, onConf
   ], [versions, t]);
 
   const resolvedVersion = choice === LATEST ? '' : choice === CUSTOM ? customVersion.trim() : choice;
-  const canRun = !submitting && (choice !== CUSTOM || customVersion.trim().length > 0);
+  const config: InstallConfig = {
+    username: username.trim(),
+    password: password.trim(),
+    panelPort: panelPort ? String(panelPort) : '',
+    webBasePath: webBasePath.trim(),
+    dbType,
+    sslMode,
+    domain: domain.trim(),
+  };
+  const domainRequiredMissing = sslMode === 'domain' && domain.trim().length === 0;
+  const canRun = !submitting && (choice !== CUSTOM || customVersion.trim().length > 0) && !domainRequiredMissing;
 
   async function run() {
     setSubmitting(true);
     try {
-      await onConfirm(resolvedVersion);
+      await onConfirm(resolvedVersion, config);
       onOpenChange(false);
     } finally {
       setSubmitting(false);
@@ -64,6 +95,7 @@ export default function InstallPanelModal({ open, targets, fetchVersions, onConf
     <Modal
       open={open}
       title={title}
+      width="640px"
       okText={t('pages.nodes.install.action')}
       cancelText={t('cancel')}
       okButtonProps={{ disabled: !canRun, loading: submitting }}
@@ -96,6 +128,54 @@ export default function InstallPanelModal({ open, targets, fetchVersions, onConf
           disabled={submitting}
         />
       )}
+
+      <Card size="small" style={{ marginTop: 12 }} title={t('pages.nodes.install.config.title')}>
+        <div style={{ opacity: 0.65, marginBottom: 10, fontSize: 12 }}>{t('pages.nodes.install.config.hint')}</div>
+
+        <Divider style={{ margin: '4px 0 10px' }}>{t('pages.nodes.install.config.panelSection')}</Divider>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t('pages.nodes.install.config.username')} disabled={submitting} />
+          <Input value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('pages.nodes.install.config.password')} disabled={submitting} />
+          <InputNumber value={panelPort} onChange={(v) => setPanelPort(typeof v === 'number' ? v : null)} min={1} max={65535} placeholder={t('pages.nodes.install.config.panelPort')} style={{ width: '100%' }} disabled={submitting} />
+          <Input value={webBasePath} onChange={(e) => setWebBasePath(e.target.value)} placeholder={t('pages.nodes.install.config.webBasePath')} disabled={submitting} />
+        </div>
+
+        <Divider style={{ margin: '14px 0 10px' }}>{t('pages.nodes.install.config.dbSection')}</Divider>
+        <Segmented<DbType>
+          value={dbType}
+          onChange={setDbType}
+          options={[
+            { value: 'sqlite', label: t('pages.nodes.install.config.dbSqlite') },
+            { value: 'postgres', label: t('pages.nodes.install.config.dbPostgres') },
+          ]}
+          disabled={submitting}
+        />
+
+        <Divider style={{ margin: '14px 0 10px' }}>{t('pages.nodes.install.config.sslSection')}</Divider>
+        <Segmented<SslMode>
+          value={sslMode}
+          onChange={setSslMode}
+          options={[
+            { value: 'none', label: t('pages.nodes.install.config.sslNone') },
+            { value: 'ip', label: t('pages.nodes.install.config.sslIp') },
+            { value: 'domain', label: t('pages.nodes.install.config.sslDomain') },
+          ]}
+          disabled={submitting}
+        />
+        {sslMode === 'domain' && (
+          <Input
+            style={{ marginTop: 8 }}
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            placeholder={t('pages.nodes.install.config.domainPlaceholder')}
+            status={domainRequiredMissing ? 'error' : undefined}
+            disabled={submitting}
+          />
+        )}
+        {sslMode !== 'none' && (
+          <div style={{ opacity: 0.65, marginTop: 6, fontSize: 12 }}>{t('pages.nodes.install.config.sslHint')}</div>
+        )}
+      </Card>
 
       <Alert
         type="info"

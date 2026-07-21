@@ -443,8 +443,9 @@ func parseIntCSV(s string) []int {
 // can take minutes — so it carries a wider request budget than exec.
 func (a *ManagedServerController) install(c *gin.Context) {
 	var req struct {
-		ServerId int    `json:"serverId"`
-		Version  string `json:"version"`
+		ServerId int                   `json:"serverId"`
+		Version  string                `json:"version"`
+		Config   service.InstallConfig `json:"config"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
@@ -460,7 +461,7 @@ func (a *ManagedServerController) install(c *gin.Context) {
 	}
 	ctx, cancel := context.WithTimeout(c.Request.Context(), installRequestBudget)
 	defer cancel()
-	result, err := a.serverService.InstallPanel(ctx, req.ServerId, req.Version, username)
+	result, err := a.serverService.InstallPanel(ctx, req.ServerId, req.Version, req.Config, username)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
 		return
@@ -473,8 +474,9 @@ func (a *ManagedServerController) install(c *gin.Context) {
 // applied to every server; servers run concurrently, bounded internally.
 func (a *ManagedServerController) installBatch(c *gin.Context) {
 	var req struct {
-		ServerIds []int  `json:"serverIds"`
-		Version   string `json:"version"`
+		ServerIds []int                 `json:"serverIds"`
+		Version   string                `json:"version"`
+		Config    service.InstallConfig `json:"config"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.install"), err)
@@ -490,7 +492,7 @@ func (a *ManagedServerController) installBatch(c *gin.Context) {
 	}
 	ctx, cancel := context.WithTimeout(c.Request.Context(), installRequestBudget)
 	defer cancel()
-	result := a.serverService.InstallPanelBatch(ctx, req.ServerIds, req.Version, username)
+	result := a.serverService.InstallPanelBatch(ctx, req.ServerIds, req.Version, req.Config, username)
 	for _, id := range req.ServerIds {
 		a.serverService.ProbeNowForHost(id)
 	}

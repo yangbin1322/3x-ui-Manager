@@ -555,6 +555,16 @@ export interface InboundOption {
   wgPublicKey?: string;
 }
 
+export interface InstallConfig {
+  dbType: string;
+  domain: string;
+  panelPort: string;
+  password: string;
+  sslMode: string;
+  username: string;
+  webBasePath: string;
+}
+
 export interface InstallResult {
   accessUrl?: string;
   derived: boolean;

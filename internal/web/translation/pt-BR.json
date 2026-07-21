@@ -1286,7 +1286,25 @@
         "running": "Instalando 3x-ui… pode levar alguns minutos",
         "derivedOk": "Instalado — um nó de painel vinculado foi criado",
         "installedNotDerived": "Instalado, mas a criação do nó de painel falhou — adicione o nó manualmente",
-        "failed": "Falha na instalação"
+        "failed": "Falha na instalação",
+        "config": {
+          "title": "Configuração de instalação (opcional)",
+          "hint": "Deixe qualquer campo em branco para o instalador escolher um padrão seguro (credenciais/porta/caminho aleatórios, SQLite, sem TLS).",
+          "panelSection": "Painel",
+          "username": "Usuário (vazio = aleatório)",
+          "password": "Senha (vazio = aleatória)",
+          "panelPort": "Porta (vazio = aleatória)",
+          "webBasePath": "Caminho base (vazio = aleatório)",
+          "dbSection": "Banco de dados",
+          "dbSqlite": "SQLite",
+          "dbPostgres": "PostgreSQL",
+          "sslSection": "Certificado SSL",
+          "sslNone": "Nenhum (HTTP)",
+          "sslIp": "Certificado para IP",
+          "sslDomain": "Certificado de domínio",
+          "domainPlaceholder": "example.com",
+          "sslHint": "Certificados de IP/domínio exigem a porta 80 aberta no servidor; o de domínio exige um domínio apontando para ele."
+        }
       }
     },
     "settings": {

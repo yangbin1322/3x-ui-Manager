@@ -629,6 +629,15 @@ export const EXAMPLES: Record<string, unknown> = {
     "wgMtu": 0,
     "wgPublicKey": ""
   },
+  "InstallConfig": {
+    "dbType": "",
+    "domain": "",
+    "panelPort": "",
+    "password": "",
+    "sslMode": "",
+    "username": "",
+    "webBasePath": ""
+  },
   "InstallResult": {
     "accessUrl": "https://1.2.3.4:2053/abc/",
     "derived": true,

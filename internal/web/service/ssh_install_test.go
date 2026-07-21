@@ -11,7 +11,7 @@ import (
 func TestBuildInstallCommand(t *testing.T) {
 	// No version pins to latest; the command must run under bash (process
 	// substitution) and be non-interactive.
-	latest := buildInstallCommand("")
+	latest := buildInstallCommand("", InstallConfig{})
 	if !strings.HasPrefix(latest, "bash -c ") {
 		t.Fatalf("command must run under bash -c, got %q", latest)
 	}
@@ -23,7 +23,7 @@ func TestBuildInstallCommand(t *testing.T) {
 	}
 
 	// A pinned version must be shell-quoted so it cannot break out of the command.
-	pinned := buildInstallCommand("v3.4.0; rm -rf /")
+	pinned := buildInstallCommand("v3.4.0; rm -rf /", InstallConfig{})
 	if !strings.Contains(pinned, `'v3.4.0; rm -rf /'`) {
 		t.Fatalf("pinned version not shell-quoted safely: %q", pinned)
 	}
@@ -230,7 +230,7 @@ func TestInstallPanelRejectsLinkedServer(t *testing.T) {
 		Update("node_id", 42).Error; err != nil {
 		t.Fatalf("seed link: %v", err)
 	}
-	_, err := svc.InstallPanel(t.Context(), srv.Id, "", "admin")
+	_, err := svc.InstallPanel(t.Context(), srv.Id, "", InstallConfig{}, "admin")
 	if err == nil || !strings.Contains(err.Error(), "already has a linked panel node") {
 		t.Fatalf("InstallPanel on linked server error = %v, want already-linked rejection", err)
 	}
