@@ -37,7 +37,7 @@ func TestDeployInboundToNodes(t *testing.T) {
 		t.Fatalf("create sg: %v", err)
 	}
 
-	resp, err := svc.DeployInboundToNodes(created.Id, []int{hk.Id, sg.Id})
+	resp, err := svc.DeployInboundToNodes(created.Id, []int{hk.Id, sg.Id}, DeployOptions{ClientMode: DeployClientsNone})
 	if err != nil {
 		t.Fatalf("deploy: %v", err)
 	}
@@ -76,11 +76,70 @@ func TestDeployInboundToNodes(t *testing.T) {
 
 	// Redeploying to a node that already has the copy fails on that node (tag
 	// collision) but does not error the whole call.
-	resp2, err := svc.DeployInboundToNodes(created.Id, []int{hk.Id})
+	resp2, err := svc.DeployInboundToNodes(created.Id, []int{hk.Id}, DeployOptions{ClientMode: DeployClientsNone})
 	if err != nil {
 		t.Fatalf("redeploy: %v", err)
 	}
 	if resp2.Results[0].Success {
 		t.Fatalf("redeploy to a node that already has the copy should fail (tag collision)")
+	}
+}
+
+func TestDeployInboundToNodes_CopyClientsAndRemark(t *testing.T) {
+	t.Setenv("XUI_SECRET_KEY", "test-key")
+	setupConflictDB(t)
+	svc := &InboundService{}
+
+	settings := `{"clients":[` +
+		`{"id":"22222222-2222-2222-2222-222222222222","email":"bob","subId":"s-bob","enable":true}` +
+		`],"decryption":"none","encryption":"none"}`
+	src := makeImportInbound("in-9301-tcp", 9301, settings, []xray.ClientTraffic{
+		{Email: "bob", Up: 0, Down: 0, Total: 0},
+	})
+	src.Remark = "prod"
+	created, _, err := svc.AddInbound(src)
+	if err != nil {
+		t.Fatalf("add source inbound: %v", err)
+	}
+
+	nodeSvc := &NodeService{}
+	hk := &model.Node{Name: "hk 1", Address: "node1.example.com", Port: 2053, ApiToken: "t1"}
+	if err := nodeSvc.Create(hk); err != nil {
+		t.Fatalf("create hk: %v", err)
+	}
+
+	resp, err := svc.DeployInboundToNodes(created.Id, []int{hk.Id}, DeployOptions{ClientMode: DeployClientsCopy})
+	if err != nil {
+		t.Fatalf("deploy: %v", err)
+	}
+	if !resp.Results[0].Success {
+		t.Fatalf("deploy failed: %s", resp.Results[0].Message)
+	}
+	if resp.Results[0].Attached != 1 {
+		t.Fatalf("attached = %d, want 1 (source client copied to the node)", resp.Results[0].Attached)
+	}
+
+	var copies []model.Inbound
+	if err := database.GetDB().Where("node_id IS NOT NULL").Find(&copies).Error; err != nil {
+		t.Fatalf("load copies: %v", err)
+	}
+	if len(copies) != 1 {
+		t.Fatalf("got %d node copies, want 1", len(copies))
+	}
+	cp := copies[0]
+	if cp.Remark != "prod-hk-1" {
+		t.Fatalf("remark = %q, want prod-hk-1 (source remark + sanitized node name)", cp.Remark)
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(cp.Settings), &parsed); err != nil {
+		t.Fatalf("parse copy settings: %v", err)
+	}
+	clients, _ := parsed["clients"].([]any)
+	if len(clients) != 1 {
+		t.Fatalf("copy has %d clients, want 1 (source client copied)", len(clients))
+	}
+	c0, _ := clients[0].(map[string]any)
+	if email, _ := c0["email"].(string); email != "bob" {
+		t.Fatalf("copied client email = %q, want bob (shared identity)", email)
 	}
 }

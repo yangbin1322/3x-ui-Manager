@@ -408,6 +408,7 @@ export const EXAMPLES: Record<string, unknown> = {
   "DeployResponse": {
     "results": [
       {
+        "attached": 2,
         "message": "",
         "nodeId": 3,
         "nodeName": "hk-1",
@@ -417,6 +418,7 @@ export const EXAMPLES: Record<string, unknown> = {
     ]
   },
   "DeployResult": {
+    "attached": 2,
     "message": "",
     "nodeId": 3,
     "nodeName": "hk-1",

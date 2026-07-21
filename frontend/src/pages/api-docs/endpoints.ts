@@ -169,8 +169,8 @@ export const sections: readonly Section[] = [
       {
         method: 'POST',
         path: '/panel/api/inbounds/deployToNodes',
-        summary: 'Copy one inbound’s configuration onto each of the given nodes: for every node a new independent inbound is created there with tag "<tag>-<nodeName>", the same transport/TLS/port config, and an EMPTIED client list (client emails are globally unique and cannot be duplicated across nodes). Each node is independent — one failure does not abort the rest — and the node that already hosts the source inbound is skipped. Reports per-node success/failure.',
-        body: '{\n  "inboundId": 5,\n  "nodeIds": [3, 7]\n}',
+        summary: 'Copy one inbound’s configuration onto each of the given nodes: for every node a new independent inbound is created there with tag "<tag>-<nodeName>", remark "<remark>-<nodeName>", and the same transport/TLS/port config. clientMode controls clients — "none" (empty client list), "copy" (attach the source inbound’s own clients to every copy), or "bind" (attach the clientEmails set to every copy); copy/bind share one client identity and traffic account across nodes. Each node is independent — one failure does not abort the rest — and the node that already hosts the source inbound is skipped. Reports per-node success/failure (with an attached count).',
+        body: '{\n  "inboundId": 5,\n  "nodeIds": [3, 7],\n  "clientMode": "none",\n  "clientEmails": []\n}',
         responseSchema: 'DeployResponse',
       },
       {
