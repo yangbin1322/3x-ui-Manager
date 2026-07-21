@@ -53,18 +53,15 @@ export default function DeployToNodesModal({ open, inbound, nodes, onOpenChange,
   }, [targets, nodeSearch]);
 
   useEffect(() => {
-    if (open) {
-      setSelected([]);
-      setResults(null);
-      setSubmitting(false);
-      setClientMode('none');
-      setBindEmails([]);
-      setNodeSearch('');
-    }
-  }, [open]);
+    if (!open) return;
+    setSelected([]);
+    setResults(null);
+    setSubmitting(false);
+    setClientMode('none');
+    setBindEmails([]);
+    setNodeSearch('');
+    setClientEmails([]);
 
-  useEffect(() => {
-    if (!open || clientMode !== 'bind' || clientEmails.length > 0 || clientsLoading) return;
     let cancelled = false;
     setClientsLoading(true);
     HttpUtil.get('/panel/api/clients/list', undefined, { silent: true })
@@ -80,7 +77,7 @@ export default function DeployToNodesModal({ open, inbound, nodes, onOpenChange,
     return () => {
       cancelled = true;
     };
-  }, [open, clientMode, clientEmails.length, clientsLoading]);
+  }, [open]);
 
   const bindMissing = clientMode === 'bind' && bindEmails.length === 0;
   const canDeploy = selected.length > 0 && !submitting && !!inbound && !bindMissing;
