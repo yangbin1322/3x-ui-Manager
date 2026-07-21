@@ -35,6 +35,9 @@ describe('NodeList desktop table row keys', () => {
         onToggleEnable={noop}
         onUpdateNode={noop}
         onUpdateSelected={noop}
+        onBatchDelete={noop}
+        onBatchRemoveInbounds={noop}
+        onBatchRemoveClients={noop}
       />,
     );
 

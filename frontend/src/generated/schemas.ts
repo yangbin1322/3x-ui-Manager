@@ -2795,6 +2795,54 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "NodeBatchResponse": {
+    "description": "NodeBatchResponse aggregates per-node results plus whether xray needs a\nrestart afterward (a client/inbound change on the panel's own node).",
+    "properties": {
+      "needRestart": {
+        "type": "boolean"
+      },
+      "results": {
+        "items": {
+          "$ref": "#/components/schemas/NodeBatchResult"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "needRestart",
+      "results"
+    ],
+    "type": "object"
+  },
+  "NodeBatchResult": {
+    "description": "NodeBatchResult is one node's outcome from a batch node operation (remove\ninbounds / remove clients / delete). Counts report how much was affected on\nthat node; Error is set when the node itself could not be processed.",
+    "properties": {
+      "clients": {
+        "type": "integer"
+      },
+      "error": {
+        "type": "string"
+      },
+      "id": {
+        "type": "integer"
+      },
+      "inbounds": {
+        "type": "integer"
+      },
+      "name": {
+        "type": "string"
+      },
+      "ok": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "ok"
+    ],
+    "type": "object"
+  },
   "OutboundTraffics": {
     "description": "OutboundTraffics tracks traffic statistics for Xray outbound connections.",
     "properties": {

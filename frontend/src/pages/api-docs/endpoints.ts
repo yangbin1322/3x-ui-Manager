@@ -1009,9 +1009,30 @@ export const sections: readonly Section[] = [
       {
         method: 'POST',
         path: '/panel/api/nodes/updatePanel',
-        summary: 'Trigger the official panel self-updater on each given node (downloads the latest release and restarts). Only enabled, online nodes are updated; offline/disabled ones are reported as skipped. Set "dev": true to move the nodes to the rolling per-commit dev channel instead of the latest stable release. Returns a per-node result list.',
+        summary: 'Trigger the panel self-updater on each given node (downloads the latest release from the configured repo — this fork by default, XUI_REPO to override — and restarts). Only enabled, online nodes are updated; offline/disabled ones are reported as skipped. Set "dev": true to move the nodes to the rolling per-commit dev channel instead of the latest stable release. Returns a per-node result list.',
         body: '{\n  "ids": [1, 2, 3],\n  "dev": false\n}',
         response: '{\n  "success": true,\n  "obj": [\n    { "id": 1, "name": "de-1", "ok": true },\n    { "id": 2, "name": "fr-1", "ok": false, "error": "node is offline" }\n  ]\n}',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/nodes/bulkDel',
+        summary: 'Delete each given node. A node that still has inbounds is skipped and reported, unless "force": true, which first removes that node’s inbounds (and their clients) then deletes the node. Returns a per-node result list.',
+        body: '{\n  "ids": [1, 2, 3],\n  "force": false\n}',
+        responseSchema: 'NodeBatchResponse',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/nodes/removeInbounds',
+        summary: 'Remove every inbound (and its clients) on each given node, keeping the node. Returns a per-node result list with the removed inbound count.',
+        body: '{\n  "ids": [1, 2, 3]\n}',
+        responseSchema: 'NodeBatchResponse',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/nodes/removeClients',
+        summary: 'Detach every client from each given node’s inbounds, keeping the inbounds. A client shared with another inbound stays on that other inbound. Returns a per-node result list with the detached client count.',
+        body: '{\n  "ids": [1, 2, 3]\n}',
+        responseSchema: 'NodeBatchResponse',
       },
       {
         method: 'GET',

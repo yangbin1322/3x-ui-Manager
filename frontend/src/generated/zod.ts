@@ -702,6 +702,22 @@ export const NodeSchema = z.object({
 });
 export type Node = z.infer<typeof NodeSchema>;
 
+export const NodeBatchResponseSchema = z.object({
+  needRestart: z.boolean(),
+  results: z.array(z.lazy(() => NodeBatchResultSchema)),
+});
+export type NodeBatchResponse = z.infer<typeof NodeBatchResponseSchema>;
+
+export const NodeBatchResultSchema = z.object({
+  clients: z.number().int().optional(),
+  error: z.string().optional(),
+  id: z.number().int(),
+  inbounds: z.number().int().optional(),
+  name: z.string(),
+  ok: z.boolean(),
+});
+export type NodeBatchResult = z.infer<typeof NodeBatchResultSchema>;
+
 export const OutboundTrafficsSchema = z.object({
   down: z.number().int(),
   id: z.number().int(),

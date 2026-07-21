@@ -16,10 +16,12 @@ import type { BadgeProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   ApartmentOutlined,
+  ClearOutlined,
   ClusterOutlined,
   CloudDownloadOutlined,
   CloudServerOutlined,
   DeleteOutlined,
+  UsergroupDeleteOutlined,
   EditOutlined,
   ExclamationCircleOutlined,
   EyeInvisibleOutlined,
@@ -55,6 +57,9 @@ interface NodeListProps {
   onToggleEnable: (node: NodeRecord, next: boolean) => void;
   onUpdateNode: (node: NodeRecord) => void;
   onUpdateSelected: () => void;
+  onBatchDelete: () => void;
+  onBatchRemoveInbounds: () => void;
+  onBatchRemoveClients: () => void;
 }
 
 function isUpdateEligible(n: NodeRecord): boolean {
@@ -177,6 +182,9 @@ export default function NodeList({
   onToggleEnable,
   onUpdateNode,
   onUpdateSelected,
+  onBatchDelete,
+  onBatchRemoveInbounds,
+  onBatchRemoveClients,
 }: NodeListProps) {
   const { t } = useTranslation();
   const relativeTime = useRelativeTime();
@@ -453,9 +461,20 @@ export default function NodeList({
           {t('pages.nodes.mtls.title')}
         </Button>
         {selectedIds.length > 0 && (
-          <Button icon={<CloudDownloadOutlined />} onClick={onUpdateSelected}>
-            {t('pages.nodes.updateSelected', { count: selectedIds.length })}
-          </Button>
+          <>
+            <Button icon={<CloudDownloadOutlined />} onClick={onUpdateSelected}>
+              {t('pages.nodes.updateSelected', { count: selectedIds.length })}
+            </Button>
+            <Button icon={<UsergroupDeleteOutlined />} onClick={onBatchRemoveClients}>
+              {t('pages.nodes.batch.removeClients', { count: selectedIds.length })}
+            </Button>
+            <Button icon={<ClearOutlined />} onClick={onBatchRemoveInbounds}>
+              {t('pages.nodes.batch.removeInbounds', { count: selectedIds.length })}
+            </Button>
+            <Button danger icon={<DeleteOutlined />} onClick={onBatchDelete}>
+              {t('pages.nodes.batch.delete', { count: selectedIds.length })}
+            </Button>
+          </>
         )}
       </div>
 
@@ -667,7 +686,7 @@ export default function NodeList({
           rowSelection={dataSource.length > 1 ? {
             selectedRowKeys: selectedIds,
             onChange: (keys) => onSelectionChange(keys.filter((k) => typeof k === 'number') as number[]),
-            getCheckboxProps: (record) => ({ disabled: !!record.transitive || !isUpdateEligible(record) }),
+            getCheckboxProps: (record) => ({ disabled: !!record.transitive }),
           } : undefined}
           locale={{
             emptyText: (

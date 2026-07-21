@@ -12,13 +12,17 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/logger"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/middleware"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/service"
+	"github.com/mhsanaei/3x-ui/v3/internal/web/session"
+	"github.com/mhsanaei/3x-ui/v3/internal/web/websocket"
 
 	"github.com/gin-gonic/gin"
 )
 
 type NodeController struct {
-	nodeService service.NodeService
-	xrayService service.XrayService
+	nodeService    service.NodeService
+	inboundService service.InboundService
+	clientService  service.ClientService
+	xrayService    service.XrayService
 }
 
 func NewNodeController(g *gin.RouterGroup) *NodeController {
@@ -42,6 +46,9 @@ func (a *NodeController) initRouter(g *gin.RouterGroup) {
 	g.POST("/inbounds", a.inbounds)
 	g.POST("/probe/:id", a.probe)
 	g.POST("/updatePanel", a.updatePanel)
+	g.POST("/bulkDel", a.bulkDel)
+	g.POST("/removeInbounds", a.removeInbounds)
+	g.POST("/removeClients", a.removeClients)
 	g.GET("/history/:id/:metric/:bucket", a.history)
 	g.POST("/mtls/ca", a.mtlsCa)
 	g.POST("/mtls/trustCA", a.setMtlsTrustCA)
@@ -330,6 +337,80 @@ func (a *NodeController) updatePanel(c *gin.Context) {
 	}
 	results, err := a.nodeService.UpdatePanels(req.Ids, req.Dev)
 	jsonMsgObj(c, I18nWeb(c, "pages.nodes.toasts.updateStarted"), results, err)
+}
+
+func (a *NodeController) bulkDel(c *gin.Context) {
+	var req struct {
+		Ids   []int `json:"ids"`
+		Force bool  `json:"force"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+		return
+	}
+	if len(req.Ids) == 0 {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), fmt.Errorf("no nodes selected"))
+		return
+	}
+	resp, err := a.nodeService.DeleteNodes(&a.inboundService, req.Ids, req.Force)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.delete"), err)
+		return
+	}
+	jsonObj(c, resp, nil)
+	a.afterNodeInboundChange(c, resp.NeedRestart)
+}
+
+func (a *NodeController) removeInbounds(c *gin.Context) {
+	var req struct {
+		Ids []int `json:"ids"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+		return
+	}
+	if len(req.Ids) == 0 {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), fmt.Errorf("no nodes selected"))
+		return
+	}
+	resp, err := a.nodeService.RemoveNodeInbounds(&a.inboundService, req.Ids)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+		return
+	}
+	jsonObj(c, resp, nil)
+	a.afterNodeInboundChange(c, resp.NeedRestart)
+}
+
+func (a *NodeController) removeClients(c *gin.Context) {
+	var req struct {
+		Ids []int `json:"ids"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+		return
+	}
+	if len(req.Ids) == 0 {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), fmt.Errorf("no nodes selected"))
+		return
+	}
+	resp, err := a.nodeService.RemoveNodeClients(&a.inboundService, &a.clientService, req.Ids)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+		return
+	}
+	jsonObj(c, resp, nil)
+	a.afterNodeInboundChange(c, resp.NeedRestart)
+}
+
+func (a *NodeController) afterNodeInboundChange(c *gin.Context, needRestart bool) {
+	if needRestart {
+		a.xrayService.SetToNeedRestart()
+	}
+	notifyClientsChanged()
+	if user := session.GetLoginUser(c); user != nil {
+		websocket.BroadcastInvalidate(websocket.MessageTypeInbounds)
+	}
 }
 
 func (a *NodeController) history(c *gin.Context) {

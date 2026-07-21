@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Checkbox, Col, ConfigProvider, Input, Layout, Modal, Result, Row, Spin, Statistic, Tabs, Typography, message } from 'antd';
+import { Alert, Button, Card, Checkbox, Col, ConfigProvider, Input, Layout, Modal, Result, Row, Spin, Statistic, Tabs, Tag, Typography, message } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -17,7 +17,7 @@ import { useNodeMutations } from '@/api/queries/useNodeMutations';
 import { useManagedServersQuery } from '@/api/queries/useManagedServersQuery';
 import type { ManagedServerRecord } from '@/api/queries/useManagedServersQuery';
 import { useManagedServerMutations } from '@/api/queries/useManagedServerMutations';
-import type { InstallConfig } from '@/generated/types';
+import type { InstallConfig, NodeBatchResponse } from '@/generated/types';
 import AppSidebar from '@/layouts/AppSidebar';
 import NodeList from './NodeList';
 import NodeFormModal from './NodeFormModal';
@@ -60,6 +60,28 @@ function UpdateChannelChoice({ onChange }: { onChange: (dev: boolean) => void })
   );
 }
 
+function NodeCascadeChoice({ names, onChange }: { names: string[]; onChange: (cascade: boolean) => void }) {
+  const { t } = useTranslation();
+  const [cascade, setCascade] = useState(false);
+  return (
+    <div>
+      <p>{t('pages.nodes.batch.deleteHasInbounds', { count: names.length })}</p>
+      <div style={{ maxHeight: 120, overflowY: 'auto', marginBottom: 8 }}>
+        {names.map((n) => <Tag key={n} style={{ marginBottom: 4 }}>{n}</Tag>)}
+      </div>
+      <Checkbox
+        checked={cascade}
+        onChange={(e) => { setCascade(e.target.checked); onChange(e.target.checked); }}
+      >
+        {t('pages.nodes.batch.deleteCascade')}
+      </Checkbox>
+      {!cascade && (
+        <Alert type="info" showIcon style={{ marginTop: 8 }} title={t('pages.nodes.batch.deleteSkipHint')} />
+      )}
+    </div>
+  );
+}
+
 export default function NodesPage() {
   const { t } = useTranslation();
   const { isDark, isUltra, antdThemeConfig } = useTheme();
@@ -69,7 +91,7 @@ export default function NodesPage() {
   useEffect(() => { setMessageInstance(messageApi); }, [messageApi]);
 
   const { nodes, loading, fetched, fetchError, refetch, totals } = useNodesQuery();
-  const { create, update, remove, setEnable, testConnection, fetchFingerprint, fetchInbounds, probe, updatePanels } = useNodeMutations();
+  const { create, update, remove, setEnable, testConnection, fetchFingerprint, fetchInbounds, probe, updatePanels, bulkDelNodes, removeNodeInbounds, removeNodeClients } = useNodeMutations();
   const { servers, loading: serversLoading } = useManagedServersQuery();
   const serverMutations = useManagedServerMutations();
 
@@ -194,6 +216,81 @@ export default function NodesPage() {
       },
     });
   }, [modal, t, remove, messageApi]);
+
+  const selectedNodes = useMemo(
+    () => nodes.filter((n) => !n.transitive && selectedIds.includes(n.id)),
+    [nodes, selectedIds],
+  );
+
+  const reportBatch = useCallback((resp: NodeBatchResponse | null | undefined, okKey: string) => {
+    const results = resp?.results ?? [];
+    const ok = results.filter((r) => r.ok).length;
+    const failed = results.length - ok;
+    if (failed === 0) {
+      messageApi.success(t(okKey, { count: ok }));
+    } else {
+      const firstError = results.find((r) => !r.ok)?.error ?? '';
+      const base = t('pages.nodes.batch.result', { ok, failed });
+      messageApi.warning(firstError ? `${base} — ${firstError}` : base);
+    }
+    setSelectedIds([]);
+  }, [messageApi, t]);
+
+  const cascadeRef = useRef(false);
+
+  const onBatchDeleteNodes = useCallback(() => {
+    if (selectedNodes.length === 0) return;
+    const withInbounds = selectedNodes.filter((n) => (n.inboundCount || 0) > 0);
+    cascadeRef.current = false;
+    modal.confirm({
+      title: t('pages.nodes.batch.deleteTitle', { count: selectedNodes.length }),
+      content: withInbounds.length > 0
+        ? (
+          <NodeCascadeChoice
+            names={withInbounds.map((n) => n.name || `#${n.id}`)}
+            onChange={(v) => { cascadeRef.current = v; }}
+          />
+        )
+        : t('pages.nodes.batch.deleteContent'),
+      okText: t('delete'),
+      okType: 'danger',
+      cancelText: t('cancel'),
+      onOk: async () => {
+        const msg = await bulkDelNodes(selectedNodes.map((n) => n.id), cascadeRef.current);
+        reportBatch(msg?.obj, 'pages.nodes.batch.deleteDone');
+      },
+    });
+  }, [modal, t, selectedNodes, bulkDelNodes, reportBatch]);
+
+  const onBatchRemoveInbounds = useCallback(() => {
+    if (selectedNodes.length === 0) return;
+    modal.confirm({
+      title: t('pages.nodes.batch.removeInboundsTitle', { count: selectedNodes.length }),
+      content: t('pages.nodes.batch.removeInboundsContent'),
+      okText: t('remove'),
+      okType: 'danger',
+      cancelText: t('cancel'),
+      onOk: async () => {
+        const msg = await removeNodeInbounds(selectedNodes.map((n) => n.id));
+        reportBatch(msg?.obj, 'pages.nodes.batch.removeInboundsDone');
+      },
+    });
+  }, [modal, t, selectedNodes, removeNodeInbounds, reportBatch]);
+
+  const onBatchRemoveClients = useCallback(() => {
+    if (selectedNodes.length === 0) return;
+    modal.confirm({
+      title: t('pages.nodes.batch.removeClientsTitle', { count: selectedNodes.length }),
+      content: t('pages.nodes.batch.removeClientsContent'),
+      okText: t('remove'),
+      okType: 'danger',
+      cancelText: t('cancel'),
+      onOk: async () => {
+        const msg = await removeNodeClients(selectedNodes.map((n) => n.id));
+        reportBatch(msg?.obj, 'pages.nodes.batch.removeClientsDone');
+      },
+    });
+  }, [modal, t, selectedNodes, removeNodeClients, reportBatch]);
 
   const onProbe = useCallback(async (node: NodeRecord) => {
     const msg = await probe(node.id);
@@ -548,6 +645,9 @@ export default function NodesPage() {
           onToggleEnable={onToggleEnable}
           onUpdateNode={onUpdateNode}
           onUpdateSelected={onUpdateSelected}
+          onBatchDelete={onBatchDeleteNodes}
+          onBatchRemoveInbounds={onBatchRemoveInbounds}
+          onBatchRemoveClients={onBatchRemoveClients}
         />
       </Col>
     </Row>
