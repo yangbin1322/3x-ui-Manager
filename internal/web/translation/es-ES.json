@@ -396,6 +396,8 @@
       "deployToNodesHint": "Copia este inbound a cada nodo seleccionado — allí se crea un inbound independiente con la misma configuración, y a su tag y comentario se les añade el nombre del nodo. Elige abajo qué ocurre con los clientes.",
       "deploySource": "Inbound de origen",
       "deployNoNodes": "No hay nodos aptos para desplegar.",
+      "deployNodeSearchPlaceholder": "Buscar nodos por nombre o dirección",
+      "deployNodeSearchEmpty": "Ningún nodo coincide con tu búsqueda.",
       "deployClients": "Clientes",
       "deployClientsNone": "Ninguno",
       "deployClientsCopy": "Copiar clientes de origen",

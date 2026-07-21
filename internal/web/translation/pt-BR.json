@@ -396,6 +396,8 @@
       "deployToNodesHint": "Copie este inbound para cada nó selecionado — um inbound independente com a mesma configuração é criado lá, e o nome do nó é anexado ao seu tag e observação. Escolha abaixo o que acontece com os clientes.",
       "deploySource": "Inbound de origem",
       "deployNoNodes": "Nenhum nó elegível para implantar.",
+      "deployNodeSearchPlaceholder": "Pesquisar nós por nome ou endereço",
+      "deployNodeSearchEmpty": "Nenhum nó corresponde à sua pesquisa.",
       "deployClients": "Clientes",
       "deployClientsNone": "Nenhum",
       "deployClientsCopy": "Copiar clientes de origem",

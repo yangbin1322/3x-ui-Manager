@@ -396,6 +396,8 @@
       "deployToNodesHint": "将此入站复制到每个选中的节点——在那里创建一个配置相同的独立入站，其 tag 和备注会附加节点名。下方选择客户端如何处理。",
       "deploySource": "源入站",
       "deployNoNodes": "没有可部署的节点。",
+      "deployNodeSearchPlaceholder": "按名称或地址搜索节点",
+      "deployNodeSearchEmpty": "没有匹配搜索的节点。",
       "deployClients": "客户端",
       "deployClientsNone": "不绑定",
       "deployClientsCopy": "复制源客户端",

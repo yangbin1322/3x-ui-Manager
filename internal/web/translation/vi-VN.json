@@ -396,6 +396,8 @@
       "deployToNodesHint": "Sao chép inbound này sang mỗi node đã chọn — một inbound độc lập với cùng cấu hình được tạo ở đó, tag và ghi chú của nó được thêm tên node. Chọn bên dưới cách xử lý client.",
       "deploySource": "Inbound nguồn",
       "deployNoNodes": "Không có node phù hợp để triển khai.",
+      "deployNodeSearchPlaceholder": "Tìm node theo tên hoặc địa chỉ",
+      "deployNodeSearchEmpty": "Không có node nào khớp với tìm kiếm.",
       "deployClients": "Client",
       "deployClientsNone": "Không",
       "deployClientsCopy": "Sao chép client nguồn",

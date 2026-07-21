@@ -396,6 +396,8 @@
       "deployToNodesHint": "このインバウンドを選択した各ノードへコピーします。同じ設定の独立したインバウンドが作成され、タグと備考にノード名が付加されます。クライアントの扱いは下で選択してください。",
       "deploySource": "元のインバウンド",
       "deployNoNodes": "デプロイできるノードがありません。",
+      "deployNodeSearchPlaceholder": "名前またはアドレスでノードを検索",
+      "deployNodeSearchEmpty": "検索に一致するノードがありません。",
       "deployClients": "クライアント",
       "deployClientsNone": "なし",
       "deployClientsCopy": "元のクライアントをコピー",

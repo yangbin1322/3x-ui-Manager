@@ -396,6 +396,8 @@
       "deployToNodesHint": "Salin inbound ini ke setiap node terpilih — inbound independen dengan konfigurasi sama dibuat di sana, tag dan keterangannya ditambahi nama node. Pilih di bawah apa yang terjadi pada klien.",
       "deploySource": "Inbound sumber",
       "deployNoNodes": "Tidak ada node yang memenuhi syarat.",
+      "deployNodeSearchPlaceholder": "Cari node berdasarkan nama atau alamat",
+      "deployNodeSearchEmpty": "Tidak ada node yang cocok dengan pencarian.",
       "deployClients": "Klien",
       "deployClientsNone": "Tidak ada",
       "deployClientsCopy": "Salin klien sumber",

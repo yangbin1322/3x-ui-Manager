@@ -396,6 +396,8 @@
       "deployToNodesHint": "Bu inbound'u seçilen her düğüme kopyalayın — orada aynı yapılandırmayla bağımsız bir inbound oluşturulur; tag ve notuna düğüm adı eklenir. Aşağıdan istemcilere ne olacağını seçin.",
       "deploySource": "Kaynak inbound",
       "deployNoNodes": "Dağıtılacak uygun düğüm yok.",
+      "deployNodeSearchPlaceholder": "Düğümleri ada veya adrese göre ara",
+      "deployNodeSearchEmpty": "Aramanızla eşleşen düğüm yok.",
       "deployClients": "İstemciler",
       "deployClientsNone": "Yok",
       "deployClientsCopy": "Kaynak istemcileri kopyala",

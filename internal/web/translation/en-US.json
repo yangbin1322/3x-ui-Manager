@@ -396,6 +396,8 @@
       "deployToNodesHint": "Copy this inbound to each selected node — a new independent inbound is created there with the same config. Its tag and remark get the node name appended. Choose below what happens to clients.",
       "deploySource": "Source inbound",
       "deployNoNodes": "No eligible nodes to deploy to.",
+      "deployNodeSearchPlaceholder": "Search nodes by name or address",
+      "deployNodeSearchEmpty": "No nodes match your search.",
       "deployClients": "Clients",
       "deployClientsNone": "None",
       "deployClientsCopy": "Copy source clients",

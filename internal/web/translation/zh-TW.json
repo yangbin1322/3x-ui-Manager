@@ -396,6 +396,8 @@
       "deployToNodesHint": "將此入站複製到每個選取的節點——在那裡建立一個設定相同的獨立入站，其 tag 與備註會附加節點名稱。下方選擇客戶端如何處理。",
       "deploySource": "來源入站",
       "deployNoNodes": "沒有可部署的節點。",
+      "deployNodeSearchPlaceholder": "依名稱或位址搜尋節點",
+      "deployNodeSearchEmpty": "沒有符合搜尋的節點。",
       "deployClients": "客戶端",
       "deployClientsNone": "不綁定",
       "deployClientsCopy": "複製來源客戶端",

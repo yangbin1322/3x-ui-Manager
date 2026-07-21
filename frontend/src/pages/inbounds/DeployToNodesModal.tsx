@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Checkbox, Modal, Segmented, Select, Tag, Tooltip, Empty } from 'antd';
+import { Alert, Checkbox, Input, Modal, Segmented, Select, Tag, Tooltip, Empty } from 'antd';
 import type { NodeRecord } from '@/api/queries/useNodesQuery';
+import { SelectAllClearButtons } from '@/components/form';
 import type { DeployResponse } from '@/generated/types';
 import { HttpUtil } from '@/utils';
 
@@ -34,6 +35,7 @@ export default function DeployToNodesModal({ open, inbound, nodes, onOpenChange,
   const [bindEmails, setBindEmails] = useState<string[]>([]);
   const [clientEmails, setClientEmails] = useState<string[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
+  const [nodeSearch, setNodeSearch] = useState('');
 
   // Eligible targets: enabled nodes other than the one the source inbound
   // already lives on (a copy there would collide with itself).
@@ -42,6 +44,14 @@ export default function DeployToNodesModal({ open, inbound, nodes, onOpenChange,
     [nodes, inbound],
   );
 
+  const visibleTargets = useMemo(() => {
+    const q = nodeSearch.trim().toLowerCase();
+    if (!q) return targets;
+    return targets.filter(
+      (n) => (n.name || '').toLowerCase().includes(q) || (n.address || '').toLowerCase().includes(q),
+    );
+  }, [targets, nodeSearch]);
+
   useEffect(() => {
     if (open) {
       setSelected([]);
@@ -49,6 +59,7 @@ export default function DeployToNodesModal({ open, inbound, nodes, onOpenChange,
       setSubmitting(false);
       setClientMode('none');
       setBindEmails([]);
+      setNodeSearch('');
     }
   }, [open]);
 
@@ -154,26 +165,47 @@ export default function DeployToNodesModal({ open, inbound, nodes, onOpenChange,
       {targets.length === 0 ? (
         <Empty description={t('pages.inbounds.deployNoNodes')} />
       ) : (
-        <Checkbox.Group
-          value={selected}
-          onChange={(v) => setSelected(v as number[])}
-          style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-        >
-          {targets.map((n) => {
-            const result = results?.find((r) => r.nodeId === n.id);
-            return (
-              <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Checkbox value={n.id} disabled={submitting}>
-                  {n.name || `#${n.id}`}
-                  <span style={{ opacity: 0.5, marginInlineStart: 6 }}>{n.address}</span>
-                </Checkbox>
-                {result && (result.success
-                  ? <Tag color="success">{result.tag}{result.attached ? ` +${result.attached}` : ''}</Tag>
-                  : <Tooltip title={result.message}><Tag color="error">!</Tag></Tooltip>)}
-              </div>
-            );
-          })}
-        </Checkbox.Group>
+        <>
+          <Input.Search
+            allowClear
+            value={nodeSearch}
+            onChange={(e) => setNodeSearch(e.target.value)}
+            placeholder={t('pages.inbounds.deployNodeSearchPlaceholder')}
+            disabled={submitting}
+            style={{ marginBottom: 8 }}
+          />
+          <SelectAllClearButtons
+            options={visibleTargets.map((n) => ({ value: n.id }))}
+            value={selected}
+            onChange={setSelected}
+            selectAllLabel={t('selectAll')}
+            clearLabel={t('clearAll')}
+          />
+          {visibleTargets.length === 0 ? (
+            <Empty description={t('pages.inbounds.deployNodeSearchEmpty')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          ) : (
+            <Checkbox.Group
+              value={selected}
+              onChange={(v) => setSelected(v as number[])}
+              style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 260, overflowY: 'auto' }}
+            >
+              {visibleTargets.map((n) => {
+                const result = results?.find((r) => r.nodeId === n.id);
+                return (
+                  <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Checkbox value={n.id} disabled={submitting}>
+                      {n.name || `#${n.id}`}
+                      <span style={{ opacity: 0.5, marginInlineStart: 6 }}>{n.address}</span>
+                    </Checkbox>
+                    {result && (result.success
+                      ? <Tag color="success">{result.tag}{result.attached ? ` +${result.attached}` : ''}</Tag>
+                      : <Tooltip title={result.message}><Tag color="error">!</Tag></Tooltip>)}
+                  </div>
+                );
+              })}
+            </Checkbox.Group>
+          )}
+        </>
       )}
     </Modal>
   );

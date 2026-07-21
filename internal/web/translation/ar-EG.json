@@ -396,6 +396,8 @@
       "deployToNodesHint": "انسخ هذا الوارد إلى كل عقدة محددة — يُنشأ هناك وارد مستقل بنفس الإعداد، ويُضاف اسم العقدة إلى وسمه وملاحظته. اختر أدناه ما يحدث للعملاء.",
       "deploySource": "الوارد المصدر",
       "deployNoNodes": "لا توجد عقد مؤهلة للنشر.",
+      "deployNodeSearchPlaceholder": "ابحث عن العقد بالاسم أو العنوان",
+      "deployNodeSearchEmpty": "لا توجد عقد تطابق بحثك.",
       "deployClients": "العملاء",
       "deployClientsNone": "بدون",
       "deployClientsCopy": "نسخ عملاء المصدر",
