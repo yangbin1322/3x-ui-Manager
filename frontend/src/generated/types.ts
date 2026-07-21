@@ -651,6 +651,20 @@ export interface Node {
   xrayVersion: string;
 }
 
+export interface NodeBatchResponse {
+  needRestart: boolean;
+  results: NodeBatchResult[];
+}
+
+export interface NodeBatchResult {
+  clients?: number;
+  error?: string;
+  id: number;
+  inbounds?: number;
+  name: string;
+  ok: boolean;
+}
+
 export interface OutboundTraffics {
   down: number;
   id: number;

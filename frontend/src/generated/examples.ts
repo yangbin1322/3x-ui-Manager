@@ -722,6 +722,27 @@ export const EXAMPLES: Record<string, unknown> = {
     "xrayState": "",
     "xrayVersion": "25.10.31"
   },
+  "NodeBatchResponse": {
+    "needRestart": false,
+    "results": [
+      {
+        "clients": 0,
+        "error": "",
+        "id": 0,
+        "inbounds": 0,
+        "name": "",
+        "ok": false
+      }
+    ]
+  },
+  "NodeBatchResult": {
+    "clients": 0,
+    "error": "",
+    "id": 0,
+    "inbounds": 0,
+    "name": "",
+    "ok": false
+  },
   "OutboundTraffics": {
     "down": 0,
     "id": 0,

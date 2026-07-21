@@ -99,6 +99,8 @@ func run(root, outDir string) error {
 				"BulkAddResponse",
 				"DeployResult",
 				"DeployResponse",
+				"NodeBatchResult",
+				"NodeBatchResponse",
 			),
 		},
 		{

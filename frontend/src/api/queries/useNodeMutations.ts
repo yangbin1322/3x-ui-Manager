@@ -4,6 +4,7 @@ import { HttpUtil, Msg } from '@/utils';
 import { parseMsg } from '@/utils/zodValidate';
 import { keys } from '@/api/queryKeys';
 import type { NodeRecord } from '@/api/queries/useNodesQuery';
+import type { NodeBatchResponse } from '@/generated/types';
 import { ProbeResultSchema, type ProbeResult } from '@/schemas/node';
 
 export type { ProbeResult };
@@ -69,6 +70,26 @@ export function useNodeMutations() {
     onSuccess: (msg) => { if (msg?.success) invalidate(); },
   });
 
+  const jsonHeaders = { headers: { 'Content-Type': 'application/json' } };
+
+  const bulkDelMut = useMutation({
+    mutationFn: ({ ids, force }: { ids: number[]; force: boolean }) =>
+      HttpUtil.post<NodeBatchResponse>('/panel/api/nodes/bulkDel', { ids, force }, jsonHeaders),
+    onSuccess: (msg) => { if (msg?.success) invalidate(); },
+  });
+
+  const removeInboundsMut = useMutation({
+    mutationFn: (ids: number[]) =>
+      HttpUtil.post<NodeBatchResponse>('/panel/api/nodes/removeInbounds', { ids }, jsonHeaders),
+    onSuccess: (msg) => { if (msg?.success) invalidate(); },
+  });
+
+  const removeClientsMut = useMutation({
+    mutationFn: (ids: number[]) =>
+      HttpUtil.post<NodeBatchResponse>('/panel/api/nodes/removeClients', { ids }, jsonHeaders),
+    onSuccess: (msg) => { if (msg?.success) invalidate(); },
+  });
+
   return {
     create: (payload: Partial<NodeRecord>) => createMut.mutateAsync(payload),
     update: (id: number, payload: Partial<NodeRecord>) => updateMut.mutateAsync({ id, payload }),
@@ -76,6 +97,9 @@ export function useNodeMutations() {
     setEnable: (id: number, enable: boolean) => setEnableMut.mutateAsync({ id, enable }),
     probe: (id: number) => probeMut.mutateAsync(id),
     updatePanels: (ids: number[], dev: boolean): Promise<Msg<NodeUpdateResult[]>> => updatePanelsMut.mutateAsync({ ids, dev }),
+    bulkDelNodes: (ids: number[], force: boolean): Promise<Msg<NodeBatchResponse>> => bulkDelMut.mutateAsync({ ids, force }),
+    removeNodeInbounds: (ids: number[]): Promise<Msg<NodeBatchResponse>> => removeInboundsMut.mutateAsync(ids),
+    removeNodeClients: (ids: number[]): Promise<Msg<NodeBatchResponse>> => removeClientsMut.mutateAsync(ids),
     testConnection: async (payload: Partial<NodeRecord>): Promise<Msg<ProbeResult>> => {
       const raw = await HttpUtil.post('/panel/api/nodes/test', payload);
       return parseMsg(raw, ProbeResultSchema, 'nodes/test');

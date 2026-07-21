@@ -40,16 +40,40 @@ type PanelUpdateInfo struct {
 }
 
 const (
-	panelUpdaterURL      = "https://raw.githubusercontent.com/MHSanaei/3x-ui/main/update.sh"
 	maxPanelUpdaterBytes = 2 << 20
 	// devReleaseTag is the fixed-tag rolling pre-release the CI force-moves to the
 	// newest main commit; the dev update channel installs from it.
 	devReleaseTag = "dev-latest"
 
+	// defaultPanelRepo is the GitHub repo the self-updater downloads update.sh
+	// and releases from. It defaults to this fork so a node's "Update panel"
+	// pulls fork builds, matching install.sh / update.sh (which honor XUI_REPO);
+	// XUI_REPO overrides it to install from upstream or another fork.
+	defaultPanelRepo = "yangbin1322/3x-ui-Manager"
+	panelRawBranch   = "main"
+
 	updateStatePending = "pending"
 	updateStateSuccess = "success"
 	updateStateFailed  = "failed"
 )
+
+// panelRepo returns the GitHub owner/repo the self-updater targets, honoring the
+// XUI_REPO override (the same env var install.sh / update.sh read).
+func panelRepo() string {
+	if repo := strings.TrimSpace(os.Getenv("XUI_REPO")); repo != "" {
+		return repo
+	}
+	return defaultPanelRepo
+}
+
+// panelUpdaterURL is the raw update.sh URL on the resolved repo/branch.
+func panelUpdaterURL() string {
+	branch := strings.TrimSpace(os.Getenv("XUI_RAW_BRANCH"))
+	if branch == "" {
+		branch = panelRawBranch
+	}
+	return fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/update.sh", panelRepo(), branch)
+}
 
 // PanelUpdateStatus reports the outcome of the most recently launched panel
 // self-update. RunID lets the caller confirm this status belongs to the
@@ -356,7 +380,7 @@ func releaseUpdateSlot() {
 
 func downloadPanelUpdater() (string, error) {
 	client := (&service.SettingService{}).NewProxiedHTTPClient(15 * time.Second)
-	req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, panelUpdaterURL, nil)
+	req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, panelUpdaterURL(), nil)
 	if reqErr != nil {
 		return "", fmt.Errorf("download panel updater: %w", reqErr)
 	}
@@ -413,9 +437,9 @@ func fetchLatestPanelVersion() (string, error) {
 // fetchPanelRelease fetches a release from GitHub. An empty tag resolves the
 // latest stable release; a non-empty tag (e.g. dev-latest) resolves that tag.
 func fetchPanelRelease(tag string) (*service.Release, error) {
-	url := "https://api.github.com/repos/MHSanaei/3x-ui/releases/latest"
+	url := "https://api.github.com/repos/" + panelRepo() + "/releases/latest"
 	if tag != "" {
-		url = "https://api.github.com/repos/MHSanaei/3x-ui/releases/tags/" + tag
+		url = "https://api.github.com/repos/" + panelRepo() + "/releases/tags/" + tag
 	}
 	client := (&service.SettingService{}).NewProxiedHTTPClient(10 * time.Second)
 	req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)

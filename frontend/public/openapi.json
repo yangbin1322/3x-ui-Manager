@@ -2817,6 +2817,54 @@
         ],
         "type": "object"
       },
+      "NodeBatchResponse": {
+        "description": "NodeBatchResponse aggregates per-node results plus whether xray needs a\nrestart afterward (a client/inbound change on the panel's own node).",
+        "properties": {
+          "needRestart": {
+            "type": "boolean"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/NodeBatchResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "needRestart",
+          "results"
+        ],
+        "type": "object"
+      },
+      "NodeBatchResult": {
+        "description": "NodeBatchResult is one node's outcome from a batch node operation (remove\ninbounds / remove clients / delete). Counts report how much was affected on\nthat node; Error is set when the node itself could not be processed.",
+        "properties": {
+          "clients": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "inbounds": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "ok"
+        ],
+        "type": "object"
+      },
       "OutboundTraffics": {
         "description": "OutboundTraffics tracks traffic statistics for Xray outbound connections.",
         "properties": {
@@ -8893,7 +8941,7 @@
         "tags": [
           "Nodes"
         ],
-        "summary": "Trigger the official panel self-updater on each given node (downloads the latest release and restarts). Only enabled, online nodes are updated; offline/disabled ones are reported as skipped. Set \"dev\": true to move the nodes to the rolling per-commit dev channel instead of the latest stable release. Returns a per-node result list.",
+        "summary": "Trigger the panel self-updater on each given node (downloads the latest release from the configured repo — this fork by default, XUI_REPO to override — and restarts). Only enabled, online nodes are updated; offline/disabled ones are reported as skipped. Set \"dev\": true to move the nodes to the rolling per-commit dev channel instead of the latest stable release. Returns a per-node result list.",
         "operationId": "post_panel_api_nodes_updatePanel",
         "requestBody": {
           "required": true,
@@ -8945,6 +8993,202 @@
                       "error": "node is offline"
                     }
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/nodes/bulkDel": {
+      "post": {
+        "tags": [
+          "Nodes"
+        ],
+        "summary": "Delete each given node. A node that still has inbounds is skipped and reported, unless \"force\": true, which first removes that node’s inbounds (and their clients) then deletes the node. Returns a per-node result list.",
+        "operationId": "post_panel_api_nodes_bulkDel",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "ids": [
+                  1,
+                  2,
+                  3
+                ],
+                "force": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/NodeBatchResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "needRestart": false,
+                    "results": [
+                      {
+                        "clients": 0,
+                        "error": "",
+                        "id": 0,
+                        "inbounds": 0,
+                        "name": "",
+                        "ok": false
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/nodes/removeInbounds": {
+      "post": {
+        "tags": [
+          "Nodes"
+        ],
+        "summary": "Remove every inbound (and its clients) on each given node, keeping the node. Returns a per-node result list with the removed inbound count.",
+        "operationId": "post_panel_api_nodes_removeInbounds",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "ids": [
+                  1,
+                  2,
+                  3
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/NodeBatchResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "needRestart": false,
+                    "results": [
+                      {
+                        "clients": 0,
+                        "error": "",
+                        "id": 0,
+                        "inbounds": 0,
+                        "name": "",
+                        "ok": false
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/nodes/removeClients": {
+      "post": {
+        "tags": [
+          "Nodes"
+        ],
+        "summary": "Detach every client from each given node’s inbounds, keeping the inbounds. A client shared with another inbound stays on that other inbound. Returns a per-node result list with the detached client count.",
+        "operationId": "post_panel_api_nodes_removeClients",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "ids": [
+                  1,
+                  2,
+                  3
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/NodeBatchResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "needRestart": false,
+                    "results": [
+                      {
+                        "clients": 0,
+                        "error": "",
+                        "id": 0,
+                        "inbounds": 0,
+                        "name": "",
+                        "ok": false
+                      }
+                    ]
+                  }
                 }
               }
             }
