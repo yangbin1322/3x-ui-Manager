@@ -23,6 +23,24 @@ Construido como un fork mejorado del proyecto X-UI original, 3X-UI añade un sop
 > [!IMPORTANT]
 > Este proyecto está destinado únicamente al uso personal. Por favor, no lo uses para fines ilegales ni en un entorno de producción.
 
+## Acerca de este fork (`3x-ui-Manager`)
+
+`yangbin1322/3x-ui-Manager` amplía el 3X-UI original de «gestionar nodos 3x-ui que ya tienes» a «gestionar toda una flota de servidores por SSH». Además de todo lo que aparece abajo, este fork añade:
+
+- **Servidores gestionados por SSH** — conecta un host Linux por SSH (contraseña o clave), con pruebas de conexión, credenciales cifradas con AES-256-GCM, verificación de la clave del host y latidos de disponibilidad. La página de nodos se divide en las pestañas **Servers** y **Panel Nodes**.
+- **Instalación / importación / desinstalación remota** — instala 3x-ui en un servidor (con una tarjeta de configuración paso a paso: cuenta, puerto, ruta, tipo de base de datos, modo SSL incluidos certificados de IP o de Let's Encrypt) y deriva automáticamente un nodo de panel vinculado, importa un panel existente o desinstala — de forma individual o por lotes.
+- **Operaciones por lotes** — añade servidores en masa desde una tabla pegada/subida, ejecuta comandos en muchos servidores con registro de auditoría, despliega la configuración de un inbound en varios nodos y adjunta/desvincula clientes por lotes entre inbounds.
+- **Distribución de archivos** — sube archivos/directorios a una ruta por SFTP y copia una ruta entre servidores, con una barra de progreso general.
+- **Cadena propia de compilación/publicación/instalación** — tag → GitHub Release (binarios + UI incrustada), y `install.sh` / `update.sh` / `x-ui.sh` descargan todos desde este fork, con `XUI_SECRET_KEY` generado y persistido automáticamente en instalaciones nuevas.
+
+Detalles completos e historial de PR: **[docs/FORK_FEATURES.md](docs/FORK_FEATURES.md)**.
+
+Instalar desde este fork:
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/yangbin1322/3x-ui-Manager/main/install.sh)
+```
+
 ## Características
 
 - **Entradas multiprotocolo** — VLESS, VMess, Trojan, Shadowsocks, WireGuard, Hysteria2, HTTP, SOCKS (Mixed), Dokodemo-door / Tunnel y TUN.

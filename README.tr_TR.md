@@ -23,6 +23,24 @@ Orijinal X-UI projesinin geliştirilmiş bir çatallaması (fork) olarak inşa e
 > [!IMPORTANT]
 > Bu proje yalnızca kişisel kullanım için tasarlanmıştır. Lütfen yasadışı amaçlar için veya üretim (production) ortamında kullanmayın.
 
+## Bu fork hakkında (`3x-ui-Manager`)
+
+`yangbin1322/3x-ui-Manager`, özgün 3X-UI'yi «zaten sahip olduğunuz 3x-ui düğümlerini yönetmek»ten «SSH üzerinden bütün bir sunucu filosunu yönetmek»e genişletir. Aşağıdaki her şeye ek olarak bu fork şunları ekler:
+
+- **SSH ile yönetilen sunucular** — bir Linux ana bilgisayarını SSH (parola veya anahtar) ile ekleyin; bağlantı testleri, AES-256-GCM ile şifrelenmiş kimlik bilgileri, ana bilgisayar anahtarı doğrulaması ve erişilebilirlik kalp atışları ile. Düğümler sayfası **Servers** ve **Panel Nodes** sekmelerine ayrılır.
+- **Uzaktan kurulum / içe aktarma / kaldırma** — bir sunucuya 3x-ui kurun (adım adım yapılandırma kartıyla: hesap, port, yol, veritabanı türü, IP veya Let's Encrypt sertifikaları dahil SSL modu) ve bağlı bir panel düğümü otomatik türetin, mevcut bir paneli içe aktarın veya kaldırın — tekli ya da toplu olarak.
+- **Toplu işlemler** — yapıştırılan/yüklenen bir tablodan sunucuları toplu ekleyin, denetim günlüğü tutarak birçok sunucuda komut çalıştırın, bir inbound yapılandırmasını birden çok düğüme dağıtın ve inbound'lar arasında istemcileri toplu bağlayın/ayırın.
+- **Dosya dağıtımı** — SFTP ile bir yola dosya/dizin yükleyin ve sunucular arasında bir yolu kopyalayın; genel bir ilerleme çubuğuyla.
+- **Kendi derleme/yayın/kurulum zinciri** — etiket → GitHub Release (ikili dosyalar + gömülü arayüz) ve `install.sh` / `update.sh` / `x-ui.sh` her şeyi bu fork'tan indirir; yeni kurulumlarda `XUI_SECRET_KEY` otomatik oluşturulup kalıcı kılınır.
+
+Tüm ayrıntılar ve PR geçmişi: **[docs/FORK_FEATURES.md](docs/FORK_FEATURES.md)**.
+
+Bu fork'tan kurulum:
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/yangbin1322/3x-ui-Manager/main/install.sh)
+```
+
 ## Özellikler
 
 - **Çoklu protokol destekli gelen bağlantılar (Inbounds)** — VLESS, VMess, Trojan, Shadowsocks, WireGuard, Hysteria2, HTTP, SOCKS (Karma), Dokodemo-door / Tunnel ve TUN.
