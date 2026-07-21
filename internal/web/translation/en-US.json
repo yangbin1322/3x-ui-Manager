@@ -1403,7 +1403,25 @@
         "running": "Installing 3x-ui… this can take a few minutes",
         "derivedOk": "Installed — a linked panel node was created",
         "installedNotDerived": "Installed, but creating the panel node failed — add the node manually",
-        "failed": "Install failed"
+        "failed": "Install failed",
+        "config": {
+          "title": "Install configuration (optional)",
+          "hint": "Leave any field blank to let the installer pick a secure default (random credentials/port/path, SQLite, no TLS).",
+          "panelSection": "Panel",
+          "username": "Username (blank = random)",
+          "password": "Password (blank = random)",
+          "panelPort": "Port (blank = random)",
+          "webBasePath": "Web base path (blank = random)",
+          "dbSection": "Database",
+          "dbSqlite": "SQLite",
+          "dbPostgres": "PostgreSQL",
+          "sslSection": "SSL certificate",
+          "sslNone": "None (HTTP)",
+          "sslIp": "IP certificate",
+          "sslDomain": "Domain certificate",
+          "domainPlaceholder": "example.com",
+          "sslHint": "IP/Domain certificates need port 80 open on the server; a domain certificate requires a domain pointing to it."
+        }
       }
     },
     "settings": {

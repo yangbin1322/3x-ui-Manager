@@ -1286,7 +1286,25 @@
         "running": "Menginstal 3x-ui… bisa memakan waktu beberapa menit",
         "derivedOk": "Terpasang — node panel tertaut telah dibuat",
         "installedNotDerived": "Terpasang, tetapi pembuatan node panel gagal — tambahkan node secara manual",
-        "failed": "Instalasi gagal"
+        "failed": "Instalasi gagal",
+        "config": {
+          "title": "Konfigurasi instalasi (opsional)",
+          "hint": "Kosongkan bidang mana pun agar penginstal memilih default aman (kredensial/port/jalur acak, SQLite, tanpa TLS).",
+          "panelSection": "Panel",
+          "username": "Nama pengguna (kosong = acak)",
+          "password": "Kata sandi (kosong = acak)",
+          "panelPort": "Port (kosong = acak)",
+          "webBasePath": "Jalur dasar (kosong = acak)",
+          "dbSection": "Basis data",
+          "dbSqlite": "SQLite",
+          "dbPostgres": "PostgreSQL",
+          "sslSection": "Sertifikat SSL",
+          "sslNone": "Tidak ada (HTTP)",
+          "sslIp": "Sertifikat IP",
+          "sslDomain": "Sertifikat domain",
+          "domainPlaceholder": "example.com",
+          "sslHint": "Sertifikat IP/domain memerlukan port 80 terbuka di server; sertifikat domain memerlukan domain yang mengarah ke sana."
+        }
       }
     },
     "settings": {

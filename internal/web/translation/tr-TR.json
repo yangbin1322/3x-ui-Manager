@@ -1286,7 +1286,25 @@
         "running": "3x-ui yükleniyor… birkaç dakika sürebilir",
         "derivedOk": "Kuruldu — bağlı bir panel düğümü oluşturuldu",
         "installedNotDerived": "Kuruldu ancak panel düğümü oluşturulamadı — düğümü elle ekleyin",
-        "failed": "Yükleme başarısız"
+        "failed": "Yükleme başarısız",
+        "config": {
+          "title": "Kurulum yapılandırması (isteğe bağlı)",
+          "hint": "Yükleyicinin güvenli bir varsayılan seçmesi için herhangi bir alanı boş bırakın (rastgele kimlik bilgisi/port/yol, SQLite, TLS yok).",
+          "panelSection": "Panel",
+          "username": "Kullanıcı adı (boş = rastgele)",
+          "password": "Parola (boş = rastgele)",
+          "panelPort": "Port (boş = rastgele)",
+          "webBasePath": "Temel yol (boş = rastgele)",
+          "dbSection": "Veritabanı",
+          "dbSqlite": "SQLite",
+          "dbPostgres": "PostgreSQL",
+          "sslSection": "SSL sertifikası",
+          "sslNone": "Yok (HTTP)",
+          "sslIp": "IP sertifikası",
+          "sslDomain": "Alan adı sertifikası",
+          "domainPlaceholder": "example.com",
+          "sslHint": "IP/alan adı sertifikaları sunucuda 80 portunun açık olmasını gerektirir; alan adı sertifikası ise ona işaret eden bir alan adı gerektirir."
+        }
       }
     },
     "settings": {

@@ -4,7 +4,7 @@ import { HttpUtil, Msg } from '@/utils';
 import { uploadWithProgress } from '@/api/http-init';
 import { keys } from '@/api/queryKeys';
 import type { ManagedServerRecord } from '@/schemas/managedServer';
-import type { SSHTestResult, BatchExecResult, BatchUploadResult, BatchCopyResult, ExecHistoryResponse, InstallResult, UninstallResult, BatchInstallResponse, BulkAddResponse } from '@/generated/types';
+import type { SSHTestResult, BatchExecResult, BatchUploadResult, BatchCopyResult, ExecHistoryResponse, InstallResult, UninstallResult, BatchInstallResponse, BulkAddResponse, InstallConfig } from '@/generated/types';
 
 export interface ExecHistoryFilter {
   page?: number;
@@ -88,8 +88,8 @@ export function useManagedServerMutations() {
   };
 
   const installMut = useMutation({
-    mutationFn: ({ serverId, version }: { serverId: number; version: string }) =>
-      HttpUtil.post<InstallResult>('/panel/api/managedServers/install', { serverId, version }, {
+    mutationFn: ({ serverId, version, config }: { serverId: number; version: string; config?: InstallConfig }) =>
+      HttpUtil.post<InstallResult>('/panel/api/managedServers/install', { serverId, version, config }, {
         headers: { 'Content-Type': 'application/json' },
       }),
     onSuccess: invalidateBoth,
@@ -112,8 +112,8 @@ export function useManagedServerMutations() {
   });
 
   const installBatchMut = useMutation({
-    mutationFn: ({ serverIds, version }: { serverIds: number[]; version: string }) =>
-      HttpUtil.post<BatchInstallResponse>('/panel/api/managedServers/installBatch', { serverIds, version }, {
+    mutationFn: ({ serverIds, version, config }: { serverIds: number[]; version: string; config?: InstallConfig }) =>
+      HttpUtil.post<BatchInstallResponse>('/panel/api/managedServers/installBatch', { serverIds, version, config }, {
         headers: { 'Content-Type': 'application/json' },
       }),
     onSuccess: invalidateBoth,
@@ -167,12 +167,12 @@ export function useManagedServerMutations() {
       HttpUtil.post<BatchCopyResult>('/panel/api/managedServers/copyPath', { sourceId, sourcePath, targetIds, dest, timeoutSec }, {
         headers: { 'Content-Type': 'application/json' },
       }),
-    installPanel: (serverId: number, version: string): Promise<Msg<InstallResult>> =>
-      installMut.mutateAsync({ serverId, version }),
+    installPanel: (serverId: number, version: string, config?: InstallConfig): Promise<Msg<InstallResult>> =>
+      installMut.mutateAsync({ serverId, version, config }),
     importPanel: (serverId: number): Promise<Msg<InstallResult>> => importMut.mutateAsync(serverId),
     uninstallPanel: (serverId: number): Promise<Msg<UninstallResult>> => uninstallMut.mutateAsync(serverId),
-    installPanelBatch: (serverIds: number[], version: string): Promise<Msg<BatchInstallResponse>> =>
-      installBatchMut.mutateAsync({ serverIds, version }),
+    installPanelBatch: (serverIds: number[], version: string, config?: InstallConfig): Promise<Msg<BatchInstallResponse>> =>
+      installBatchMut.mutateAsync({ serverIds, version, config }),
     uninstallPanelBatch: (serverIds: number[]): Promise<Msg<BatchInstallResponse>> =>
       uninstallBatchMut.mutateAsync(serverIds),
     fetchPanelVersions: (): Promise<Msg<string[]>> =>

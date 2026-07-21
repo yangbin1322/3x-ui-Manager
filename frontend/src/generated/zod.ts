@@ -597,6 +597,17 @@ export const InboundOptionSchema = z.object({
 });
 export type InboundOption = z.infer<typeof InboundOptionSchema>;
 
+export const InstallConfigSchema = z.object({
+  dbType: z.string(),
+  domain: z.string(),
+  panelPort: z.string(),
+  password: z.string(),
+  sslMode: z.string(),
+  username: z.string(),
+  webBasePath: z.string(),
+});
+export type InstallConfig = z.infer<typeof InstallConfigSchema>;
+
 export const InstallResultSchema = z.object({
   accessUrl: z.string().optional(),
   derived: z.boolean(),

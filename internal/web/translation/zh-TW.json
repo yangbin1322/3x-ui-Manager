@@ -1286,7 +1286,25 @@
         "running": "正在安裝 3x-ui…可能需要幾分鐘",
         "derivedOk": "安裝成功——已建立關聯的面板節點",
         "installedNotDerived": "已安裝,但建立面板節點失敗——請手動新增該節點",
-        "failed": "安裝失敗"
+        "failed": "安裝失敗",
+        "config": {
+          "title": "安裝設定（選填）",
+          "hint": "任一欄位留空則由安裝腳本使用安全預設值（隨機帳號/連接埠/路徑、SQLite、無 TLS）。",
+          "panelSection": "面板",
+          "username": "使用者名稱（留空隨機）",
+          "password": "密碼（留空隨機）",
+          "panelPort": "連接埠（留空隨機）",
+          "webBasePath": "存取路徑（留空隨機）",
+          "dbSection": "資料庫",
+          "dbSqlite": "SQLite",
+          "dbPostgres": "PostgreSQL",
+          "sslSection": "SSL 憑證",
+          "sslNone": "無（HTTP）",
+          "sslIp": "IP 憑證",
+          "sslDomain": "網域憑證",
+          "domainPlaceholder": "example.com",
+          "sslHint": "IP/網域憑證需要伺服器開放 80 連接埠；網域憑證還需有網域解析到該伺服器。"
+        }
       }
     },
     "settings": {

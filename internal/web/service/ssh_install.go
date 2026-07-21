@@ -56,14 +56,65 @@ type installEnv struct {
 	url      string
 }
 
+// InstallConfig carries optional install-time settings entered in the panel. A
+// blank field is omitted from the command so install.sh applies its own default
+// (random credentials/port/path, sqlite, no TLS). DbType is "sqlite" or
+// "postgres"; SslMode is "none", "ip", or "domain" (domain requires Domain).
+type InstallConfig struct {
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	PanelPort   string `json:"panelPort"`
+	WebBasePath string `json:"webBasePath"`
+	DbType      string `json:"dbType"`
+	SslMode     string `json:"sslMode"`
+	Domain      string `json:"domain"`
+}
+
+// envAssignments renders the config as a shell prefix of `KEY=value ` pairs
+// (trailing space when non-empty), each value shell-quoted, ready to prepend to
+// the install command. Empty fields are skipped so install.sh keeps its default.
+func (c InstallConfig) envAssignments() string {
+	var b strings.Builder
+	add := func(k, v string) {
+		v = strings.TrimSpace(v)
+		if v == "" {
+			return
+		}
+		b.WriteString(k)
+		b.WriteString("=")
+		b.WriteString(shellQuote(v))
+		b.WriteString(" ")
+	}
+	add("XUI_USERNAME", c.Username)
+	add("XUI_PASSWORD", c.Password)
+	add("XUI_PANEL_PORT", c.PanelPort)
+	add("XUI_WEB_BASE_PATH", c.WebBasePath)
+	if dt := strings.TrimSpace(c.DbType); dt == "postgres" {
+		add("XUI_DB_TYPE", "postgres")
+	}
+	switch strings.TrimSpace(c.SslMode) {
+	case "ip":
+		add("XUI_SSL_MODE", "ip")
+	case "domain":
+		add("XUI_SSL_MODE", "domain")
+		add("XUI_DOMAIN", c.Domain)
+	}
+	return b.String()
+}
+
 // buildInstallCommand assembles the non-interactive install invocation. The
 // script is fetched over the network and executed — the same trust model as a
 // human running the official one-liner. XUI_NONINTERACTIVE=1 makes it run
 // unattended (the EOF stdin already makes stdin a non-TTY, but the flag is
 // explicit and future-proof).
-func buildInstallCommand(version string) string {
-	const scriptURL = "https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh"
-	inner := fmt.Sprintf("XUI_NONINTERACTIVE=1 bash <(curl -Ls %s)", scriptURL)
+func buildInstallCommand(version string, cfg InstallConfig) string {
+	const scriptURL = "https://raw.githubusercontent.com/yangbin1322/3x-ui-Manager/main/install.sh"
+	// Config env assignments precede the flag so install.sh's non-interactive
+	// path reads them. Each value is shell-quoted; blank values are omitted so
+	// install.sh falls back to its own defaults (random credentials, sqlite, no
+	// TLS). See config_after_install in install.sh for the supported vars.
+	prefix := cfg.envAssignments()
+	inner := fmt.Sprintf("%sXUI_NONINTERACTIVE=1 bash <(curl -Ls %s)", prefix, scriptURL)
 	version = strings.TrimSpace(version)
 	if version != "" {
 		inner += " " + shellQuote(version)
@@ -85,7 +136,7 @@ func shellQuote(s string) string {
 // server's NodeId. The server row — and with it the SSH access — is left
 // untouched: SSH management and panel management are two parallel handles on
 // the same box, not successive states of one row.
-func (s *ManagedServerService) InstallPanel(ctx context.Context, serverId int, version string, username string) (*InstallResult, error) {
+func (s *ManagedServerService) InstallPanel(ctx context.Context, serverId int, version string, cfg InstallConfig, username string) (*InstallResult, error) {
 	srv, err := s.GetById(serverId)
 	if err != nil || srv == nil {
 		return nil, common.NewError("server not found")
@@ -106,7 +157,7 @@ func (s *ManagedServerService) InstallPanel(ctx context.Context, serverId int, v
 	runCtx, cancel := context.WithTimeout(ctx, installTimeout)
 	defer cancel()
 
-	cmd := buildInstallCommand(version)
+	cmd := buildInstallCommand(version, cfg)
 	res := s.execOnServer(runCtx, srv, cmd, installTimeout)
 	s.writeAudit("", srv, "[install 3x-ui]", username, res)
 
@@ -446,7 +497,7 @@ type BatchInstallResponse struct {
 // execConcurrency (each install is a heavy, side-effecting action). Results come
 // back in the requested order. A server that is missing or already linked
 // becomes a failed result rather than aborting the batch.
-func (s *ManagedServerService) InstallPanelBatch(ctx context.Context, serverIds []int, version string, username string) *BatchInstallResponse {
+func (s *ManagedServerService) InstallPanelBatch(ctx context.Context, serverIds []int, version string, cfg InstallConfig, username string) *BatchInstallResponse {
 	results := make([]BatchServerResult, len(serverIds))
 	sem := make(chan struct{}, execConcurrency)
 	var wg sync.WaitGroup
@@ -456,7 +507,7 @@ func (s *ManagedServerService) InstallPanelBatch(ctx context.Context, serverIds 
 		go func(i, id int) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			res, err := s.InstallPanel(ctx, id, version, username)
+			res, err := s.InstallPanel(ctx, id, version, cfg, username)
 			results[i] = installOutcome(id, res, err)
 		}(i, id)
 	}

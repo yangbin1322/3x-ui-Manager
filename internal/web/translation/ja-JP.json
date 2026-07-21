@@ -1286,7 +1286,25 @@
         "running": "3x-ui をインストール中…数分かかることがあります",
         "derivedOk": "インストール完了 — 紐づくパネルノードを作成しました",
         "installedNotDerived": "インストールは完了しましたが、パネルノードの作成に失敗しました。手動でノードを追加してください",
-        "failed": "インストールに失敗しました"
+        "failed": "インストールに失敗しました",
+        "config": {
+          "title": "インストール設定（任意）",
+          "hint": "空欄にするとインストーラーが安全な既定値を選びます（ランダムな資格情報/ポート/パス、SQLite、TLSなし）。",
+          "panelSection": "パネル",
+          "username": "ユーザー名（空欄=ランダム）",
+          "password": "パスワード（空欄=ランダム）",
+          "panelPort": "ポート（空欄=ランダム）",
+          "webBasePath": "ベースパス（空欄=ランダム）",
+          "dbSection": "データベース",
+          "dbSqlite": "SQLite",
+          "dbPostgres": "PostgreSQL",
+          "sslSection": "SSL証明書",
+          "sslNone": "なし（HTTP）",
+          "sslIp": "IP証明書",
+          "sslDomain": "ドメイン証明書",
+          "domainPlaceholder": "example.com",
+          "sslHint": "IP/ドメイン証明書はサーバーのポート80を開放する必要があります。ドメイン証明書にはそのサーバーを指すドメインが必要です。"
+        }
       }
     },
     "settings": {

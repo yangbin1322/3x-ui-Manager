@@ -200,7 +200,7 @@ func TestInstallReusesSameHostNode(t *testing.T) {
 		t.Fatalf("unlink b: %v", err)
 	}
 	// Installing on b must reuse a's node, not create a second one.
-	res, err := svc.InstallPanel(t.Context(), b.Id, "", "admin")
+	res, err := svc.InstallPanel(t.Context(), b.Id, "", InstallConfig{}, "admin")
 	if err != nil {
 		t.Fatalf("install b: %v", err)
 	}

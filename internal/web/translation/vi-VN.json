@@ -1286,7 +1286,25 @@
         "running": "Đang cài đặt 3x-ui… có thể mất vài phút",
         "derivedOk": "Đã cài đặt — đã tạo node bảng điều khiển liên kết",
         "installedNotDerived": "Đã cài đặt nhưng tạo node bảng điều khiển thất bại — hãy thêm node thủ công",
-        "failed": "Cài đặt thất bại"
+        "failed": "Cài đặt thất bại",
+        "config": {
+          "title": "Cấu hình cài đặt (tùy chọn)",
+          "hint": "Để trống bất kỳ trường nào để trình cài đặt chọn giá trị mặc định an toàn (thông tin đăng nhập/cổng/đường dẫn ngẫu nhiên, SQLite, không TLS).",
+          "panelSection": "Bảng điều khiển",
+          "username": "Tên đăng nhập (trống = ngẫu nhiên)",
+          "password": "Mật khẩu (trống = ngẫu nhiên)",
+          "panelPort": "Cổng (trống = ngẫu nhiên)",
+          "webBasePath": "Đường dẫn cơ sở (trống = ngẫu nhiên)",
+          "dbSection": "Cơ sở dữ liệu",
+          "dbSqlite": "SQLite",
+          "dbPostgres": "PostgreSQL",
+          "sslSection": "Chứng chỉ SSL",
+          "sslNone": "Không (HTTP)",
+          "sslIp": "Chứng chỉ IP",
+          "sslDomain": "Chứng chỉ tên miền",
+          "domainPlaceholder": "example.com",
+          "sslHint": "Chứng chỉ IP/tên miền cần mở cổng 80 trên máy chủ; chứng chỉ tên miền cần một tên miền trỏ tới nó."
+        }
       }
     },
     "settings": {
