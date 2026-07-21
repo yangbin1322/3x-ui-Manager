@@ -22,7 +22,7 @@ Tab。
 
 - **连接方式**:地址 / SSH 端口 / 用户名 + 密码或 SSH 私钥(私钥可带 passphrase)。
 - **连接测试**:保存前先测通 SSH,并在测试时探测主机操作系统(读 `/etc/os-release`)。
-- **凭据加密存储**:SSH 密码 / 私钥用 AES-256-GCM 加密后落库(密钥见第 6 节),
+- **凭据加密存储**:SSH 密码 / 私钥用 AES-256-GCM 加密后落库(密钥见第 8 节),
   API 层只写不读(`json:"-"`),UI 只显示「已配置」而不回显明文。
 - **主机指纹校验**:模仿 TLS 的 `trust / pin / skip` 三种模式防中间人 ——
   `trust` 首次连接记录指纹(TOFU),`pin` 要求指纹匹配,`skip` 接受任意指纹。
@@ -54,7 +54,7 @@ Tab。
 面板「节点」页拆成两个 Tab:**Servers(服务器)** 与 **Panel Nodes(面板节点)**。
 
 - 新增 `ManagedServer` 数据模型:保存远程主机的地址、SSH 端口、账号 +
-  密码/私钥,SSH 凭据以 AES-256-GCM 加密后落库(密钥见第 6 节)。
+  密码/私钥,SSH 凭据以 AES-256-GCM 加密后落库(密钥见第 8 节)。
 - SSH 访问能力从原来的 Node 中拆出,独立成 ManagedServer;安装成功后自动派生
   一个关联的 Panel Node,并在服务器行上显示关联关系(**Panel Node** 列)。
 - 服务器行内操作:
@@ -120,9 +120,50 @@ Tab。
 
 相关 PR:#10。
 
+## 6. 服务器文件分发(上传 / 跨机复制)
+
+在「服务器」Tab 对选中的多台服务器做文件级运维,底层走 SFTP,复用与远程命令
+相同的 SSH 连接(主机指纹校验 + SSRF 防护),并发限流,结果按主机分组返回。
+
+- **Upload files(上传到路径)**:把本地文件上传到目标服务器的指定路径。支持
+  多文件,也支持整目录上传(浏览器 `webkitdirectory`,保留目录树)。
+- **Copy path(跨机复制)**:把某台服务器上的指定文件 / 目录,复制到另外多台
+  服务器的指定路径。
+- **上传进度**:上传阶段显示一条总体进度条(基于 XHR 上报字节数);到 100%
+  后进入「正在分发到 N 台服务器,请稍候」的分发阶段提示,分发完成才报成功。
+- **安全**:路径经 `resolveRemotePath` / `safeRel` 归一化,剥离前导 `/` 与 `..`
+  防目录穿越;上传 / 复制路由豁免 10 MiB 请求体上限,并去掉了会在传输中撕断
+  TLS 的 Write 超时。
+
+相关 PR:#22、#24(上传 / 复制)、#27(目录 / 大文件请求体上限)、
+#29(大文件 TLS 撕断修复)、#31(上传进度条)、#33(分发提示)。
+
+## 7. 安装配置卡片
+
+给「Install 3X-UI」流程加了一张配置卡片,类似手动装 3x-ui 时的分步向导,
+每一项都有默认值(留空即用 install.sh 的默认:随机账号密码 / 端口 / 路径、
+sqlite、不启用 TLS):
+
+- **面板**:账号 / 密码 / 端口 / Web 基础路径。
+- **数据库**:sqlite(默认)/ postgres。
+- **SSL**:none(默认)/ ip(自签 IP 证书)/ domain(Let's Encrypt 域名证书,
+  需填域名)。
+
+非空项会以 `XUI_*=...` 环境变量前缀注入到非交互安装命令
+(`XUI_NONINTERACTIVE=1`)。心跳刷新时表单不会被重置(用 ref 持有
+`fetchVersions`,effect 仅在弹窗打开时跑),版本下拉的可选版本号取自本 fork
+的 Release 列表。
+
+> ⚠️ 若选 ip / domain 但证书签发失败(如 80 端口被 nginx 占用),install.sh 会
+> 回退到 http 并把 Access URL / 派生节点标为 http,避免出现「面板跑 HTTP、
+> 节点却是 https」的错配(见 PR #39)。
+
+相关 PR:#35(配置卡片)、#37(心跳不重置表单、版本指向 fork)、
+#39(证书失败回退 http)。
+
 ---
 
-## 6. XUI_SECRET_KEY — SSH 凭据加密密钥
+## 8. XUI_SECRET_KEY — SSH 凭据加密密钥
 
 面板用环境变量 `XUI_SECRET_KEY` 对入库的 SSH 凭据做 AES-256-GCM 加密。缺失时
 「服务器」功能会报错:`XUI_SECRET_KEY is not set; it is required to store SSH
@@ -143,7 +184,7 @@ credentials`。
 
 ---
 
-## 7. 自建构建 / 发布 / 安装链路
+## 9. 自建构建 / 发布 / 安装链路
 
 让这个 fork 能像官方一样「打 tag → 自动出 Release → 一键安装」,并且所有下载都
 指向本 fork。
@@ -180,7 +221,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/yangbin1322/3x-ui-Manager/main
   指定版本安装、更新、卸载后提示的重装命令,都走 fork。
 - 可用环境变量 `XUI_REPO`(默认 `yangbin1322/3x-ui-Manager`)/ `XUI_RAW_BRANCH`
   覆盖,回退到上游或其它 fork。
-- 安装时会用 tarball 内自带的 systemd unit(不再多余联网),并按第 6 节自动配好
+- 安装时会用 tarball 内自带的 systemd unit(不再多余联网),并按第 8 节自动配好
   `XUI_SECRET_KEY`。
 
 > 这三个脚本在运行时从 fork 的 `main` 分支 raw 拉取,所以对脚本的改动一经合并到
@@ -223,6 +264,17 @@ XUI_SECRET_KEY=<your-fixed-key> ./deploy.sh
 | #13 | install.sh 从本 fork 下载 Release |
 | #14 | install.sh 优先使用 tarball 内自带的 systemd unit |
 | #15 | 安装时自动生成 / 持久化 XUI_SECRET_KEY;update.sh / x-ui.sh 全部指向 fork |
+| #18 | 客户端页删光客户端后计数仍显示 1 的前端 live-stats stale 修复 |
+| #20 | 客户端计数 stale 修复(启用 / 关闭列同步) |
+| #22 | 批量上传文件到指定路径 / 服务器间复制路径 |
+| #24 | 上传 / 复制功能完善 |
+| #27 | 目录 / 大文件上传 ERR_CONNECTION_RESET:请求体上限豁免上传 / 复制路由 |
+| #29 | 大文件上传 ERR_SSL_PROTOCOL_ERROR:去掉传输中撕断 TLS 的 Write 超时 |
+| #31 | 上传总体进度条 |
+| #33 | 分发阶段提示「正在分发到 N 台服务器,请稍候」 |
+| #35 | Install 3X-UI 安装配置卡片(账号 / 密码 / 端口 / 路径 / 库类型 / SSL) |
+| #37 | 配置表单心跳刷新不再被重置;版本下拉指向本 fork Release |
+| #39 | IP / 域名证书签发失败时,节点 scheme 回退 http(避免 HTTP/HTTPS 错配) |
 
 > 打 tag 自动发布 Release 的能力由 `.github/workflows/release.yml` 提供
 > (上游已有,本 fork 直接复用,推 tag 即发布到本 fork)。
