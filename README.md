@@ -23,6 +23,24 @@ Built as an enhanced fork of the original X-UI project, 3X-UI adds broader proto
 > [!IMPORTANT]
 > This project is intended for personal use only. Please do not use it for illegal purposes or in a production environment.
 
+## About this fork (`3x-ui-Manager`)
+
+`yangbin1322/3x-ui-Manager` extends upstream 3X-UI from "manage 3x-ui nodes you already have" into "manage a whole fleet of servers over SSH." On top of everything below, this fork adds:
+
+- **SSH-managed servers** — attach a Linux host by SSH (password or key), with connection tests, AES-256-GCM-encrypted credentials, host-key verification, and reachability heartbeats. The nodes page splits into **Servers** and **Panel Nodes** tabs.
+- **Remote install / import / uninstall** — install 3x-ui on a server (with a step-by-step config card: account, port, path, DB type, SSL mode incl. IP or Let's Encrypt certs) and auto-derive a linked panel node, import an existing panel, or uninstall — singly or in batch.
+- **Bulk operations** — bulk-add servers from a pasted/uploaded table, run commands across many servers with an audit log, deploy one inbound's config to many nodes, and batch attach/detach clients across inbounds.
+- **File distribution** — upload files/directories to a path over SFTP and copy a path between servers, with an overall progress bar.
+- **Self-hosted build/release/install pipeline** — tag → GitHub Release (binaries + embedded UI), and `install.sh` / `update.sh` / `x-ui.sh` all download from this fork, with `XUI_SECRET_KEY` auto-generated and persisted on fresh installs.
+
+Full details and the PR history: **[docs/FORK_FEATURES.md](docs/FORK_FEATURES.md)**.
+
+Install from this fork:
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/yangbin1322/3x-ui-Manager/main/install.sh)
+```
+
 ## Features
 
 - **Multi-protocol inbounds** — VLESS, VMess, Trojan, Shadowsocks, WireGuard, Hysteria2, HTTP, SOCKS (Mixed), Dokodemo-door / Tunnel, and TUN.
