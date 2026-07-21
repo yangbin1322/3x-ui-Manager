@@ -557,7 +557,7 @@ func uninstallOutcome(id int, res *UninstallResult, err error) BatchServerResult
 }
 
 // panelReleasesURL lists the 3x-ui releases the install script can install.
-const panelReleasesURL = "https://api.github.com/repos/MHSanaei/3x-ui/releases"
+const panelReleasesURL = "https://api.github.com/repos/yangbin1322/3x-ui-Manager/releases"
 
 // panelVersionsTTL bounds how often the version picker hits GitHub.
 const panelVersionsTTL = 15 * time.Minute
