@@ -1577,6 +1577,10 @@ export const SCHEMAS: Record<string, unknown> = {
   "DeployResult": {
     "description": "DeployResult is one node's outcome from copying an inbound to several nodes.",
     "properties": {
+      "attached": {
+        "example": 2,
+        "type": "integer"
+      },
       "message": {
         "type": "string"
       },

@@ -1603,6 +1603,10 @@
       "DeployResult": {
         "description": "DeployResult is one node's outcome from copying an inbound to several nodes.",
         "properties": {
+          "attached": {
+            "example": 2,
+            "type": "integer"
+          },
           "message": {
             "type": "string"
           },
@@ -3898,7 +3902,7 @@
         "tags": [
           "Inbounds"
         ],
-        "summary": "Copy one inbound’s configuration onto each of the given nodes: for every node a new independent inbound is created there with tag \"<tag>-<nodeName>\", the same transport/TLS/port config, and an EMPTIED client list (client emails are globally unique and cannot be duplicated across nodes). Each node is independent — one failure does not abort the rest — and the node that already hosts the source inbound is skipped. Reports per-node success/failure.",
+        "summary": "Copy one inbound’s configuration onto each of the given nodes: for every node a new independent inbound is created there with tag \"<tag>-<nodeName>\", remark \"<remark>-<nodeName>\", and the same transport/TLS/port config. clientMode controls clients — \"none\" (empty client list), \"copy\" (attach the source inbound’s own clients to every copy), or \"bind\" (attach the clientEmails set to every copy); copy/bind share one client identity and traffic account across nodes. Each node is independent — one failure does not abort the rest — and the node that already hosts the source inbound is skipped. Reports per-node success/failure (with an attached count).",
         "operationId": "post_panel_api_inbounds_deployToNodes",
         "requestBody": {
           "required": true,
@@ -3912,7 +3916,9 @@
                 "nodeIds": [
                   3,
                   7
-                ]
+                ],
+                "clientMode": "none",
+                "clientEmails": []
               }
             }
           }
@@ -3941,6 +3947,7 @@
                   "obj": {
                     "results": [
                       {
+                        "attached": 2,
                         "message": "",
                         "nodeId": 3,
                         "nodeName": "hk-1",

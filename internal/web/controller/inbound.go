@@ -224,12 +224,15 @@ func (a *InboundController) bulkDelInbounds(c *gin.Context) {
 }
 
 // deployToNodes copies one inbound's configuration onto each of the given nodes,
-// creating an independent inbound on every node (new tag, emptied client list).
-// The response reports per-node success/failure.
+// creating an independent inbound on every node (suffixed tag + remark). Clients
+// are handled per the request's clientMode (none / copy / bind). The response
+// reports per-node success/failure.
 func (a *InboundController) deployToNodes(c *gin.Context) {
 	var req struct {
-		InboundId int   `json:"inboundId"`
-		NodeIds   []int `json:"nodeIds"`
+		InboundId    int                      `json:"inboundId"`
+		NodeIds      []int                    `json:"nodeIds"`
+		ClientMode   service.DeployClientMode `json:"clientMode"`
+		ClientEmails []string                 `json:"clientEmails"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
@@ -243,7 +246,18 @@ func (a *InboundController) deployToNodes(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), fmt.Errorf("at least one node is required"))
 		return
 	}
-	result, err := a.inboundService.DeployInboundToNodes(req.InboundId, req.NodeIds)
+	mode := req.ClientMode
+	if mode == "" {
+		mode = service.DeployClientsNone
+	}
+	if mode == service.DeployClientsBind && len(req.ClientEmails) == 0 {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), fmt.Errorf("at least one client is required to bind"))
+		return
+	}
+	result, err := a.inboundService.DeployInboundToNodes(req.InboundId, req.NodeIds, service.DeployOptions{
+		ClientMode:   mode,
+		ClientEmails: req.ClientEmails,
+	})
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
